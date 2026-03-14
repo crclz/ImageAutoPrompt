@@ -1,4 +1,7 @@
-from flask import Flask
+import os
+from pathlib import Path
+
+from flask import Flask, abort, send_from_directory
 
 from entropy.application.episode_handler import EpisodeHandler
 
@@ -10,6 +13,22 @@ def hello_world():
     return "<p>Hello, World!</p>"
 
 
-@app.route("/api/episode/<name>")
+@app.route("/api/episodes/<name>")
 def get_episode_data(name):
     return EpisodeHandler.get_episode_data_wrapper(name)
+
+
+@app.route("/episodes/<episode_name>/files/<filename>")
+def serve_episode_image(episode_name, filename):
+    # 1. 构造该 episode 对应的磁盘目录
+    episodes_dir = Path("./runs/episodes")
+
+    target_dir = os.path.join(episodes_dir, episode_name)
+
+    # 2. 检查目录是否存在，防止 500 错误
+    if not episodes_dir.exists():
+        abort(404)
+
+    # 3. 安全地从目录发送文件
+    # send_from_directory 会自动防止路径穿越攻击（如 filename 中包含 ../）
+    return send_from_directory(target_dir, filename)

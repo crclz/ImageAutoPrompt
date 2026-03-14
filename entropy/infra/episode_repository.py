@@ -74,7 +74,7 @@ class EpisodeRepository:
                 )
 
             timestep_map[timestep].images.append(
-                ImageQueryModel(image_index=image_index, url=f"/episode/{episode_name}/images/{png_file.name}")
+                ImageQueryModel(image_index=image_index, url=f"/episodes/{episode_name}/files/{png_file.name}")
             )
 
         # collect timesteps
