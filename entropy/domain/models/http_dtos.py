@@ -13,3 +13,12 @@ class ChooseHighScoresRequest(pydantic.BaseModel):
 
 class ChooseHighScoresResponse(pydantic.BaseModel):
     pass
+
+
+class StartImageProcessingRequest(pydantic.BaseModel):
+    episode_name: str = ""
+    exploration_output: str = ""
+
+
+class StartImageProcessingResponse(pydantic.BaseModel):
+    run_many_seconds: float

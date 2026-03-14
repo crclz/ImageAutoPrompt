@@ -3,6 +3,7 @@
 *.log
 
 /runs
+/comfyui_template.json
 
 
 # Python-generated files

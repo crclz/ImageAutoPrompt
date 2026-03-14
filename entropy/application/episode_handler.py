@@ -1,8 +1,19 @@
+from datetime import datetime
 import logging
+import os
+from pathlib import Path
 import traceback
 
-from entropy.domain.models.http_dtos import ChooseHighScoresRequest, ChooseHighScoresResponse
+from entropy.domain.models.episode import EpisodeTimestep
+from entropy.domain.models.http_dtos import (
+    ChooseHighScoresRequest,
+    ChooseHighScoresResponse,
+    StartImageProcessingRequest,
+    StartImageProcessingResponse,
+)
 from entropy.domain.models.query_model import EpisodeQueryModel
+from entropy.domain.services.llm_parse_service import LlmParseService
+from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import Flask, jsonify, make_response, render_template, request
 
@@ -149,10 +160,86 @@ class EpisodeHandler:
         return ChooseHighScoresResponse()
 
     @classmethod
-    def start_image_processing(cls):
+    def start_image_processing_wrapper(cls, episode_name: str):
+        try:
+            assert episode_name
+
+            req = StartImageProcessingRequest.model_validate(request.get_json())
+            req.episode_name = episode_name
+
+            return cls.start_image_processing(req)
+        except Exception as e:
+            _logger.exception("start_image_processing_wrapper error")
+            return cls.wrap_api_exception(e)
+
+    @classmethod
+    def start_image_processing(cls, request: StartImageProcessingRequest) -> StartImageProcessingResponse:
         """
+        create new timestep. when done, change status from 0 to 1
         change EpisodeTimestep.status from 0 to 1.
-        when done, change EpisodeTimestep.status from 1 to 2.
-        user can force state go back to 0.
+        when failure, rollback
         """
-        raise NotImplementedError()
+
+        # base url
+        base_url = os.environ.get("COMFY_BASE_URL")
+        assert base_url, "COMFY_BASE_URL not provided"
+        assert base_url.startswith("http"), "COMFY_BASE_URL should start with http"
+
+        # template json
+        json_file = "comfyui_template.json"
+        if not Path(json_file).exists():
+            raise ValueError(f"not exist: {json_file}")
+
+        template_json = Path(json_file).read_text("utf8")
+
+        # parse llm
+        assert request.exploration_output, "exploration_output is empty"
+
+        positives, negatives = LlmParseService.parse_exploration_output(request.exploration_output)
+
+        if not positives:
+            raise ValueError("parse exploration_output failed")
+
+        # check positives
+        episode = EpisodeRepository.get_eposide(request.episode_name)
+
+        if episode.timesteps:
+            last_status = episode.timesteps[-1].status
+            if last_status != 2:
+                raise ValueError(f"last timestep status != 2. actual: {last_status}")
+
+        # create new timestep
+        timestep_i = len(episode.timesteps)
+
+        episode.timesteps.append(
+            EpisodeTimestep(
+                i=timestep_i,
+            )
+        )
+        EpisodeRepository.save_episode(request.episode_name, episode)
+
+        def complete_hook(image_index: int, image_bytes: bytes) -> None:
+            # save so that web page can see the picture
+            pic_save_path = EpisodeRepository.pic_path(request.episode_name, timestep_i, image_index)
+            pic_save_path.write_bytes(image_bytes)
+
+        try:
+            t0 = datetime.now()
+            ComfyApi.run_many(base_url, template_json, positives, negatives, complete_hook=complete_hook)
+
+            dt = (datetime.now() - t0).total_seconds()
+            _logger.info(f"run_many takes {dt:.1f} seconds")
+
+            episode.timesteps[-1].status = 1
+
+            EpisodeRepository.save_episode(request.episode_name, episode)
+
+            return StartImageProcessingResponse(run_many_seconds=dt)
+
+        except (Exception, KeyboardInterrupt):
+            _logger.exception("start_image_processing has error")
+
+            episode.timesteps.pop()
+            EpisodeRepository.save_episode(request.episode_name, episode)
+
+            raise

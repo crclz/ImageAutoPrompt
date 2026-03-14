@@ -168,7 +168,13 @@ class ComfyApi:
 
     @classmethod
     def run_many(
-        cls, base_url: str, workflow_template_json: str, positives: List[str], negative: List[str], batch_size=1
+        cls,
+        base_url: str,
+        workflow_template_json: str,
+        positives: List[str],
+        negative: List[str],
+        batch_size=1,
+        complete_hook=None,
     ) -> List[bytes]:
         """
         return, keep order
@@ -192,6 +198,9 @@ class ComfyApi:
 
             image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative)
             results[i] = image_bytes
+
+            if complete_hook:
+                complete_hook(i, image_bytes)
 
         with ThreadPoolExecutor(10) as executor:
             args_list = zip(range(len(positives)), positives, negative)

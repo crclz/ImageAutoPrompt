@@ -106,3 +106,10 @@ class EpisodeRepository:
             timesteps.append(model)
 
         return timesteps
+
+    @classmethod
+    def pic_path(cls, episode_name: str, timestep: int, image_index: int) -> Path:
+        d = cls.episodes_dir() / episode_name
+        f = f"t{timestep:03d}_{image_index:02d}.png"
+
+        return d / f
