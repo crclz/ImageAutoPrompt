@@ -259,6 +259,7 @@
                     timesteps.value = data.timesteps || [];
                 } catch (err) {
                     console.warn("Sync error:", err);
+                    alert("get episode data error:" + err);
                 }
             };
 
