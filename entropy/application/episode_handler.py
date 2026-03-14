@@ -72,6 +72,20 @@ class EpisodeHandler:
 
         timesteps = EpisodeRepository.get_timesteps_query_model(name)
 
+        # format observation
+        for timestep in timesteps:
+            if timestep.status == 2:
+                ob = f"timestep={timestep.i}\n"
+
+                ob += "用户: NewHighScore: "
+                for highscore in timestep.chosen_highscores:
+                    llm_info = highscore.format_llm()
+                    ob += f"{llm_info}, "
+
+                ob += "\n"
+
+                timestep.observation = ob
+
         return EpisodeQueryModel(timesteps=timesteps)
 
     @classmethod
@@ -119,15 +133,6 @@ class EpisodeHandler:
         EpisodeRepository.save_episode(request.name, episode)
 
         return ChooseHighScoresResponse()
-
-    @classmethod
-    def get_timestep_observation(cls):
-        """
-        return a string e.g.
-        timestep=15
-        user: NewHighScore: timestep_14_image[0]
-        """
-        raise NotImplementedError()
 
     @classmethod
     def start_image_processing(cls):
