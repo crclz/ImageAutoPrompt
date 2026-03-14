@@ -3,26 +3,44 @@
 {% block title %}Episode - {{ episode_name }}{% endblock %}
 
 {% block content %}
-<div id="app" class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl p-8">
-    <div class="text-center">
-        <h2 class="text-2xl font-bold text-indigo-600 mb-4">
-            正在查看: [[ episodeName ]]
+<div id="app" class="max-w-5xl mx-auto p-4">
+    <div class="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
+        <h2 class="text-xl font-bold text-gray-800">
+            Episode: <span class="text-indigo-600">[[ episodeName ]]</span>
         </h2>
+        <div class="flex items-center space-x-2">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            <span class="text-sm text-gray-500">每 2 秒自动同步</span>
+        </div>
+    </div>
 
-        <p class="text-gray-500 mb-6">这是一个使用 Tailwind 渲染的计数器示例：</p>
+    <div class="space-y-6">
+        <div v-for="step in reversedTimesteps" :key="step.i" 
+             class="bg-white border border-gray-100 rounded-xl shadow-sm p-4 transition-all hover:shadow-md">
+            
+            <div class="flex items-center mb-3 border-b border-gray-50 pb-2">
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-mono font-bold">
+                    STEP [[ step.i ]]
+                </span>
+                <span class="ml-3 text-sm text-gray-400">状态: [[ step.status ]]</span>
+            </div>
 
-        <div class="flex flex-col items-center space-y-4">
-            <span class="text-6xl font-black text-gray-800">[[ count ]]</span>
-
-            <div class="flex space-x-2">
-                <button @click="decrement"
-                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow-lg active:scale-95">
-                    减少
-                </button>
-                <button @click="increment"
-                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-lg active:scale-95 font-bold">
-                    增加点我！
-                </button>
+            <div class="flex flex-wrap gap-4">
+                <div v-for="img in step.images" :key="img.image_index" class="relative group">
+                    <img :src="img.url" 
+                         class="h-32 w-auto rounded-lg object-cover border border-gray-200 shadow-sm transition-transform group-hover:scale-105"
+                         @error="handleImgError">
+                    <span class="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1 rounded">
+                        #[[ img.image_index ]]
+                    </span>
+                </div>
+                
+                <div v-if="step.images.length === 0" class="text-gray-300 italic text-sm py-4">
+                    无图片数据
+                </div>
             </div>
         </div>
     </div>
@@ -31,24 +49,56 @@
 
 {% block scripts %}
 <script>
-    const { createApp, ref } = Vue;
+    const { createApp, ref, onMounted, onUnmounted, computed } = Vue;
 
     createApp({
         setup() {
-            const count = ref(0);
-            const episodeName = ref("{{ episode_name }}"); // 从 Flask 传入变量
+            const episodeName = ref("{{ episode_name }}");
+            const timesteps = ref([]);
+            let timer = null;
 
-            const increment = () => count.value++;
-            const decrement = () => count.value--;
+            // 计算属性：将 timesteps 倒序排列（timestep[-1] 在前）
+            const reversedTimesteps = computed(() => {
+                return [...timesteps.value].reverse();
+            });
+
+            // 获取数据
+            const fetchData = async () => {
+                try {
+                    const response = await fetch(`/api/episodes/${episodeName.value}`);
+                    if (!response.ok) throw new Error('网络请求失败');
+                    const data = await response.json();
+                    
+                    // 假设 API 返回结构是 { timesteps: [...] }
+                    timesteps.value = data.timesteps || [];
+                } catch (err) {
+                    console.error("加载失败:", err);
+                }
+            };
+
+            const handleImgError = (e) => {
+                e.target.src = 'https://placehold.co/200x200?text=Error';
+            };
+
+            onMounted(() => {
+                // 1. 初始加载
+                fetchData();
+                // 2. 开启每2秒轮询
+                timer = setInterval(fetchData, 2000);
+            });
+
+            onUnmounted(() => {
+                // 组件卸载时销毁定时器，防止内存泄漏
+                if (timer) clearInterval(timer);
+            });
 
             return {
-                count,
                 episodeName,
-                increment,
-                decrement
+                timesteps,
+                reversedTimesteps,
+                handleImgError
             };
         },
-        // 因为 Jinja2 也使用 ，所以我们将 Vue 的分隔符改为 [[ ]]
         delimiters: ['[[', ']]']
     }).mount('#app');
 </script>
