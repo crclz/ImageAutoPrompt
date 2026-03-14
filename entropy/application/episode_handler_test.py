@@ -74,7 +74,8 @@ def test_start_image_processing_happy_1():
     """
 
     response = EpisodeHandler.start_image_processing(
-        StartImageProcessingRequest(episode_name="test1", exploration_output=s)
+        StartImageProcessingRequest(episode_name="test1", exploration_output=s),
+        join=True,
     )
 
     print("response is", response)

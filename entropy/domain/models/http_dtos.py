@@ -21,4 +21,4 @@ class StartImageProcessingRequest(pydantic.BaseModel):
 
 
 class StartImageProcessingResponse(pydantic.BaseModel):
-    run_many_seconds: float
+    pass

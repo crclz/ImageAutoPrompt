@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
+from threading import Thread
 import traceback
 
 from entropy.domain.models.episode import EpisodeTimestep
@@ -155,13 +156,15 @@ class EpisodeHandler:
             req = StartImageProcessingRequest.model_validate(request.get_json())
             req.episode_name = episode_name
 
-            return cls.start_image_processing(req)
+            resp = cls.start_image_processing(req)
+            data_object = resp.model_dump()
+            return data_object
         except Exception as e:
             _logger.exception("start_image_processing_wrapper error")
             return cls.wrap_api_exception(e)
 
     @classmethod
-    def start_image_processing(cls, request: StartImageProcessingRequest) -> StartImageProcessingResponse:
+    def start_image_processing(cls, request: StartImageProcessingRequest, join=False) -> StartImageProcessingResponse:
         """
         create new timestep. when done, change status from 0 to 1
         change EpisodeTimestep.status from 0 to 1.
@@ -211,23 +214,30 @@ class EpisodeHandler:
             pic_save_path = EpisodeRepository.pic_path(request.episode_name, timestep_i, image_index)
             pic_save_path.write_bytes(image_bytes)
 
-        try:
-            t0 = datetime.now()
-            ComfyApi.run_many(base_url, template_json, positives, negatives, complete_hook=complete_hook)
+        def thread_function():
+            try:
+                t0 = datetime.now()
+                ComfyApi.run_many(base_url, template_json, positives, negatives, complete_hook=complete_hook)
 
-            dt = (datetime.now() - t0).total_seconds()
-            _logger.info(f"run_many takes {dt:.1f} seconds")
+                dt = (datetime.now() - t0).total_seconds()
+                _logger.info(f"run_many takes {dt:.1f} seconds")
 
-            episode.timesteps[-1].status = 1
+                episode.timesteps[-1].status = 1
 
-            EpisodeRepository.save_episode(request.episode_name, episode)
+                EpisodeRepository.save_episode(request.episode_name, episode)
 
-            return StartImageProcessingResponse(run_many_seconds=dt)
+            except (Exception, KeyboardInterrupt):
+                _logger.exception("start_image_processing has error")
 
-        except (Exception, KeyboardInterrupt):
-            _logger.exception("start_image_processing has error")
+                episode.timesteps.pop()
+                EpisodeRepository.save_episode(request.episode_name, episode)
 
-            episode.timesteps.pop()
-            EpisodeRepository.save_episode(request.episode_name, episode)
+                raise
 
-            raise
+        th = Thread(target=thread_function)
+        th.start()
+
+        if join:
+            th.join()
+
+        return StartImageProcessingResponse()

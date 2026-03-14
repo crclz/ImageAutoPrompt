@@ -42,3 +42,8 @@ def episode_page(episode_name):
 @app.post("/api/episodes/<name>/choose-highscore")
 def choose_highscore(name: str):
     return EpisodeHandler.choose_high_scores_wrapper(name)
+
+
+@app.post("/api/episodes/<name>/process-image")
+def process_image(name: str):
+    return EpisodeHandler.start_image_processing_wrapper(name)
