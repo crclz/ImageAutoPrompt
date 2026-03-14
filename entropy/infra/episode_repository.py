@@ -50,7 +50,7 @@ class EpisodeRepository:
         # read json
         json_file = episode_dir / EpisodeRepository.episode_json()
 
-        json_string = episode.model_dump_json()
+        json_string = episode.model_dump_json(indent=4)
 
         json_file.write_text(json_string, "utf8")
 
