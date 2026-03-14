@@ -30,6 +30,19 @@
                         [[ getStatusInfo(step.status).text ]]
                     </span>
                 </template>
+
+                <template v-if="step.observation">
+                    <div @click="copyToClipboard(step.observation)" title="点击复制"
+                        class="flex items-center px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-mono cursor-pointer transition-colors border border-gray-200 group whitespace-nowrap">
+                        <span>[[ step.observation ]]</span>
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="h-3 w-3 ml-1.5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                        </svg>
+                    </div>
+                </template>
             </div>
 
             <div class="flex flex-wrap gap-3">
@@ -106,6 +119,19 @@
                 class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&rsaquo;</button>
         </div>
     </div>
+
+    <transition name="fade-top">
+        <div v-if="toastMsg"
+            class="fixed top-10 left-1/2 -translate-x-1/2 z-[200] bg-gray-900/90 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-2xl flex items-center space-x-2 pointer-events-none border border-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" viewBox="0 0 20 20"
+                fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
+            </svg>
+            <span>[[ toastMsg ]]</span>
+        </div>
+    </transition>
 </div>
 {% endblock %}
 
@@ -140,6 +166,26 @@
                     selectedPointers.value.splice(index, 1);
                 } else {
                     selectedPointers.value.push({ timestep: stepI, image_index: imgIndex });
+                }
+            };
+
+            const toastMsg = ref(""); // 控制消息显示
+            // ... 其他 ref
+
+            const showToast = (msg) => {
+                toastMsg.value = msg;
+                setTimeout(() => {
+                    toastMsg.value = "";
+                }, 2000); // 2秒后自动消失
+            };
+
+            const copyToClipboard = async (text) => {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast("已复制到剪贴板"); // 调用反馈
+                } catch (err) {
+                    showToast("复制失败");
+                    console.error(err);
                 }
             };
 
@@ -279,7 +325,9 @@
                 isImageSelected,
                 toggleSelection,
                 clearAllSelected,
-                submitHighscores
+                submitHighscores,
+                copyToClipboard,
+                toastMsg,
             };
         },
         delimiters: ['[[', ']]']
