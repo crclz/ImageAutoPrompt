@@ -1,0 +1,152 @@
+from datetime import datetime, timedelta
+import json
+import logging
+import re
+import time
+from typing import List, Tuple
+
+import requests
+import pydantic
+
+
+_logger = logging.getLogger(__name__)
+
+
+class ImageDescriptor(pydantic.BaseModel):
+    filename: str = ""
+    subfolder: str = ""
+    type: str = ""
+
+
+class ComfyApi:
+    @staticmethod
+    def run_workflow_replace_prompt(
+        base_address: str, workflow_template_json: str, positive: str, negative: str
+    ) -> bytes:
+        """
+        return: png binary
+        """
+
+        assert workflow_template_json
+
+        # 1. render json
+        replaces = {
+            "entropy:positive": positive,
+            "entropy:negative": negative,
+            "entropy_out": "entropy_out",  # only check existence
+        }
+
+        rendered_workflow = workflow_template_json
+
+        for k, v in replaces.items():
+            k = json.dumps(k, ensure_ascii=False)
+            v = json.dumps(v, ensure_ascii=False)
+
+            if k not in rendered_workflow:
+                raise ValueError(f"workflow not contains: {k}")
+
+            rendered_workflow.replace(k, v)
+
+        _logger.info(f"rendered_workflow is: {rendered_workflow}")
+
+        # 2. submit prompt
+        base_address = base_address.removesuffix("/")
+
+        response = requests.get(f"{base_address}/prompt", json={"prompt": rendered_workflow}, timeout=10)
+
+        if not response.ok:
+            raise ValueError(f"submit prompt failed. code: {response.status_code}, text: {response.text}")
+
+        _logger.info(f"submit prompt response is {response.text}")
+
+        data = response.json()
+        assert not data.get("node_errors"), "has node_errors"
+        prompt_id = data["prompt_id"]
+        assert prompt_id
+
+        _logger.info(f"prompt_id: {prompt_id}. start polling")
+
+        # 3. poll for prompt complete
+        deadline = datetime.now() + timedelta(minutes=3)
+        while True:
+            if datetime.now() > deadline:
+                raise ValueError("poll for prompt reached deadline")
+
+            response = requests.get(f"{base_address}/history/{prompt_id}", timeout=10)
+            if not response.ok:
+                raise ValueError(f"get prompt history failed. code: {response.status_code}, text: {response.text}")
+
+            complete, images = ComfyApi.detect_prompt_history_status(response.json(), prompt_id)
+            if complete:
+                assert len(images) == 1, f"output images is not 1: {len(images)}"
+
+                # download image
+
+            time.sleep(1)
+
+    @staticmethod
+    def get_image_bytes(base_url: str, image: ImageDescriptor) -> bytes:
+        params = {
+            "filename": image.filename,
+            "subfolder": image.subfolder,
+            "type": image.type,
+        }
+
+        response = requests.get(f"{base_url}/view", params=params)
+        if not response.ok:
+            raise ValueError(f"download image error. status: {response.status_code}, text: {response.text}")
+
+        assert isinstance(response.content, bytes)
+
+        return response.content
+
+    @staticmethod
+    def detect_prompt_history_status(response_data: dict, prompt_id: str) -> Tuple[bool, List[ImageDescriptor]]:
+        """
+        return: false when not complete, true when complete
+        throw: when failure
+        """
+
+        history = response_data.get("prompt_id")
+        if not history:
+            return False, []
+
+        status_str = history.get("status_str", "")
+        if "error" in status_str or "fail" in status_str:
+            raise ValueError(f"prompt run failed: {prompt_id}. status_str: {status_str}")
+
+        if status_str != "success":
+            return False, []
+
+        # parse ImageDescriptor
+        images = ComfyApi.find_output_images(history["outputs"], r"^entropy_out.*\.png$")
+        return True, images
+
+    @classmethod
+    def find_output_images(cls, data, pattern) -> List[ImageDescriptor]:
+        """
+        递归遍历 JSON，寻找所有符合 type='output' 且 filename 匹配 pattern 的字典对象。
+        """
+        results: List[ImageDescriptor] = []
+
+        if isinstance(data, dict):
+            # 健壮性检查：判断当前字典是否同时包含 filename 和 type
+            if "filename" in data and "type" in data:
+                if data["type"] == "output" and re.match(pattern, str(data["filename"])):
+                    # 找到目标，返回包含完整信息的字典
+                    results.append(
+                        ImageDescriptor(
+                            filename=data["filename"], subfolder=data.get("subfolder", ""), type=data["type"]
+                        )
+                    )
+
+            # 继续递归遍历字典的所有值
+            for value in data.values():
+                results.extend(cls.find_output_images(value, pattern))
+
+        elif isinstance(data, list):
+            # 遍历列表项
+            for item in data:
+                results.extend(cls.find_output_images(item, pattern))
+
+        return results
