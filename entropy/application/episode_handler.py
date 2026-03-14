@@ -1,5 +1,11 @@
+import logging
+import traceback
+
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.infra.episode_repository import EpisodeRepository
+from flask import Flask, jsonify, make_response
+
+_logger = logging.getLogger(__name__)
 
 
 class EpisodeHandler:
@@ -31,12 +37,27 @@ class EpisodeHandler:
         """
         raise NotImplementedError()
 
+    @staticmethod
+    def wrap_api_exception(e: Exception):
+        err_data = {
+            "message": str(e),
+            # "stack": traceback.format_exc(),
+        }
+
+        return make_response(jsonify(err_data), 400)
+
     @classmethod
-    def get_episode_data_wrapper(cls):
+    def get_episode_data_wrapper(cls, episode_name: str):
         """
         get data, which could be rendered on webpages. return EpisodeQueryModel json
         """
-        raise NotImplementedError()
+        try:
+            data = cls.get_episode_data(episode_name)
+            data_object = data.model_dump()
+            return data_object
+        except Exception as e:
+            _logger.exception("get_episode_data_wrapper error")
+            return cls.wrap_api_exception(e)
 
     @classmethod
     def get_episode_data(cls, name: str) -> EpisodeQueryModel:
