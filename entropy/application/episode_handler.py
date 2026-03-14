@@ -1,3 +1,7 @@
+from entropy.domain.models.query_model import EpisodeQueryModel
+from entropy.infra.episode_repository import EpisodeRepository
+
+
 class EpisodeHandler:
     @classmethod
     def episodes_list_page(cls) -> None:
@@ -5,6 +9,13 @@ class EpisodeHandler:
         In this page, episodes are listed. Order by create_time desc.
         Episodes are managed using folder structure.
         Main data is in episode.json
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def new_episode(cls) -> None:
+        """
+        start new episode
         """
         raise NotImplementedError()
 
@@ -21,11 +32,21 @@ class EpisodeHandler:
         raise NotImplementedError()
 
     @classmethod
-    def get_episode_data(cls):
+    def get_episode_data_wrapper(cls):
         """
         get data, which could be rendered on webpages. return EpisodeQueryModel json
         """
         raise NotImplementedError()
+
+    @classmethod
+    def get_episode_data(cls, name: str) -> EpisodeQueryModel:
+        """
+        get data, which could be rendered on webpages. return EpisodeQueryModel
+        """
+
+        timesteps = EpisodeRepository.get_timesteps_query_model(name)
+
+        return EpisodeQueryModel(timesteps=timesteps)
 
     @classmethod
     def choose_best_scores(cls):
@@ -47,7 +68,7 @@ class EpisodeHandler:
     def start_image_processing(cls):
         """
         change EpisodeTimestep.status from 0 to 1.
-        return immediately and keep running in background.
         when done, change EpisodeTimestep.status from 1 to 2.
+        user can force state go back to 0.
         """
         raise NotImplementedError()
