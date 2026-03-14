@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 import json
 import logging
-import re
 import time
 from typing import List, Tuple
+import uuid
 
 import requests
 import pydantic
+import shortuuid
 
 
 _logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ class ImageDescriptor(pydantic.BaseModel):
 
 class ComfyApi:
     @staticmethod
-    def run_workflow(base_address: str, workflow_template_json: str, positive: str, negative: str) -> bytes:
+    def run_workflow(base_url: str, workflow_template_json: str, positive: str, negative: str) -> bytes:
         """
         return: png binary
         """
@@ -28,10 +29,14 @@ class ComfyApi:
         assert workflow_template_json
 
         # 1. render json
+
+        # force node to execute, avoid cached
+        file_prefix = "entropy_out_" + str(shortuuid.uuid())
+
         replaces = {
             "entropy:positive": positive,
             "entropy:negative": negative,
-            "entropy_out": "entropy_out",  # only check existence
+            "entropy_out_placeholder": file_prefix,
         }
 
         rendered_workflow = workflow_template_json
@@ -50,9 +55,9 @@ class ComfyApi:
         rendered_workflow_obj = json.loads(rendered_workflow)
 
         # 2. submit prompt
-        base_address = base_address.removesuffix("/")
+        base_url = base_url.removesuffix("/")
 
-        response = requests.post(f"{base_address}/prompt", json={"prompt": rendered_workflow_obj}, timeout=10)
+        response = requests.post(f"{base_url}/prompt", json={"prompt": rendered_workflow_obj}, timeout=10)
 
         if not response.ok:
             raise ValueError(f"submit prompt failed. code: {response.status_code}, text: {response.text}")
@@ -72,11 +77,13 @@ class ComfyApi:
             if datetime.now() > deadline:
                 raise ValueError("poll for prompt reached deadline")
 
-            complete, images = ComfyApi.get_workflow_result(base_address, prompt_id)
+            complete, images = ComfyApi.get_workflow_result(base_url, prompt_id, file_prefix)
             if complete:
                 assert len(images) == 1, f"output images is not 1: {len(images)}"
 
                 # download image
+                image_bytes = ComfyApi.get_image_bytes(base_url, images[0])
+                return image_bytes
 
             time.sleep(1)
 
@@ -97,13 +104,13 @@ class ComfyApi:
         return response.content
 
     @staticmethod
-    def get_workflow_result(base_address: str, prompt_id: str) -> Tuple[bool, List[ImageDescriptor]]:
+    def get_workflow_result(base_url: str, prompt_id: str, file_prefix: str) -> Tuple[bool, List[ImageDescriptor]]:
         """
         return: false when not complete, true when complete
         throw: when failure
         """
 
-        response = requests.get(f"{base_address}/history/{prompt_id}", timeout=10)
+        response = requests.get(f"{base_url}/history/{prompt_id}", timeout=10)
         if not response.ok:
             raise ValueError(f"get prompt history failed. code: {response.status_code}, text: {response.text}")
 
@@ -127,11 +134,11 @@ class ComfyApi:
             return False, []
 
         # parse ImageDescriptor
-        images = ComfyApi.find_output_images(history["outputs"], r"^entropy_out.*\.png$")
+        images = ComfyApi.find_output_images(history["outputs"], file_prefix)
         return True, images
 
     @classmethod
-    def find_output_images(cls, data, pattern) -> List[ImageDescriptor]:
+    def find_output_images(cls, data, file_prefix) -> List[ImageDescriptor]:
         """
         递归遍历 JSON，寻找所有符合 type='output' 且 filename 匹配 pattern 的字典对象。
         """
@@ -140,7 +147,7 @@ class ComfyApi:
         if isinstance(data, dict):
             # 健壮性检查：判断当前字典是否同时包含 filename 和 type
             if "filename" in data and "type" in data:
-                if data["type"] == "output" and re.match(pattern, str(data["filename"])):
+                if data["type"] == "output" and data["filename"].startswith(file_prefix):
                     # 找到目标，返回包含完整信息的字典
                     results.append(
                         ImageDescriptor(
@@ -150,11 +157,11 @@ class ComfyApi:
 
             # 继续递归遍历字典的所有值
             for value in data.values():
-                results.extend(cls.find_output_images(value, pattern))
+                results.extend(cls.find_output_images(value, file_prefix))
 
         elif isinstance(data, list):
             # 遍历列表项
             for item in data:
-                results.extend(cls.find_output_images(item, pattern))
+                results.extend(cls.find_output_images(item, file_prefix))
 
         return results
