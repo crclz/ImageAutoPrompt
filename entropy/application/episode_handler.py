@@ -78,9 +78,12 @@ class EpisodeHandler:
                 ob = f"timestep={timestep.i}\n"
 
                 ob += "用户: NewHighScore: "
-                for highscore in timestep.chosen_highscores:
-                    llm_info = highscore.format_llm()
-                    ob += f"{llm_info}, "
+                if timestep.chosen_highscores:
+                    for highscore in timestep.chosen_highscores:
+                        llm_info = highscore.format_llm()
+                        ob += f"{llm_info}, "
+                else:
+                    ob += "NO"
 
                 ob += "\n"
 
@@ -120,7 +123,8 @@ class EpisodeHandler:
     @classmethod
     def choose_high_scores(cls, request: ChooseHighScoresRequest) -> ChooseHighScoresResponse:
         """
-        change EpisodeTimestep.status from 1 to 2
+        change EpisodeTimestep.status from 1 to 2.
+        2 can submit.
 
         args:
         - timestep: for integrity check
@@ -133,12 +137,13 @@ class EpisodeHandler:
 
         newest_timestep = episode.timesteps[len(episode.timesteps) - 1]
 
-        if newest_timestep.status != 1:
+        if newest_timestep.status not in (1, 2):
             raise ValueError(f"cannot choose high score. newest_timestep.status: {newest_timestep.status}")
 
         # choose
-        if not request.highscores:
-            raise ValueError("request.highscores is empty")
+        # support no high score
+        # if not request.highscores:
+        #     raise ValueError("request.highscores is empty")
 
         newest_timestep.chosen_highscores = request.highscores
         newest_timestep.status = 2
@@ -233,7 +238,7 @@ class EpisodeHandler:
                 EpisodeRepository.save_episode(request.episode_name, episode)
 
                 raise
-                
+
         if True:
             th = Thread(target=thread_function)
             th.start()

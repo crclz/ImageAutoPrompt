@@ -210,10 +210,10 @@
             };
 
             const submitHighscores = async () => {
-                if (selectedPointers.value.length === 0) {
-                    alert("请至少选择一张图片作为高分");
-                    return;
-                }
+                // if (selectedPointers.value.length === 0) {
+                //     alert("请至少选择一张图片作为高分");
+                //     return;
+                // }
 
                 // 1. 获取当前最大的 timestep 作为完整性检查 (integrity check)
                 const maxTimestep = timesteps.value.length > 0
