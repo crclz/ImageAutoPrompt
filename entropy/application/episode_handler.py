@@ -95,7 +95,7 @@ class EpisodeHandler:
         for timestep in timesteps:
             for highscore in timestep.chosen_highscores:
                 key = f"{highscore.timestep}_{highscore.image_index}"
-                highlight_text[key] = f"HIGH {timestep.i}"
+                highlight_text[key] = f"HIGH_{timestep.i}"
 
         for timestep in timesteps:
             for image in timestep.images:
