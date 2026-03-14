@@ -14,7 +14,7 @@ class ImagePointer(pydantic.BaseModel):
 class EpisodeTimestep(pydantic.BaseModel):
     i: int = 0
     status: int = 0  # 0=image processing, 1=image done, 2=high score chosen
-    current_high_scores: List[ImagePointer] = []
+    chosen_highscores: List[ImagePointer] = []
 
 
 class Episode(pydantic.BaseModel):

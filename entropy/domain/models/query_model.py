@@ -16,7 +16,7 @@ class ImageQueryModel(pydantic.BaseModel):
 class TimestepQueryModel(pydantic.BaseModel):
     i: int = 0
     images: List[ImageQueryModel] = []
-    choosed_highscore: List[ImagePointer] = []
+    chosen_highscores: List[ImagePointer] = []
     status: int = 0
 
     def sort_images(self) -> None:

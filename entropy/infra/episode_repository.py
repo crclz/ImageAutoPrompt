@@ -83,6 +83,8 @@ class EpisodeRepository:
         for i, timestep in enumerate(episode.timesteps):
             model = timestep_map[i]
 
+            model.chosen_highscores = timestep.chosen_highscores
+
             # sort images
             model.sort_images()
 
