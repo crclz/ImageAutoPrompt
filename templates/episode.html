@@ -15,7 +15,7 @@
                     class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
-            <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">每 2 秒同步</span>
+            <span class="text-gray-600 text-sm font-bold tracking-wider">[[getEpisodeMessage]]</span>
             <div class="h-6 w-[1px] bg-gray-300 mx-2"></div>
             <button @click="showPasteModal = true"
                 class="flex items-center px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-xs font-bold transition-all active:scale-95">
@@ -261,15 +261,19 @@
                 }
             };
 
+            const getEpisodeMessage = ref("");
+
             const fetchData = async () => {
                 try {
                     const response = await fetch(`/api/episodes/${episodeName.value}`);
                     if (!response.ok) throw new Error('Fetch failed');
                     const data = await response.json();
                     timesteps.value = data.timesteps || [];
+
+                    getEpisodeMessage.value = "sync success";
                 } catch (err) {
                     console.warn("Sync error:", err);
-                    alert("get episode data error:" + err);
+                    getEpisodeMessage.value = "sync error: " + err;
                 }
             };
 
@@ -382,7 +386,7 @@
 
             onMounted(() => {
                 fetchData();
-                timer = setInterval(fetchData, 2000);
+                timer = setInterval(fetchData, 1000);
                 window.addEventListener('keydown', handleKeyDown);
             });
 
@@ -412,6 +416,7 @@
                 pasteContent,
                 isSubmittingPaste,
                 submitPaste,
+                getEpisodeMessage,
             };
         },
         delimiters: ['[[', ']]']
