@@ -1,9 +1,10 @@
 import logging
 import traceback
 
+from entropy.domain.models.http_dtos import ChooseHighScoresRequest, ChooseHighScoresResponse
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.infra.episode_repository import EpisodeRepository
-from flask import Flask, jsonify, make_response, render_template
+from flask import Flask, jsonify, make_response, render_template, request
 
 _logger = logging.getLogger(__name__)
 
@@ -74,11 +75,50 @@ class EpisodeHandler:
         return EpisodeQueryModel(timesteps=timesteps)
 
     @classmethod
-    def choose_best_scores(cls):
+    def choose_high_scores_wrapper(cls, episode_name):
+        try:
+            assert episode_name, "episode_name is empty"
+
+            req = ChooseHighScoresRequest.model_validate(request.get_json())
+            req.name = episode_name
+
+            resp = cls.choose_high_scores(episode_name)
+            data_object = resp.model_dump()
+            return data_object
+        except Exception as e:
+            _logger.exception("choose_high_scores_wrapper error")
+            return cls.wrap_api_exception(e)
+
+    @classmethod
+    def choose_high_scores(cls, request: ChooseHighScoresRequest) -> ChooseHighScoresResponse:
         """
         change EpisodeTimestep.status from 1 to 2
+
+        args:
+        - timestep: for integrity check
         """
-        raise NotImplementedError()
+
+        episode = EpisodeRepository.get_eposide(request.name)
+
+        if request.timestep != len(episode.timesteps) - 1:
+            raise ValueError(f"wrong timestep. expected: {len(episode.timesteps) - 1}, actual: {request.timestep}")
+
+        newest_timestep = episode.timesteps[len(episode.timesteps) - 1]
+
+        if newest_timestep.status != 1:
+            raise ValueError(f"cannot choose high score. newest_timestep.status: {newest_timestep.status}")
+
+        # choose
+        if not request.highscores:
+            raise ValueError("request.highscores is empty")
+
+        newest_timestep.chosen_highscores = request.highscores
+        newest_timestep.status = 2
+
+        # save
+        EpisodeRepository.save_episode(request.name, episode)
+
+        return ChooseHighScoresResponse()
 
     @classmethod
     def get_timestep_observation(cls):

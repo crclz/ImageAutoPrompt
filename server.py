@@ -33,6 +33,12 @@ def serve_episode_files(episode_name, filename):
     # send_from_directory 会自动防止路径穿越攻击（如 filename 中包含 ../）
     return send_from_directory(target_dir, filename)
 
+
 @app.get("/episodes/<episode_name>")
 def episode_page(episode_name):
     return EpisodeHandler.episode_page_wrapper(episode_name)
+
+
+@app.post("/api/episodes/<name>/choose-highscore")
+def choose_highscore(name: str):
+    return EpisodeHandler.choose_high_scores_wrapper(name)

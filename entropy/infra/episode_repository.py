@@ -39,6 +39,21 @@ class EpisodeRepository:
 
         return Episode.model_validate_json(json_text)
 
+    @staticmethod
+    def save_episode(name: str, episode: Episode) -> None:
+        d = EpisodeRepository.episodes_dir()
+        episode_dir = d / name
+
+        if not episode_dir.exists():
+            raise ValueError(f"episode not exist: {name}")
+
+        # read json
+        json_file = episode_dir / EpisodeRepository.episode_json()
+
+        json_string = episode.model_dump_json()
+
+        json_file.write_text(json_string, "utf8")
+
     @classmethod
     def get_timesteps_query_model(cls, episode_name: str) -> List[TimestepQueryModel]:
         episode = cls.get_eposide(episode_name)
