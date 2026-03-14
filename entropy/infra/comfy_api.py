@@ -1,9 +1,9 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 import json
 import logging
 import time
 from typing import List, Tuple
-import uuid
 
 import requests
 import pydantic
@@ -163,5 +163,42 @@ class ComfyApi:
             # 遍历列表项
             for item in data:
                 results.extend(cls.find_output_images(item, file_prefix))
+
+        return results
+
+    @classmethod
+    def run_many(
+        cls, base_url: str, workflow_template_json: str, positives: List[str], negative: List[str], batch_size=1
+    ) -> List[bytes]:
+        """
+        return, keep order
+        """
+
+        assert batch_size == 1, "batchsize not supported"
+
+        # multi thread
+        assert len(positives) == len(negative)
+
+        results: List[bytes] = [None] * len(positives)  # type: ignore
+
+        def run(i, positive, negative) -> None:
+            assert isinstance(i, int)
+            assert isinstance(positive, str)
+            assert isinstance(negative, str)
+
+            if i > 0:
+                # useless, but makes me feel better
+                time.sleep(i * 0.5)
+
+            image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative)
+            results[i] = image_bytes
+
+        with ThreadPoolExecutor(10) as executor:
+            args_list = zip(range(len(positives)), positives, negative)
+            a = executor.map(lambda x: run(x[0], x[1], x[2]), args_list)
+            a = list(a)  # wait
+
+        for image in results:
+            assert image is not None
 
         return results
