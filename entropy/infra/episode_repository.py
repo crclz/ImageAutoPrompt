@@ -68,6 +68,14 @@ class EpisodeRepository:
 
         timestep_map: Dict[int, TimestepQueryModel] = {}
 
+        # initialize
+        for timestep in episode.timesteps:
+            timestep_map[timestep.i] = TimestepQueryModel(
+                i=timestep.i,
+                images=[],
+                status=timestep.status,
+            )
+
         for png_file in png_files:
             match = re.match(pattern, png_file.name)
 
@@ -82,11 +90,7 @@ class EpisodeRepository:
                 raise ValueError(f"timestep too big: {png_file}")
 
             if timestep_map.get(timestep) is None:
-                timestep_map[timestep] = TimestepQueryModel(
-                    i=timestep,
-                    images=[],
-                    status=episode.timesteps[timestep].status,
-                )
+                raise ValueError(f"png file exceed timestep: {png_file}")
 
             timestep_map[timestep].images.append(
                 ImageQueryModel(image_index=image_index, url=f"/episodes/{episode_name}/files/{png_file.name}")

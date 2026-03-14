@@ -233,11 +233,12 @@ class EpisodeHandler:
                 EpisodeRepository.save_episode(request.episode_name, episode)
 
                 raise
+                
+        if True:
+            th = Thread(target=thread_function)
+            th.start()
 
-        th = Thread(target=thread_function)
-        th.start()
-
-        if join:
-            th.join()
+            if join:
+                th.join()
 
         return StartImageProcessingResponse()

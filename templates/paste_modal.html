@@ -1,0 +1,32 @@
+<div v-if="showPasteModal"
+    class="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+    <div class="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden border border-gray-200" @click.stop>
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-800">Go To Paste (Image Processing)</h3>
+            <button @click="showPasteModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Exploration Output Content:</label>
+            <textarea v-model="pasteContent"
+                class="w-full h-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                placeholder="在此粘贴 exploration_output 内容..."></textarea>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <button @click="showPasteModal = false"
+                class="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 transition-colors">
+                取消
+            </button>
+            <button @click="submitPaste" :disabled="isSubmittingPaste"
+                class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center">
+                <span v-if="isSubmittingPaste" class="animate-spin mr-2">...</span>
+                提交并处理
+            </button>
+        </div>
+    </div>
+</div>

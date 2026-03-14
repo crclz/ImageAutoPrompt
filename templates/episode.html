@@ -16,7 +16,18 @@
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
             <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">每 2 秒同步</span>
+            <div class="h-6 w-[1px] bg-gray-300 mx-2"></div>
+            <button @click="showPasteModal = true"
+                class="flex items-center px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-xs font-bold transition-all active:scale-95">
+                <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Go To Paste
+            </button>
         </div>
+
+        {% include "paste_modal.html" %}
     </div>
 
     <div class="space-y-3">
@@ -246,8 +257,7 @@
                         alert("提交失败: " + (result.message || result.error || "未知错误"));
                     }
                 } catch (err) {
-                    console.error("API Error:", err);
-                    alert("网络请求失败，请检查后端服务");
+                    alert("API Error:" + err);
                 }
             };
 
@@ -306,6 +316,45 @@
                 e.target.src = 'https://placehold.co/600x400/f3f4f6/9ca3af?text=Processing...';
             };
 
+            const showPasteModal = ref(false);
+            const pasteContent = ref("");
+            const isSubmittingPaste = ref(false);
+
+            const submitPaste = async () => {
+                if (!pasteContent.value.trim()) {
+                    alert("内容不能为空");
+                    return;
+                }
+
+                isSubmittingPaste.value = true;
+                try {
+                    const response = await fetch(`/api/episodes/${episodeName.value}/process-image`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            exploration_output: pasteContent.value
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        showToast("处理请求已发送");
+                        pasteContent.value = ""; // 清空
+                        showPasteModal.value = false; // 关闭界面
+                        fetchData(); // 立即刷新
+                    } else {
+                        // 停留在此界面并报错
+                        alert("提交失败: " + (result.message || result.error || "未知错误"));
+                    }
+                } catch (err) {
+                    console.error("API Error:", err);
+                    alert("网络请求失败，请检查后端服务");
+                } finally {
+                    isSubmittingPaste.value = false;
+                }
+            };
+
             onMounted(() => {
                 fetchData();
                 timer = setInterval(fetchData, 2000);
@@ -334,6 +383,10 @@
                 submitHighscores,
                 copyToClipboard,
                 toastMsg,
+                showPasteModal,
+                pasteContent,
+                isSubmittingPaste,
+                submitPaste,
             };
         },
         delimiters: ['[[', ']]']
