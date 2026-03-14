@@ -285,19 +285,44 @@
 
             const navigate = (direction) => {
                 if (!preview.value) return;
+
+                // 1. 构建一个有序的线性图片列表
+                // 逻辑：大的 Timestep 在前，小的在后；同一 Timestep 内 Index 从小到大
                 const allImages = [];
-                timesteps.value.forEach(step => {
-                    step.images.forEach(img => {
-                        allImages.push({ stepI: step.i, imgIndex: img.image_index, url: img.url });
+
+                // 先复制一份并按 timestep ID 倒序排列 (从大到小)
+                const sortedSteps = [...timesteps.value].sort((a, b) => b.i - a.i);
+
+                sortedSteps.forEach(step => {
+                    // 同一 step 内，image_index 通常已经是升序，如果不确定可以再 sort
+                    const sortedImages = [...step.images].sort((a, b) => a.image_index - b.image_index);
+
+                    sortedImages.forEach(img => {
+                        allImages.push({
+                            stepI: step.i,
+                            imgIndex: img.image_index,
+                            url: img.url
+                        });
                     });
                 });
+
+                // 2. 找到当前预览图在有序列表中的位置
                 const currentIndex = allImages.findIndex(item =>
                     item.stepI === preview.value.stepI && item.imgIndex === preview.value.imgIndex
                 );
+
                 if (currentIndex === -1) return;
+
+                // 3. 计算新索引
                 const newIndex = currentIndex + direction;
+
+                // 4. 执行跳转
                 if (newIndex >= 0 && newIndex < allImages.length) {
                     preview.value = allImages[newIndex];
+                } else {
+                    // 可选：如果到头了，可以加个抖动反馈或者 Toast
+                    if (newIndex < 0) showToast("已经是最新的一张了");
+                    if (newIndex >= allImages.length) showToast("已经是最旧的一张了");
                 }
             };
 
