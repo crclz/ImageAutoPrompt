@@ -1,11 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Episode: {{episode_name}}</title>
-</head>
-<body>
-    <h1>Hello 123</h1>
-</body>
-</html>
+{% extends "layout.html" %}
+
+{% block title %}Episode - {{ episode_name }}{% endblock %}
+
+{% block content %}
+<div id="app" class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:max-w-2xl p-8">
+    <div class="text-center">
+        <h2 class="text-2xl font-bold text-indigo-600 mb-4">
+            正在查看: [[ episodeName ]]
+        </h2>
+
+        <p class="text-gray-500 mb-6">这是一个使用 Tailwind 渲染的计数器示例：</p>
+
+        <div class="flex flex-col items-center space-y-4">
+            <span class="text-6xl font-black text-gray-800">[[ count ]]</span>
+
+            <div class="flex space-x-2">
+                <button @click="decrement"
+                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition shadow-lg active:scale-95">
+                    减少
+                </button>
+                <button @click="increment"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-lg active:scale-95 font-bold">
+                    增加点我！
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const { createApp, ref } = Vue;
+
+    createApp({
+        setup() {
+            const count = ref(0);
+            const episodeName = ref("{{ episode_name }}"); // 从 Flask 传入变量
+
+            const increment = () => count.value++;
+            const decrement = () => count.value--;
+
+            return {
+                count,
+                episodeName,
+                increment,
+                decrement
+            };
+        },
+        // 因为 Jinja2 也使用 ，所以我们将 Vue 的分隔符改为 [[ ]]
+        delimiters: ['[[', ']]']
+    }).mount('#app');
+</script>
+{% endblock %}
