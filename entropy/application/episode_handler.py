@@ -41,18 +41,6 @@ class EpisodeHandler:
     def episode_page_wrapper(cls, episode_name):
         return render_template("episode.html", episode_name=episode_name)
 
-    # @classmethod
-    # def episode_page(cls):
-    #     """
-    #     this page accept query parameter: name
-    #     and show:
-    #     - timesteps and images
-    #     - high score images (highlight)
-
-    #     these data are refreshed frequently, by polling get_episode_data via page
-    #     """
-    #     raise NotImplementedError()
-
     @staticmethod
     def wrap_api_exception(e: Exception):
         err_data = {
