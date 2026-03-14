@@ -82,7 +82,7 @@ class EpisodeHandler:
             req = ChooseHighScoresRequest.model_validate(request.get_json())
             req.name = episode_name
 
-            resp = cls.choose_high_scores(episode_name)
+            resp = cls.choose_high_scores(req)
             data_object = resp.model_dump()
             return data_object
         except Exception as e:

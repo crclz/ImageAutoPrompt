@@ -11,7 +11,8 @@
         <div class="h-6 w-[1px] bg-gray-300"></div>
         <div class="flex items-center space-x-2">
             <span class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
             <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">每 2 秒同步</span>
@@ -24,7 +25,8 @@
             <div class="flex items-center mb-3 space-x-4">
                 <span class="text-lg font-black text-gray-800 tracking-tight">TIMESTEP [[ step.i ]]</span>
                 <template v-if="getStatusInfo(step.status)">
-                    <span :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
+                    <span
+                        :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
                         [[ getStatusInfo(step.status).text ]]
                     </span>
                 </template>
@@ -36,14 +38,18 @@
                         class="h-64 w-auto rounded border-2 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-all cursor-zoom-in"
                         :class="isImageSelected(step.i, img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'"
                         @error="handleImgError">
-                    
-                    <div v-if="isImageSelected(step.i, img.image_index)" class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
+
+                    <div v-if="isImageSelected(step.i, img.image_index)"
+                        class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clip-rule="evenodd" />
                         </svg>
                     </div>
 
-                    <span class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-mono">
+                    <span
+                        class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-mono">
                         INDEX [[ img.image_index ]]
                     </span>
                 </div>
@@ -51,8 +57,9 @@
         </div>
     </div>
 
-    <div v-if="preview" class="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-md" @click.self="closePreview">
-        
+    <div v-if="preview" class="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-md"
+        @click.self="closePreview">
+
         <div class="w-full flex justify-center items-center px-4 py-1.5 bg-black/60 border-b border-white/5 relative">
             <div class="flex items-center space-x-4">
                 <div class="flex items-center space-x-2 text-sm">
@@ -64,35 +71,39 @@
                 <div class="h-4 w-[1px] bg-white/20"></div>
 
                 <div class="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
-                    <button @click="toggleSelection(preview.stepI, preview.imgIndex)" 
-                            :class="['px-3 py-1 rounded-md font-bold text-xs transition-all', 
+                    <button @click="toggleSelection(preview.stepI, preview.imgIndex)"
+                        :class="['px-3 py-1 rounded-md font-bold text-xs transition-all', 
                                      isImageSelected(preview.stepI, preview.imgIndex) ? 'bg-green-600 text-white' : 'text-white/60 hover:text-white']">
                         [[ isImageSelected(preview.stepI, preview.imgIndex) ? '✓ 已选' : '设为高分' ]]
                     </button>
-                    
+
                     <div class="w-[1px] h-4 bg-white/10 mx-1"></div>
 
-                    <button @click="clearAllSelected" 
-                            class="px-3 py-1 text-xs font-bold text-red-400/80 hover:text-red-400 transition-colors uppercase">
+                    <button @click="clearAllSelected"
+                        class="px-3 py-1 text-xs font-bold text-red-400/80 hover:text-red-400 transition-colors uppercase">
                         清空 ([[ selectedPointers.length ]])
                     </button>
                 </div>
 
-                <button @click="submitHighscores" 
-                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95">
+                <button @click="submitHighscores"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95">
                     提交选择
                 </button>
             </div>
 
-            <button @click="closePreview" class="absolute right-4 text-white/20 hover:text-white text-3xl leading-none">&times;</button>
+            <button @click="closePreview"
+                class="absolute right-4 text-white/20 hover:text-white text-3xl leading-none">&times;</button>
         </div>
 
         <div class="relative flex-1 flex flex-col justify-end overflow-hidden">
-            <button @click="navigate(-1)" class="absolute left-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&lsaquo;</button>
+            <button @click="navigate(-1)"
+                class="absolute left-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&lsaquo;</button>
             <div class="w-full h-full flex items-end justify-center p-1">
-                <img :src="preview.url" class="max-w-full max-h-full object-contain shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
+                <img :src="preview.url"
+                    class="max-w-full max-h-full object-contain shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
             </div>
-            <button @click="navigate(1)" class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&rsaquo;</button>
+            <button @click="navigate(1)"
+                class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&rsaquo;</button>
         </div>
     </div>
 </div>
@@ -136,12 +147,57 @@
                 selectedPointers.value = [];
             };
 
-            const submitHighscores = () => {
+            const submitHighscores = async () => {
                 if (selectedPointers.value.length === 0) {
-                    alert("Empty Selection");
+                    alert("请至少选择一张图片作为高分");
                     return;
                 }
-                alert(JSON.stringify({ highscores: selectedPointers.value }, null, 2));
+
+                // 1. 获取当前最大的 timestep 作为完整性检查 (integrity check)
+                const maxTimestep = timesteps.value.length > 0
+                    ? Math.max(...timesteps.value.map(t => t.i))
+                    : 0;
+
+                // 2. 构建符合 ChooseHighScoresRequest 的 payload
+                const payload = {
+                    name: episodeName.value,
+                    timestep: maxTimestep,
+                    highscores: selectedPointers.value.map(p => ({
+                        timestep: p.timestep,
+                        image_index: p.image_index
+                    }))
+                };
+
+                try {
+                    const response = await fetch(`/api/episodes/${episodeName.value}/choose-highscore`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        console.log("Success:", result);
+                        // 提交成功后的反馈
+                        alert(`成功提交 ${selectedPointers.value.length} 个高分结果`);
+
+                        // 清空本地选择并关闭预览（可选）
+                        selectedPointers.value = [];
+                        closePreview();
+
+                        // 立即刷新一次数据以获取最新状态
+                        fetchData();
+                    } else {
+                        // 处理后端返回的错误信息 (cls.wrap_api_exception)
+                        alert("提交失败: " + (result.message || result.error || "未知错误"));
+                    }
+                } catch (err) {
+                    console.error("API Error:", err);
+                    alert("网络请求失败，请检查后端服务");
+                }
             };
 
             const fetchData = async () => {
