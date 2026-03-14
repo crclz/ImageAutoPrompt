@@ -86,6 +86,20 @@ class EpisodeHandler:
 
                 timestep.observation = ob
 
+        # display highlight:
+        highlight_text = dict()  # key=${timestep}_${image_index}, value=${timestep_when_choose}
+
+        for timestep in timesteps:
+            for highscore in timestep.chosen_highscores:
+                key = f"{highscore.timestep}_{highscore.image_index}"
+                highlight_text[key] = f"HIGH {timestep.i}"
+
+        for timestep in timesteps:
+            for image in timestep.images:
+                key = f"{timestep.i}_{image.image_index}"
+                if key in highlight_text:
+                    image.highlight_text = highlight_text[key]
+
         return EpisodeQueryModel(timesteps=timesteps)
 
     @classmethod

@@ -52,6 +52,11 @@
                         :class="isImageSelected(step.i, img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'"
                         @error="handleImgError">
 
+                    <div v-if="img.highlight_text"
+                        class="absolute bottom-0 right-0 bg-amber-400 text-white text-[10px] px-1.5 font-bold rounded-tl shadow-sm z-10">
+                        [[img.highlight_text]]
+                    </div>
+
                     <div v-if="isImageSelected(step.i, img.image_index)"
                         class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

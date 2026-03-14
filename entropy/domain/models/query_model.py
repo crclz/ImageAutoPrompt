@@ -12,13 +12,15 @@ class ImageQueryModel(pydantic.BaseModel):
     image_index: int = 0
     url: str = ""
 
+    highlight_text: str = ""
+
 
 class TimestepQueryModel(pydantic.BaseModel):
     i: int = 0
     images: List[ImageQueryModel] = []
     chosen_highscores: List[ImagePointer] = []
     status: int = 0
-    observation: str = "" # timestep=i, 用户: NewHighScore: xxx
+    observation: str = ""  # timestep=i, 用户: NewHighScore: xxx
 
     def sort_images(self) -> None:
         self.images.sort(key=lambda x: x.image_index)
