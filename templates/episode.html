@@ -3,48 +3,50 @@
 {% block title %}Episode - {{ episode_name }}{% endblock %}
 
 {% block content %}
-<div id="app" class="max-w-6xl mx-auto px-2 py-2">
-    <div class="flex items-center space-x-4 mb-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm text-sm">
-        <h2 class="font-bold text-gray-800">
+<div id="app" class="max-w-7xl mx-auto px-4 py-3">
+    <div class="flex items-center space-x-6 mb-3 bg-white px-4 py-2.5 rounded-lg border border-gray-200 shadow-sm">
+        <h2 class="text-xl font-extrabold text-gray-900">
             Episode: <span class="text-indigo-600">[[ episodeName ]]</span>
         </h2>
-        <div class="h-4 w-[1px] bg-gray-300"></div>
-        <div class="flex items-center space-x-1.5">
-            <span class="relative flex h-2 w-2">
-                <span
-                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        <div class="h-6 w-[1px] bg-gray-300"></div>
+        <div class="flex items-center space-x-2">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
-            <span class="text-gray-500 text-xs font-medium">每 2 秒同步</span>
+            <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">Refresh every 2 seconds</span>
         </div>
     </div>
 
-    <div class="space-y-2">
-        <div v-for="step in reversedTimesteps" :key="step.i"
-            class="bg-white border border-gray-200 rounded p-2 transition-all hover:border-indigo-300">
-
-            <div class="flex items-center mb-2 space-x-3">
-                <span class="text-xs font-black text-indigo-800 uppercase tracking-tighter">
+    <div class="space-y-3">
+        <div v-for="step in reversedTimesteps" :key="step.i" 
+             class="bg-white border border-gray-200 rounded-lg p-3 transition-all hover:border-indigo-300 shadow-sm">
+            
+            <div class="flex items-center mb-3 space-x-4">
+                <span class="text-lg font-black text-gray-800 tracking-tight">
                     TIMESTEP [[ step.i ]]
                 </span>
-                <span class="text-[10px] text-gray-400 bg-gray-50 px-1 rounded border">STATUS: [[ step.status ]]</span>
+                
+                <template v-if="getStatusInfo(step.status)">
+                    <span :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
+                        [[ getStatusInfo(step.status).text ]]
+                    </span>
+                </template>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-3">
                 <div v-for="img in step.images" :key="img.image_index" class="relative group">
-                    <img :src="img.url"
-                        class="h-64 w-auto rounded border border-gray-100 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-shadow"
-                        @error="handleImgError">
-
-                    <span
-                        class="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                        IMG #[[ img.image_index ]]
+                    <img :src="img.url" 
+                         class="h-64 w-auto rounded border-2 border-gray-50 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-all group-hover:border-indigo-100"
+                         @error="handleImgError">
+                    
+                    <span class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-mono">
+                        INDEX [[ img.image_index ]]
                     </span>
                 </div>
-
-                <div v-if="step.images.length === 0"
-                    class="flex items-center justify-center h-20 w-full border-2 border-dashed border-gray-100 rounded">
-                    <span class="text-gray-300 text-xs italic">No Images for Timestep [[ step.i ]]</span>
+                
+                <div v-if="step.images.length === 0" class="flex items-center justify-center h-32 w-full border-2 border-dashed border-gray-100 rounded-xl bg-gray-50">
+                    <span class="text-gray-400 text-sm font-medium italic">Waiting for images... (Timestep [[ step.i ]])</span>
                 </div>
             </div>
         </div>
@@ -62,7 +64,17 @@
             const timesteps = ref([]);
             let timer = null;
 
-            // 倒序逻辑：保持 timestep[-1] 在顶部
+            // 状态映射配置
+            const statusMap = {
+                0: { text: 'Image Processing', class: 'bg-amber-50 text-amber-700 border-amber-200' },
+                1: { text: 'Image Done', class: 'bg-blue-50 text-blue-700 border-blue-200' },
+                2: { text: 'High Score Chosen', class: 'bg-green-50 text-green-700 border-green-200' }
+            };
+
+            const getStatusInfo = (status) => {
+                return statusMap[status] || null;
+            };
+
             const reversedTimesteps = computed(() => {
                 return [...timesteps.value].reverse();
             });
@@ -79,8 +91,7 @@
             };
 
             const handleImgError = (e) => {
-                // 简单的加载失败占位图
-                e.target.src = 'https://placehold.co/400x300?text=Pending';
+                e.target.src = 'https://placehold.co/600x400/f3f4f6/9ca3af?text=Processing...';
             };
 
             onMounted(() => {
@@ -96,7 +107,8 @@
                 episodeName,
                 timesteps,
                 reversedTimesteps,
-                handleImgError
+                handleImgError,
+                getStatusInfo
             };
         },
         delimiters: ['[[', ']]']
