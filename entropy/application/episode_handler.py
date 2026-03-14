@@ -3,7 +3,7 @@ import traceback
 
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.infra.episode_repository import EpisodeRepository
-from flask import Flask, jsonify, make_response
+from flask import Flask, jsonify, make_response, render_template
 
 _logger = logging.getLogger(__name__)
 
@@ -26,16 +26,20 @@ class EpisodeHandler:
         raise NotImplementedError()
 
     @classmethod
-    def episode_page(cls):
-        """
-        this page accept query parameter: name
-        and show:
-        - timesteps and images
-        - high score images (highlight)
+    def episode_page_wrapper(cls, episode_name):
+        return render_template("episode.html", episode_name=episode_name)
 
-        these data are refreshed frequently, by polling get_episode_data via page
-        """
-        raise NotImplementedError()
+    # @classmethod
+    # def episode_page(cls):
+    #     """
+    #     this page accept query parameter: name
+    #     and show:
+    #     - timesteps and images
+    #     - high score images (highlight)
+
+    #     these data are refreshed frequently, by polling get_episode_data via page
+    #     """
+    #     raise NotImplementedError()
 
     @staticmethod
     def wrap_api_exception(e: Exception):

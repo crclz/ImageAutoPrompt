@@ -13,13 +13,13 @@ def hello_world():
     return "<p>Hello, World!</p>"
 
 
-@app.route("/api/episodes/<name>")
+@app.get("/api/episodes/<name>")
 def get_episode_data(name):
     return EpisodeHandler.get_episode_data_wrapper(name)
 
 
-@app.route("/episodes/<episode_name>/files/<filename>")
-def serve_episode_image(episode_name, filename):
+@app.get("/episodes/<episode_name>/files/<filename>")
+def serve_episode_files(episode_name, filename):
     # 1. 构造该 episode 对应的磁盘目录
     episodes_dir = Path("./runs/episodes")
 
@@ -32,3 +32,7 @@ def serve_episode_image(episode_name, filename):
     # 3. 安全地从目录发送文件
     # send_from_directory 会自动防止路径穿越攻击（如 filename 中包含 ../）
     return send_from_directory(target_dir, filename)
+
+@app.get("/episodes/<episode_name>")
+def episode_page(episode_name):
+    return EpisodeHandler.episode_page_wrapper(episode_name)
