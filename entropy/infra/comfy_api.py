@@ -20,9 +20,7 @@ class ImageDescriptor(pydantic.BaseModel):
 
 class ComfyApi:
     @staticmethod
-    def run_workflow_replace_prompt(
-        base_address: str, workflow_template_json: str, positive: str, negative: str
-    ) -> bytes:
+    def run_workflow(base_address: str, workflow_template_json: str, positive: str, negative: str) -> bytes:
         """
         return: png binary
         """
@@ -45,14 +43,16 @@ class ComfyApi:
             if k not in rendered_workflow:
                 raise ValueError(f"workflow not contains: {k}")
 
-            rendered_workflow.replace(k, v)
+            rendered_workflow = rendered_workflow.replace(k, v)
 
         _logger.info(f"rendered_workflow is: {rendered_workflow}")
+
+        rendered_workflow_obj = json.loads(rendered_workflow)
 
         # 2. submit prompt
         base_address = base_address.removesuffix("/")
 
-        response = requests.get(f"{base_address}/prompt", json={"prompt": rendered_workflow}, timeout=10)
+        response = requests.post(f"{base_address}/prompt", json={"prompt": rendered_workflow_obj}, timeout=10)
 
         if not response.ok:
             raise ValueError(f"submit prompt failed. code: {response.status_code}, text: {response.text}")
@@ -72,11 +72,7 @@ class ComfyApi:
             if datetime.now() > deadline:
                 raise ValueError("poll for prompt reached deadline")
 
-            response = requests.get(f"{base_address}/history/{prompt_id}", timeout=10)
-            if not response.ok:
-                raise ValueError(f"get prompt history failed. code: {response.status_code}, text: {response.text}")
-
-            complete, images = ComfyApi.detect_prompt_history_status(response.json(), prompt_id)
+            complete, images = ComfyApi.get_workflow_result(base_address, prompt_id)
             if complete:
                 assert len(images) == 1, f"output images is not 1: {len(images)}"
 
@@ -101,17 +97,29 @@ class ComfyApi:
         return response.content
 
     @staticmethod
-    def detect_prompt_history_status(response_data: dict, prompt_id: str) -> Tuple[bool, List[ImageDescriptor]]:
+    def get_workflow_result(base_address: str, prompt_id: str) -> Tuple[bool, List[ImageDescriptor]]:
         """
         return: false when not complete, true when complete
         throw: when failure
         """
 
-        history = response_data.get("prompt_id")
+        response = requests.get(f"{base_address}/history/{prompt_id}", timeout=10)
+        if not response.ok:
+            raise ValueError(f"get prompt history failed. code: {response.status_code}, text: {response.text}")
+
+        _logger.debug(f"history response: {response.text}")
+
+        response_data = response.json()
+
+        history = response_data.get(prompt_id)
         if not history:
             return False, []
 
-        status_str = history.get("status_str", "")
+        status_job = history.get("status")
+        if not status_job:
+            return False, []
+
+        status_str = status_job.get("status_str", "")
         if "error" in status_str or "fail" in status_str:
             raise ValueError(f"prompt run failed: {prompt_id}. status_str: {status_str}")
 
