@@ -11,8 +11,7 @@
         <div class="h-6 w-[1px] bg-gray-300"></div>
         <div class="flex items-center space-x-2">
             <span class="relative flex h-3 w-3">
-                <span
-                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
             </span>
             <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">每 2 秒同步</span>
@@ -22,15 +21,10 @@
     <div class="space-y-3">
         <div v-for="step in reversedTimesteps" :key="step.i"
             class="bg-white border border-gray-200 rounded-lg p-3 transition-all hover:border-indigo-300 shadow-sm">
-
             <div class="flex items-center mb-3 space-x-4">
-                <span class="text-lg font-black text-gray-800 tracking-tight">
-                    TIMESTEP [[ step.i ]]
-                </span>
-
+                <span class="text-lg font-black text-gray-800 tracking-tight">TIMESTEP [[ step.i ]]</span>
                 <template v-if="getStatusInfo(step.status)">
-                    <span
-                        :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
+                    <span :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
                         [[ getStatusInfo(step.status).text ]]
                     </span>
                 </template>
@@ -39,57 +33,66 @@
             <div class="flex flex-wrap gap-3">
                 <div v-for="img in step.images" :key="img.image_index" class="relative group">
                     <img :src="img.url" @click="openPreview(step.i, img.image_index, img.url)"
-                        class="h-64 w-auto rounded border-2 border-gray-50 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-all group-hover:border-indigo-100 cursor-zoom-in"
+                        class="h-64 w-auto rounded border-2 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-all cursor-zoom-in"
+                        :class="isImageSelected(step.i, img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'"
                         @error="handleImgError">
+                    
+                    <div v-if="isImageSelected(step.i, img.image_index)" class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
 
-                    <span
-                        class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-mono">
+                    <span class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-mono">
                         INDEX [[ img.image_index ]]
                     </span>
-                </div>
-
-                <div v-if="step.images.length === 0"
-                    class="flex items-center justify-center h-32 w-full border-2 border-dashed border-gray-100 rounded-xl bg-gray-50">
-                    <span class="text-gray-400 text-sm font-medium italic">Waiting for images... (Timestep [[ step.i
-                        ]])</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div v-if="preview" class="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-md"
-        @click.self="closePreview">
-
+    <div v-if="preview" class="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-md" @click.self="closePreview">
+        
         <div class="w-full flex justify-center items-center px-4 py-1.5 bg-black/60 border-b border-white/5 relative">
-            <div class="flex items-center space-x-3 text-sm tracking-tight">
-                <span class="text-indigo-400 font-black uppercase">Timestep [[ preview.stepI ]]</span>
-                <span class="w-1 h-1 bg-white/20 rounded-full"></span>
-                <span class="text-white/80 font-bold">Index [[ preview.imgIndex ]]</span>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="text-indigo-400 font-black uppercase">TS [[ preview.stepI ]]</span>
+                    <span class="text-white/40">/</span>
+                    <span class="text-white font-bold">IDX [[ preview.imgIndex ]]</span>
+                </div>
+
+                <div class="h-4 w-[1px] bg-white/20"></div>
+
+                <div class="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
+                    <button @click="toggleSelection(preview.stepI, preview.imgIndex)" 
+                            :class="['px-3 py-1 rounded-md font-bold text-xs transition-all', 
+                                     isImageSelected(preview.stepI, preview.imgIndex) ? 'bg-green-600 text-white' : 'text-white/60 hover:text-white']">
+                        [[ isImageSelected(preview.stepI, preview.imgIndex) ? '✓ 已选' : '设为高分' ]]
+                    </button>
+                    
+                    <div class="w-[1px] h-4 bg-white/10 mx-1"></div>
+
+                    <button @click="clearAllSelected" 
+                            class="px-3 py-1 text-xs font-bold text-red-400/80 hover:text-red-400 transition-colors uppercase">
+                        清空 ([[ selectedPointers.length ]])
+                    </button>
+                </div>
+
+                <button @click="submitHighscores" 
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95">
+                    提交选择
+                </button>
             </div>
 
-            <button @click="closePreview"
-                class="absolute right-4 text-white/30 hover:text-white text-3xl leading-none transition-colors">
-                &times;
-            </button>
+            <button @click="closePreview" class="absolute right-4 text-white/20 hover:text-white text-3xl leading-none">&times;</button>
         </div>
 
         <div class="relative flex-1 flex flex-col justify-end overflow-hidden">
-
-            <button @click="navigate(-1)"
-                class="absolute left-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">
-                &lsaquo;
-            </button>
-
-            <div class="w-full h-full flex items-end justify-center">
-                <img :src="preview.url"
-                    class="max-w-full max-h-full object-contain shadow-[0_-5px_30px_rgba(0,0,0,0.5)]"
-                    style="display: block;">
+            <button @click="navigate(-1)" class="absolute left-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&lsaquo;</button>
+            <div class="w-full h-full flex items-end justify-center p-1">
+                <img :src="preview.url" class="max-w-full max-h-full object-contain shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
             </div>
-
-            <button @click="navigate(1)"
-                class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">
-                &rsaquo;
-            </button>
+            <button @click="navigate(1)" class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&rsaquo;</button>
         </div>
     </div>
 </div>
@@ -104,16 +107,42 @@
             const episodeName = ref("{{ episode_name }}");
             const timesteps = ref([]);
             const preview = ref(null);
+            const selectedPointers = ref([]);
             let timer = null;
 
             const statusMap = {
-                0: { text: 'Image Processing', class: 'bg-amber-50 text-amber-700 border-amber-200' },
+                0: { text: 'Processing', class: 'bg-amber-50 text-amber-700 border-amber-200' },
                 1: { text: 'Wait Choice', class: 'bg-blue-50 text-blue-700 border-blue-200' },
                 2: { text: 'High Score Chosen', class: 'bg-green-50 text-green-700 border-green-200' }
             };
 
             const getStatusInfo = (status) => statusMap[status] || null;
             const reversedTimesteps = computed(() => [...timesteps.value].reverse());
+
+            const isImageSelected = (stepI, imgIndex) => {
+                return selectedPointers.value.some(p => p.timestep === stepI && p.image_index === imgIndex);
+            };
+
+            const toggleSelection = (stepI, imgIndex) => {
+                const index = selectedPointers.value.findIndex(p => p.timestep === stepI && p.image_index === imgIndex);
+                if (index > -1) {
+                    selectedPointers.value.splice(index, 1);
+                } else {
+                    selectedPointers.value.push({ timestep: stepI, image_index: imgIndex });
+                }
+            };
+
+            const clearAllSelected = () => {
+                selectedPointers.value = [];
+            };
+
+            const submitHighscores = () => {
+                if (selectedPointers.value.length === 0) {
+                    alert("Empty Selection");
+                    return;
+                }
+                alert(JSON.stringify({ highscores: selectedPointers.value }, null, 2));
+            };
 
             const fetchData = async () => {
                 try {
@@ -139,17 +168,14 @@
             const navigate = (direction) => {
                 if (!preview.value) return;
                 const allImages = [];
-                // 按照 timesteps 的原始顺序（0->n）展平图片
                 timesteps.value.forEach(step => {
                     step.images.forEach(img => {
                         allImages.push({ stepI: step.i, imgIndex: img.image_index, url: img.url });
                     });
                 });
-
                 const currentIndex = allImages.findIndex(item =>
                     item.stepI === preview.value.stepI && item.imgIndex === preview.value.imgIndex
                 );
-
                 if (currentIndex === -1) return;
                 const newIndex = currentIndex + direction;
                 if (newIndex >= 0 && newIndex < allImages.length) {
@@ -159,6 +185,10 @@
 
             const handleKeyDown = (e) => {
                 if (!preview.value) return;
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    toggleSelection(preview.value.stepI, preview.value.imgIndex);
+                }
                 if (e.key === 'ArrowLeft') navigate(-1);
                 if (e.key === 'ArrowRight') navigate(1);
                 if (e.key === 'Escape') closePreview();
@@ -184,11 +214,16 @@
                 timesteps,
                 reversedTimesteps,
                 preview,
+                selectedPointers,
                 handleImgError,
                 getStatusInfo,
                 openPreview,
                 closePreview,
-                navigate
+                navigate,
+                isImageSelected,
+                toggleSelection,
+                clearAllSelected,
+                submitHighscores
             };
         },
         delimiters: ['[[', ']]']
