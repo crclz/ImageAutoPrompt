@@ -83,9 +83,18 @@ class EpisodeHandler:
         timesteps = EpisodeRepository.get_timesteps_query_model(name)
 
         # format observation
-        for timestep in timesteps:
+        for i, timestep in enumerate(timesteps):
+            assert i == timestep.i
+
             if timestep.status == 2:
-                ob = f"timestep={timestep.i}\n"
+                ob = "System:"
+
+                # double buffer: if [-1] is running, [-2] must give system message to llm
+                if i == len(timesteps) - 2:
+                    if timesteps[-1].status == 0:  # running
+                        ob += f" timestep={len(timesteps) - 1} 的highscore正在评价中 用户还未给出(由于double-buffer)"
+
+                ob += f" 下列是用户对 timestep={i} 的评价:\n"
 
                 ob += "用户: NewHighScore: "
                 if timestep.chosen_highscores:
@@ -95,6 +104,10 @@ class EpisodeHandler:
                 else:
                     ob += "NO"
 
+                ob += "\n"
+
+                if i >= len(timesteps) -2:
+                    ob += f"System: 接下来请给出timestep={len(timesteps)}的探索"
                 ob += "\n"
 
                 timestep.observation = ob
@@ -239,7 +252,6 @@ class EpisodeHandler:
 
         def thread_function():
             with _episode_timestep_lock.lock(key, 0.5):
-
                 t0 = datetime.now()
                 ComfyApi.run_many(base_url, template_json, positives, negatives, complete_hook=complete_hook)
 
@@ -288,7 +300,7 @@ class EpisodeHandler:
         rolled_i = len(episode.timesteps) - 1
 
         episode_name = request.episode_name
-        assert episode_name, 'episode_name is empty'
+        assert episode_name, "episode_name is empty"
 
         key = f"{episode_name}:{rolled_i}"
 
@@ -296,7 +308,6 @@ class EpisodeHandler:
             raise ValueError(f"episode timestep locked ({key}). kill the program and restart")
 
         with _episode_timestep_lock.lock(episode_name, timeout=0.5):
-
             episode.timesteps.pop()
 
             ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)

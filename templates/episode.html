@@ -26,7 +26,7 @@
                 </svg>
                 <template v-if="canProcessImage">Paste Prompt</template>
                 <template v-if="!canProcessImage">Cannot Paste Prompt</template>
-                
+
             </button>
 
             <button @click="handleRollback"
@@ -56,11 +56,13 @@
 
                 <template v-if="step.observation">
                     <div @click="copyToClipboard(step.observation)" title="点击复制"
-                        class="flex items-center px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-mono cursor-pointer transition-colors border border-gray-200 group whitespace-nowrap">
-                        <span>[[ step.observation ]]</span>
+                        class="flex items-start px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-mono cursor-pointer transition-colors border border-gray-200 group whitespace-normal break-words">
+
+                        <span class="flex-1">[[ step.observation ]]</span>
+
                         <svg xmlns="http://www.w3.org/2000/svg"
-                            class="h-3 w-3 ml-1.5 opacity-40 group-hover:opacity-100 transition-opacity" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
+                            class="h-3 w-3 ml-1.5 mt-0.5 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                         </svg>
