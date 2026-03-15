@@ -17,3 +17,11 @@ dependencies = [
     "torch>=2.10.0",
     "transformers<5",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true  # 关键：防止其他包误用这个源
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
