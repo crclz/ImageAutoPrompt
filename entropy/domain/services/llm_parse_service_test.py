@@ -1,3 +1,5 @@
+import pytest
+
 from entropy.domain.services.llm_parse_service import LlmParseService
 
 
@@ -61,3 +63,29 @@ def test_llm_parse_service_happy_case_1():
     assert positives[0].endswith("highres")
 
     assert negatives[0].startswith("worst quality")
+
+
+def test_llm_parse_service_return_false_when_negative_empty_1():
+    s = r"""
+        ```prompt0
+        positive
+        1girl, hatsune miku, solo
+
+        negative
+        ```
+    """
+
+    with pytest.raises(ValueError):
+        positives, negatives = LlmParseService.parse_exploration_output(s)
+
+
+def test_llm_parse_service_return_false_when_no_negative():
+    s = r"""
+        ```prompt0
+        positive
+        1girl, hatsune miku, solo
+        ```
+    """
+
+    with pytest.raises(ValueError):
+        positives, negatives = LlmParseService.parse_exploration_output(s)

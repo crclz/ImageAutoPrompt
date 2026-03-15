@@ -32,14 +32,18 @@ class LlmParseService:
             p_part = ""
             n_part = ""
 
-            if "positive" in content and "negative" in content:
-                parts = re.split(r"positive\s+|negative\s+", content)
-                # split 之后第一个元素通常是空的（如果 positive 在开头）
-                # 过滤掉空字符串并拿取对应部分
-                valid_parts = [p.strip() for p in parts if p.strip()]
-                if len(valid_parts) >= 2:
-                    p_part = valid_parts[0]
-                    n_part = valid_parts[1]
+            if not ("positive" in content and "negative" in content):
+                raise ValueError(f"positive and negative not found. prompt_{i}")
+            
+            parts = re.split(r"positive\s+|negative\s+", content)
+            # split 之后第一个元素通常是空的（如果 positive 在开头）
+            # 过滤掉空字符串并拿取对应部分
+            valid_parts = [p.strip() for p in parts if p.strip()]
+            if len(valid_parts) >= 2:
+                p_part = valid_parts[0]
+                n_part = valid_parts[1]
+            else:
+                raise ValueError(f"format error prompt_{i}")
 
             positives.append(p_part)
             negatives.append(n_part)
