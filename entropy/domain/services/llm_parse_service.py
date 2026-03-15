@@ -1,3 +1,4 @@
+import json
 import re
 from typing import List, Tuple
 
@@ -34,7 +35,7 @@ class LlmParseService:
 
             if not ("positive" in content and "negative" in content):
                 raise ValueError(f"positive and negative not found. prompt_{i}")
-            
+
             parts = re.split(r"positive\s+|negative\s+", content)
             # split 之后第一个元素通常是空的（如果 positive 在开头）
             # 过滤掉空字符串并拿取对应部分
@@ -49,3 +50,20 @@ class LlmParseService:
             negatives.append(n_part)
 
         return positives, negatives
+
+    @staticmethod
+    def parse_danbooru_search(text: str) -> List[str]:
+        # 1. Use regex to find the content inside the ```danbooru_search block
+        # re.DOTALL allows the '.' to match newlines
+        pattern = r"```danbooru_search\s+(.*?)\s+```"
+        match = re.search(pattern, text, re.DOTALL)
+
+        if not match:
+            return []
+
+        # 2. Extract the captured group and parse as JSON
+        json_content = match.group(1)
+        data = json.loads(json_content)
+
+        # 3. Return the "query_list" field
+        return data.get("query_list", [])

@@ -76,7 +76,7 @@ def test_llm_parse_service_return_false_when_negative_empty_1():
     """
 
     with pytest.raises(ValueError):
-        positives, negatives = LlmParseService.parse_exploration_output(s)
+        LlmParseService.parse_exploration_output(s)
 
 
 def test_llm_parse_service_return_false_when_no_negative():
@@ -88,4 +88,38 @@ def test_llm_parse_service_return_false_when_no_negative():
     """
 
     with pytest.raises(ValueError):
-        positives, negatives = LlmParseService.parse_exploration_output(s)
+        LlmParseService.parse_exploration_output(s)
+
+
+def test_danbooru_search():
+    s = r"""
+        ```prompt0
+        positive
+        1girl, hatsune miku, solo, (artist:torino aqua:1.1), (artist:hiten \(hitenkei\):0.9), (artist:tiv:0.8), long hair, looking at viewer, blue eyes, shirt, skirt, hair ornament, thighhighs, holding, closed mouth, bare shoulders, very long hair, twintails, standing, blue hair, white shirt, full body, ahoge, outdoors, pleated skirt, necktie, detached sleeves, sky, sleeveless, ocean, collared shirt, day, black thighhighs, cloud, black skirt, black footwear, blue sky, aqua eyes, zettai ryouiki, sleeveless shirt, floating hair, aqua hair, instrument, black sleeves, guitar, holding instrument, aqua necktie, cumulonimbus cloud, cinematic lighting, tyndall effect, lens flare, water refraction, masterpiece, best quality, newest, absurdres, highres
+
+        negative
+        worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands
+
+        ```
+
+        ```prompt1
+        positive
+        1girl, hatsune miku, solo, (artist:anmi:1.1), (artist:kantoku:0.9), artist:tiv, long hair, looking at viewer, blue eyes, shirt, skirt, hair ornament, thighhighs, holding, closed mouth, bare shoulders, very long hair, twintails, standing, blue hair, white shirt, full body, ahoge, outdoors, pleated skirt, necktie, detached sleeves, sky, sleeveless, ocean, collared shirt, day, black thighhighs, cloud, black skirt, black footwear, blue sky, aqua eyes, zettai ryouiki, sleeveless shirt, floating hair, aqua hair, instrument, black sleeves, guitar, holding instrument, aqua necktie, cumulonimbus cloud, wet, wet clothes, sea spray, masterpiece, best quality, newest, absurdres, highres
+
+        negative
+        worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands
+
+        ```
+
+        ```danbooru_search
+        {
+            "query_list": ["a", "b", "c"]
+        }
+        ```
+
+
+        这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
+    """
+
+    query_list = LlmParseService.parse_danbooru_search(s)
+    assert ["a", "b", "c"] == query_list
