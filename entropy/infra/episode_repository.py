@@ -87,7 +87,8 @@ class EpisodeRepository:
             image_index = int(match.group(2))
 
             if timestep >= len(episode.timesteps):
-                raise ValueError(f"timestep too big: {png_file}")
+                continue # ignore these files
+                # raise ValueError(f"timestep too big: {png_file}")
 
             if timestep_map.get(timestep) is None:
                 raise ValueError(f"png file exceed timestep: {png_file}")

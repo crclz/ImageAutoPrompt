@@ -27,7 +27,7 @@ from entropy.infra.keyed_lock import KeyedLock
 
 _logger = logging.getLogger(__name__)
 
-_episode_lock = KeyedLock()
+_episode_timestep_lock = KeyedLock()
 
 
 class EpisodeHandler:
@@ -175,8 +175,7 @@ class EpisodeHandler:
 
             assert episode_name
 
-            with _episode_lock.lock(episode_name, timeout=0.5):
-                resp = cls.start_image_processing(req)
+            resp = cls.start_image_processing(req)
 
             data_object = resp.model_dump()
             return data_object
@@ -215,14 +214,15 @@ class EpisodeHandler:
         # check positives
         episode = EpisodeRepository.get_eposide(request.episode_name)
 
-        if episode.timesteps:
-            last_status = episode.timesteps[-1].status
-            if last_status != 2:
-                raise ValueError(f"last timestep status != 2. actual: {last_status}")
+        if not episode.can_process_image():
+            raise ValueError("cannot process image")
 
         # create new timestep
         timestep_i = len(episode.timesteps)
 
+        # NOTE: only timestep is locked. update episode should get-modify-save
+
+        key = f"{request.episode_name}:{timestep_i}"
         episode.timesteps.append(
             EpisodeTimestep(
                 i=timestep_i,
@@ -230,30 +230,26 @@ class EpisodeHandler:
         )
         EpisodeRepository.save_episode(request.episode_name, episode)
 
+        del episode  # cannot reuse, because stale
+
         def complete_hook(image_index: int, image_bytes: bytes) -> None:
             # save so that web page can see the picture
             pic_save_path = EpisodeRepository.pic_path(request.episode_name, timestep_i, image_index)
             pic_save_path.write_bytes(image_bytes)
 
         def thread_function():
-            try:
+            with _episode_timestep_lock.lock(key, 0.5):
+
                 t0 = datetime.now()
                 ComfyApi.run_many(base_url, template_json, positives, negatives, complete_hook=complete_hook)
 
                 dt = (datetime.now() - t0).total_seconds()
                 _logger.info(f"run_many takes {dt:.1f} seconds")
 
-                episode.timesteps[-1].status = 1
+                episode = EpisodeRepository.get_eposide(request.episode_name)
+                episode.timesteps[timestep_i].status = 1
 
                 EpisodeRepository.save_episode(request.episode_name, episode)
-
-            except (Exception, KeyboardInterrupt):
-                _logger.exception("start_image_processing has error")
-
-                episode.timesteps.pop()
-                EpisodeRepository.save_episode(request.episode_name, episode)
-
-                raise
 
         if True:
             th = Thread(target=thread_function)
@@ -274,11 +270,7 @@ class EpisodeHandler:
 
             assert episode_name
 
-            if _episode_lock.is_locked(episode_name):
-                raise ValueError("episode locked. kill the program and restart")
-
-            with _episode_lock.lock(episode_name, timeout=0.5):
-                resp = cls.rollback_timestep(req)
+            resp = cls.rollback_timestep(req)
 
             data_object = resp.model_dump()
             return data_object
@@ -295,23 +287,33 @@ class EpisodeHandler:
 
         rolled_i = len(episode.timesteps) - 1
 
-        episode.timesteps.pop()
+        episode_name = request.episode_name
+        assert episode_name, 'episode_name is empty'
 
-        ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)
+        key = f"{episode_name}:{rolled_i}"
 
-        rollback_time = time.time().__int__()
+        if _episode_timestep_lock.is_locked(key):
+            raise ValueError(f"episode timestep locked ({key}). kill the program and restart")
 
-        for pic in ts_pics:
-            # move pic to pic.parent/trash/*_uuid.png
-            trash_dir = pic.parent / "trash"
-            trash_dir.mkdir(exist_ok=True)
+        with _episode_timestep_lock.lock(episode_name, timeout=0.5):
 
-            new_name = pic.name.removesuffix(".png") + f"_rollback_{rollback_time}.png"
+            episode.timesteps.pop()
 
-            dst = trash_dir / new_name
+            ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)
 
-            pic.rename(dst)
+            rollback_time = time.time().__int__()
 
-        EpisodeRepository.save_episode(request.episode_name, episode)
+            for pic in ts_pics:
+                # move pic to pic.parent/trash/*_uuid.png
+                trash_dir = pic.parent / "trash"
+                trash_dir.mkdir(exist_ok=True)
 
-        return RollbackTimestepResponse()
+                new_name = pic.name.removesuffix(".png") + f"_rollback_{rollback_time}.png"
+
+                dst = trash_dir / new_name
+
+                pic.rename(dst)
+
+            EpisodeRepository.save_episode(request.episode_name, episode)
+
+            return RollbackTimestepResponse()
