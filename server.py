@@ -59,6 +59,6 @@ def rollback_timestep(name: str):
 def rag_page():
     return RagHandler.rag_page_wrapper()
 
-@app.get("/api/show-rag")
+@app.post("/api/show-rag")
 def show_rag():
     return RagHandler.show_rag_wrapper()

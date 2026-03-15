@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% block title %}RAG Simple{% endblock %}
+
+{% block content %}
+<div id="app" style="padding: 20px; font-family: sans-serif;">
+    <h3>RAG Search</h3>
+
+    <div style="margin-bottom: 20px;">
+        <input v-model="queryText" @keyup.enter="doSearch" placeholder="Query..." style="width: 300px;">
+        <button @click="doSearch" :disabled="loading">[[ loading ? '...' : 'Search' ]]</button>
+        <span v-if="duration" style="margin-left: 10px; font-size: 12px; color: gray;">
+            Cost: [[ duration ]]ms
+        </span>
+    </div>
+
+    <div v-if="candidates.length > 0">
+        <ul style="line-height: 1.8;">
+            <li v-for="item in candidates">
+                <code style="background: #f4f4f4;">[[ item.score.toFixed(4) ]]</code>
+                <b style="margin-left: 10px;">[[ item.text ]]</b>
+                <button @click="copy(item.text)" style="margin-left: 10px; font-size: 10px;">Copy</button>
+            </li>
+        </ul>
+    </div>
+
+    <p v-if="toastMsg" style="position: fixed; bottom: 10px; background: yellow; padding: 5px;">[[ toastMsg ]]</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const { createApp, ref } = Vue;
+    createApp({
+        setup() {
+            const queryText = ref("");
+            const candidates = ref([]);
+            const loading = ref(false);
+            const duration = ref(0);
+            const toastMsg = ref("");
+
+            const copy = (t) => {
+                navigator.clipboard.writeText(t);
+                toastMsg.value = "Copied!";
+                setTimeout(() => toastMsg.value = "", 1000);
+            };
+
+            const doSearch = async () => {
+                loading.value = true;
+                const start = Date.now();
+                try {
+                    const res = await fetch('/api/show-rag', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query_text: queryText.value })
+                    });
+                    const data = await res.json();
+                    candidates.value = data.candidates || [];
+                    duration.value = Date.now() - start;
+                } catch (e) { alert(e); }
+                loading.value = false;
+            };
+
+            return { queryText, candidates, loading, duration, toastMsg, doSearch, copy };
+        },
+        delimiters: ['[[', ']]']
+    }).mount('#app');
+</script>
+{% endblock %}

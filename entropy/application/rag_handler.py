@@ -11,8 +11,8 @@ _logger = logging.getLogger(__name__)
 
 class RagHandler:
     @classmethod
-    def rag_page_wrapper(cls, episode_name):
-        return render_template("rag.html", episode_name=episode_name)
+    def rag_page_wrapper(cls):
+        return render_template("rag.html")
 
     @classmethod
     def show_rag_wrapper(cls):
