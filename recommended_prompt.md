@@ -216,7 +216,7 @@ negative
 可选:
 ```danbooru_search
 {
-    "query_list": List[str] // 限制长度 <= 3
+    "query_list": List[str] // 搜索的关键词。list限制长度 <= 3. 英文效果稍好，中文也支持。
 }
 ```
 

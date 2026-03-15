@@ -55,11 +55,11 @@
                 </template>
 
                 <template v-if="step.rag_wip">
-                    <span>RAG_WIP</span>
+                    <span class="bg-amber-300 px-2.5 py-0.5 rounded text-xs font-bold border shadow-sm">RAG_WIP</span>
                 </template>
 
                 <template v-if="step.rag_result">
-                    <span>RAG_DONE</span>
+                    <span class="bg-green-300 px-2.5 py-0.5 rounded text-xs font-bold border shadow-sm">RAG_DONE</span>
                 </template>
 
                 <template v-if="step.observation">

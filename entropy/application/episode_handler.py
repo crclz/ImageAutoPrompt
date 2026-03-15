@@ -287,7 +287,7 @@ class EpisodeHandler:
         for query in query_list:
             tags, scores = RagService.do_rag(query)
 
-            danbooru_search_outputs += f"search {query} => " + ",".join(tags)
+            danbooru_search_outputs.append(f"search {query} => " + ",".join(tags))
 
         danbooru_search_result = "\n".join(danbooru_search_outputs) + "\n"
 
@@ -295,6 +295,8 @@ class EpisodeHandler:
         episode = EpisodeRepository.get_eposide(episode_name)
         episode.timesteps[timestep].rag_wip = 0
         episode.timesteps[timestep].rag_result = danbooru_search_result
+
+        EpisodeRepository.save_episode(episode_name, episode)
 
     @classmethod
     def rollback_timestep_wrapper(cls, episode_name: str):
