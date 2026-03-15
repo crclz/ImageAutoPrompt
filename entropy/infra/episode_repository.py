@@ -61,7 +61,7 @@ class EpisodeRepository:
         episode_dir = cls.episodes_dir() / episode_name
 
         png_files = list(episode_dir.glob("*.png"))
-        _logger.debug(f"png_files: {len(png_files)}")
+        # _logger.debug(f"png_files: {len(png_files)}")
 
         # t001_05.png
         pattern = r"^t(\d+)_(\d+)\.png$"
@@ -117,3 +117,26 @@ class EpisodeRepository:
         f = f"t{timestep:03d}_{image_index:02d}.png"
 
         return d / f
+
+    @classmethod
+    def timestep_pics(cls, episode_name: str, target_timestep: int) -> List[Path]:
+        episode_dir = cls.episodes_dir() / episode_name
+
+        png_files = list(episode_dir.glob("*.png"))
+        pattern = r"^t(\d+)_(\d+)\.png$"
+
+        results: List[Path] = []
+
+        for png_file in png_files:
+            match = re.match(pattern, png_file.name)
+
+            if not match:
+                continue
+
+            timestep = int(match.group(1))
+            image_index = int(match.group(2))
+
+            if timestep == target_timestep:
+                results.append(png_file)
+
+        return results

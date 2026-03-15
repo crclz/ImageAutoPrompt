@@ -3,12 +3,17 @@ import logging
 import os
 from pathlib import Path
 from threading import Thread
+import time
 import traceback
+
+import shortuuid
 
 from entropy.domain.models.episode import EpisodeTimestep
 from entropy.domain.models.http_dtos import (
     ChooseHighScoresRequest,
     ChooseHighScoresResponse,
+    RollbackTimestepRequest,
+    RollbackTimestepResponse,
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
@@ -18,7 +23,11 @@ from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import Flask, jsonify, make_response, render_template, request
 
+from entropy.infra.keyed_lock import KeyedLock
+
 _logger = logging.getLogger(__name__)
+
+_episode_lock = KeyedLock()
 
 
 class EpisodeHandler:
@@ -161,7 +170,11 @@ class EpisodeHandler:
             req = StartImageProcessingRequest.model_validate(request.get_json())
             req.episode_name = episode_name
 
-            resp = cls.start_image_processing(req)
+            assert episode_name
+
+            with _episode_lock.lock(episode_name, timeout=0.5):
+                resp = cls.start_image_processing(req)
+
             data_object = resp.model_dump()
             return data_object
         except Exception as e:
@@ -247,3 +260,55 @@ class EpisodeHandler:
                 th.join()
 
         return StartImageProcessingResponse()
+
+    @classmethod
+    def rollback_timestep_wrapper(cls, episode_name: str):
+        try:
+            assert episode_name
+
+            req = RollbackTimestepRequest.model_validate(request.get_json())
+            req.episode_name = episode_name
+
+            assert episode_name
+
+            if _episode_lock.is_locked(episode_name):
+                raise ValueError("episode locked. kill the program and restart")
+
+            with _episode_lock.lock(episode_name, timeout=0.5):
+                resp = cls.rollback_timestep(req)
+
+            data_object = resp.model_dump()
+            return data_object
+        except Exception as e:
+            _logger.exception("start_image_processing_wrapper error")
+            return cls.wrap_api_exception(e)
+
+    @classmethod
+    def rollback_timestep(cls, request: RollbackTimestepRequest) -> RollbackTimestepResponse:
+        episode = EpisodeRepository.get_eposide(request.episode_name)
+
+        if not episode.timesteps:
+            raise ValueError("episode empty, cannot rollback")
+
+        rolled_i = len(episode.timesteps) - 1
+
+        episode.timesteps.pop()
+
+        ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)
+
+        rollback_time = time.time().__int__()
+
+        for pic in ts_pics:
+            # move pic to pic.parent/trash/*_uuid.png
+            trash_dir = pic.parent / "trash"
+            trash_dir.mkdir(exist_ok=True)
+
+            new_name = pic.name.removesuffix(".png") + f"_rollback_{rollback_time}.png"
+
+            dst = trash_dir / new_name
+
+            pic.rename(dst)
+
+        EpisodeRepository.save_episode(request.episode_name, episode)
+
+        return RollbackTimestepResponse()

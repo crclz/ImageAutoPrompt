@@ -22,3 +22,11 @@ class StartImageProcessingRequest(pydantic.BaseModel):
 
 class StartImageProcessingResponse(pydantic.BaseModel):
     pass
+
+
+class RollbackTimestepRequest(pydantic.BaseModel):
+    episode_name: str = ""
+
+
+class RollbackTimestepResponse(pydantic.BaseModel):
+    pass

@@ -1,6 +1,10 @@
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.models.episode import ImagePointer
-from entropy.domain.models.http_dtos import ChooseHighScoresRequest, StartImageProcessingRequest
+from entropy.domain.models.http_dtos import (
+    ChooseHighScoresRequest,
+    RollbackTimestepRequest,
+    StartImageProcessingRequest,
+)
 
 
 def test_get_episode_data_happy_1():
@@ -79,3 +83,7 @@ def test_start_image_processing_happy_1():
     )
 
     print("response is", response)
+
+
+def test_rollback_timestep_happy_1():
+    EpisodeHandler.rollback_timestep(RollbackTimestepRequest(episode_name="test_rollback"))

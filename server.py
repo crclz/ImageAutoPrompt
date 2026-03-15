@@ -47,3 +47,8 @@ def choose_highscore(name: str):
 @app.post("/api/episodes/<name>/process-image")
 def process_image(name: str):
     return EpisodeHandler.start_image_processing_wrapper(name)
+
+
+@app.post("/api/episodes/<name>/rollback-timestep")
+def rollback_timestep(name: str):
+    return EpisodeHandler.rollback_timestep_wrapper(name)
