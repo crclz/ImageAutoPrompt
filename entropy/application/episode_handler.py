@@ -5,6 +5,7 @@ from pathlib import Path
 from threading import Thread
 import time
 import traceback
+from typing import List
 
 import shortuuid
 
@@ -19,6 +20,7 @@ from entropy.domain.models.http_dtos import (
 )
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.domain.services.llm_parse_service import LlmParseService
+from entropy.domain.services.rag_service import RagService
 from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import Flask, jsonify, make_response, render_template, request
@@ -106,7 +108,7 @@ class EpisodeHandler:
 
                 ob += "\n"
 
-                if i >= len(timesteps) -2:
+                if i >= len(timesteps) - 2:
                     ob += f"System: 接下来请给出timestep={len(timesteps)}的探索"
                 ob += "\n"
 
@@ -221,6 +223,8 @@ class EpisodeHandler:
 
         positives, negatives = LlmParseService.parse_exploration_output(request.exploration_output)
 
+        danbooru_search_query_list = LlmParseService.parse_danbooru_search(request.exploration_output)
+
         if not positives:
             raise ValueError("parse exploration_output failed")
 
@@ -263,14 +267,37 @@ class EpisodeHandler:
 
                 EpisodeRepository.save_episode(request.episode_name, episode)
 
+        def danbooru_search():
+            cls.danbooru_search_and_save(request.episode_name, timestep_i, danbooru_search_query_list)
+
         if True:
-            th = Thread(target=thread_function)
+            th = Thread(target=thread_function, daemon=True)
             th.start()
+
+            danbooru_search_thread = Thread(target=danbooru_search, daemon=True)
+            danbooru_search_thread.start()
 
             if join:
                 th.join()
+                danbooru_search_thread.join()
 
         return StartImageProcessingResponse()
+
+    @classmethod
+    def danbooru_search_and_save(cls, episode_name: str, timestep: int, query_list: List[str]) -> None:
+        # do search before modify episode
+        danbooru_search_outputs = []
+
+        for query in query_list:
+            tags, scores = RagService.do_rag(query)
+
+            danbooru_search_outputs += f"search {query} => " + ",".join(tags)
+
+        danbooru_search_result = "\n".join(danbooru_search_outputs) + "\n"
+
+        # update episode
+        episode = EpisodeRepository.get_eposide(episode_name)
+        episode.timesteps[timestep].rag_result = danbooru_search_result
 
     @classmethod
     def rollback_timestep_wrapper(cls, episode_name: str):
@@ -307,7 +334,7 @@ class EpisodeHandler:
         if _episode_timestep_lock.is_locked(key):
             raise ValueError(f"episode timestep locked ({key}). kill the program and restart")
 
-        with _episode_timestep_lock.lock(episode_name, timeout=0.5):
+        with _episode_timestep_lock.lock(key, timeout=0.5):
             episode.timesteps.pop()
 
             ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)

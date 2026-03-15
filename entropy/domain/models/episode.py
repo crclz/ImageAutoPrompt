@@ -19,6 +19,8 @@ class EpisodeTimestep(pydantic.BaseModel):
 
     chosen_highscores: List[ImagePointer] = []
 
+    rag_result: str = ""
+
 
 class Episode(pydantic.BaseModel):
     create_time: int = 0
