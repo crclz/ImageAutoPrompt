@@ -27,4 +27,5 @@ class TimestepQueryModel(pydantic.BaseModel):
 
 
 class EpisodeQueryModel(pydantic.BaseModel):
+    can_process_image: int = 0
     timesteps: List[TimestepQueryModel] = []

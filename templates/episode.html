@@ -17,13 +17,16 @@
             </span>
             <span class="text-gray-600 text-sm font-bold tracking-wider">[[getEpisodeMessage]]</span>
             <div class="h-6 w-[1px] bg-gray-300 mx-2"></div>
-            <button @click="showPasteModal = true"
+
+            <button @click="showPasteModal = true" :disabled="canProcessImage == 0"
                 class="flex items-center px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-xs font-bold transition-all active:scale-95">
                 <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                Go To Paste
+                <template v-if="canProcessImage">Paste Prompt</template>
+                <template v-if="!canProcessImage">Cannot Paste Prompt</template>
+                
             </button>
 
             <button @click="handleRollback"
@@ -167,6 +170,7 @@
     createApp({
         setup() {
             const episodeName = ref("{{ episode_name }}");
+            const canProcessImage = ref(0)
             const timesteps = ref([]);
             const preview = ref(null);
             const selectedPointers = ref([]);
@@ -278,6 +282,7 @@
                     if (!response.ok) throw new Error('Fetch failed');
                     const data = await response.json();
                     timesteps.value = data.timesteps || [];
+                    canProcessImage.value = data.can_process_image;
 
                     getEpisodeMessage.value = "sync success";
                 } catch (err) {
@@ -428,6 +433,7 @@
 
             return {
                 episodeName,
+                canProcessImage,
                 timesteps,
                 reversedTimesteps,
                 preview,

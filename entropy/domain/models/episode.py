@@ -23,3 +23,9 @@ class EpisodeTimestep(pydantic.BaseModel):
 class Episode(pydantic.BaseModel):
     create_time: int = 0
     timesteps: List[EpisodeTimestep] = []
+
+    def can_process_image(self) -> bool:
+        last_two_status = reversed([p.status for p in self.timesteps[-2:]])
+        if any([p for p in last_two_status if p == 2]):
+            return True
+        return False

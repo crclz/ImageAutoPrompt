@@ -79,6 +79,7 @@ class EpisodeHandler:
         get data, which could be rendered on webpages. return EpisodeQueryModel
         """
 
+        episode = EpisodeRepository.get_eposide(name)
         timesteps = EpisodeRepository.get_timesteps_query_model(name)
 
         # format observation
@@ -112,7 +113,13 @@ class EpisodeHandler:
                 if key in highlight_text:
                     image.highlight_text = highlight_text[key]
 
-        return EpisodeQueryModel(timesteps=timesteps)
+        # can_process_image
+        # 如果最近的2个timestep，有任何1个进行了评价，那么都可以继续process.
+        can_process_image = 0
+        if episode.can_process_image():
+            can_process_image = 1
+
+        return EpisodeQueryModel(timesteps=timesteps, can_process_image=can_process_image)
 
     @classmethod
     def choose_high_scores_wrapper(cls, episode_name):
