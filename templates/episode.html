@@ -25,6 +25,15 @@
                 </svg>
                 Go To Paste
             </button>
+
+            <button @click="handleRollback"
+                class="flex items-center px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md text-xs font-bold transition-all active:scale-95">
+                <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Rollback
+            </button>
         </div>
 
         {% include "paste_modal.html" %}
@@ -384,6 +393,28 @@
                 }
             };
 
+            const handleRollback = async () => {
+                if (!confirm("确定要回滚最后一个 Timestep 吗？")) return;
+
+                try {
+                    const response = await fetch(`/api/episodes/${episodeName.value}/rollback-timestep`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    });
+                    const result = await response.json();
+
+                    // 无论成功失败都执行 alert
+                    alert(response.ok ? "回滚成功" : "失败: " + (result.message || result.error));
+
+                    if (response.ok) fetchData(); // 成功后刷新数据
+                } catch (err) {
+                    alert("网络错误: " + err);
+                }
+            };
+
             onMounted(() => {
                 fetchData();
                 timer = setInterval(fetchData, 1000);
@@ -417,6 +448,7 @@
                 isSubmittingPaste,
                 submitPaste,
                 getEpisodeMessage,
+                handleRollback,
             };
         },
         delimiters: ['[[', ']]']
