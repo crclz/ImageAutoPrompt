@@ -22,6 +22,9 @@ class TimestepQueryModel(pydantic.BaseModel):
     status: int = 0
     observation: str = ""  # timestep=i, 用户: NewHighScore: xxx
 
+    rag_wip: int = 0
+    rag_result: str = ""
+
     def sort_images(self) -> None:
         self.images.sort(key=lambda x: x.image_index)
 

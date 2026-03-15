@@ -240,11 +240,7 @@ class EpisodeHandler:
         # NOTE: only timestep is locked. update episode should get-modify-save
 
         key = f"{request.episode_name}:{timestep_i}"
-        episode.timesteps.append(
-            EpisodeTimestep(
-                i=timestep_i,
-            )
-        )
+        episode.timesteps.append(EpisodeTimestep(i=timestep_i, rag_wip=(1 if danbooru_search_query_list else 0)))
         EpisodeRepository.save_episode(request.episode_name, episode)
 
         del episode  # cannot reuse, because stale
@@ -297,6 +293,7 @@ class EpisodeHandler:
 
         # update episode
         episode = EpisodeRepository.get_eposide(episode_name)
+        episode.timesteps[timestep].rag_wip = 0
         episode.timesteps[timestep].rag_result = danbooru_search_result
 
     @classmethod

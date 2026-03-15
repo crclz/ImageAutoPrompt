@@ -74,6 +74,8 @@ class EpisodeRepository:
                 i=timestep.i,
                 images=[],
                 status=timestep.status,
+                rag_result=timestep.rag_result,
+                rag_wip=timestep.rag_wip,
             )
 
         for png_file in png_files:
@@ -87,7 +89,7 @@ class EpisodeRepository:
             image_index = int(match.group(2))
 
             if timestep >= len(episode.timesteps):
-                continue # ignore these files
+                continue  # ignore these files
                 # raise ValueError(f"timestep too big: {png_file}")
 
             if timestep_map.get(timestep) is None:

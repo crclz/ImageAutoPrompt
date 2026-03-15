@@ -54,8 +54,16 @@
                     </span>
                 </template>
 
+                <template v-if="step.rag_wip">
+                    <span>RAG_WIP</span>
+                </template>
+
+                <template v-if="step.rag_result">
+                    <span>RAG_DONE</span>
+                </template>
+
                 <template v-if="step.observation">
-                    <div @click="copyToClipboard(step.observation)" title="点击复制"
+                    <div @click="copyToClipboard(step.rag_result + step.observation)" title="点击复制"
                         class="flex items-start px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-mono cursor-pointer transition-colors border border-gray-200 group whitespace-normal break-words">
 
                         <span class="flex-1">[[ step.observation ]]</span>
