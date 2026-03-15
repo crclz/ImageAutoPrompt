@@ -30,3 +30,16 @@ class RollbackTimestepRequest(pydantic.BaseModel):
 
 class RollbackTimestepResponse(pydantic.BaseModel):
     pass
+
+
+class ShowRagRequest(pydantic.BaseModel):
+    query_text: str = ""
+
+
+class RagCandidate(pydantic.BaseModel):
+    text: str = ""
+    score: float = 0
+
+
+class ShowRagResponse(pydantic.BaseModel):
+    candidates: List[RagCandidate]

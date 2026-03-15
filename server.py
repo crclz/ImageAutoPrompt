@@ -4,6 +4,7 @@ from pathlib import Path
 from flask import Flask, abort, send_from_directory
 
 from entropy.application.episode_handler import EpisodeHandler
+from entropy.application.rag_handler import RagHandler
 
 app = Flask(__name__)
 
@@ -52,3 +53,12 @@ def process_image(name: str):
 @app.post("/api/episodes/<name>/rollback-timestep")
 def rollback_timestep(name: str):
     return EpisodeHandler.rollback_timestep_wrapper(name)
+
+
+@app.get("/rag")
+def rag_page():
+    return RagHandler.rag_page_wrapper()
+
+@app.get("/api/show-rag")
+def show_rag():
+    return RagHandler.show_rag_wrapper()
