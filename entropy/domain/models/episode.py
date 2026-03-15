@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import pydantic
 
@@ -29,3 +29,17 @@ class Episode(pydantic.BaseModel):
         if any([p for p in last_two_status if p == 2]):
             return True
         return False
+
+    def get_to_be_chosen(self) -> Optional[EpisodeTimestep]:
+        """
+        返回需要进行评最高分的timestep.
+        """
+
+        last_two_timesteps = reversed(self.timesteps[-2:])
+
+        # 1和2都可以进行最高分选择，其中2是覆盖
+        for timestep in last_two_timesteps:
+            if timestep.status in (1, 2):  # 优先打没打分的
+                return timestep
+
+        return None

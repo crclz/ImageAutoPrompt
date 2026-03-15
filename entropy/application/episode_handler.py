@@ -148,21 +148,17 @@ class EpisodeHandler:
 
         episode = EpisodeRepository.get_eposide(request.name)
 
-        if request.timestep != len(episode.timesteps) - 1:
-            raise ValueError(f"wrong timestep. expected: {len(episode.timesteps) - 1}, actual: {request.timestep}")
+        # if request.timestep != len(episode.timesteps) - 1:
+        #     raise ValueError(f"wrong timestep. expected: {len(episode.timesteps) - 1}, actual: {request.timestep}")
 
-        newest_timestep = episode.timesteps[len(episode.timesteps) - 1]
-
-        if newest_timestep.status not in (1, 2):
-            raise ValueError(f"cannot choose high score. newest_timestep.status: {newest_timestep.status}")
+        to_be_chosen = episode.get_to_be_chosen()
+        if to_be_chosen is None:
+            raise ValueError("cannot choose highscore")
 
         # choose
-        # support no high score
-        # if not request.highscores:
-        #     raise ValueError("request.highscores is empty")
 
-        newest_timestep.chosen_highscores = request.highscores
-        newest_timestep.status = 2
+        to_be_chosen.chosen_highscores = request.highscores
+        to_be_chosen.status = 2  # 1,2 => 2. restrictions of 1,2 is in episode.get_to_be_chosen
 
         # save
         EpisodeRepository.save_episode(request.name, episode)
