@@ -3,28 +3,35 @@
 {% block title %}RAG Simple{% endblock %}
 
 {% block content %}
-<div id="app" style="padding: 20px; font-family: sans-serif;">
-    <h3>RAG Search</h3>
+<div id="app" class="p-5 font-sans bg-gray-50 min-h-screen">
+    <h3 class="text-xl font-bold mb-4">RAG Search</h3>
 
-    <div style="margin-bottom: 20px;">
-        <input v-model="queryText" @keyup.enter="doSearch" placeholder="Query..." style="width: 300px;">
-        <button @click="doSearch" :disabled="loading">[[ loading ? '...' : 'Search' ]]</button>
-        <span v-if="duration" style="margin-left: 10px; font-size: 12px; color: gray;">
+    <div class="mb-5 flex items-center gap-2">
+        <input v-model="queryText" @keyup.enter="doSearch" placeholder="Query..."
+            class="w-[300px] border border-gray-300 px-2 py-1 rounded">
+        <button @click="doSearch" :disabled="loading"
+            class="px-4 py-1 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50">
+            [[ loading ? '...' : 'Search' ]]
+        </button>
+        <span v-if="duration" class="ml-2 text-xs text-gray-500 font-mono">
             Cost: [[ duration ]]ms
         </span>
     </div>
 
     <div v-if="candidates.length > 0">
-        <ul style="line-height: 1.8;">
-            <li v-for="item in candidates">
-                <code style="background: #f4f4f4;">[[ item.score.toFixed(4) ]]</code>
-                <b style="margin-left: 10px;">[[ item.text ]]</b>
-                <button @click="copy(item.text)" style="margin-left: 10px; font-size: 10px;">Copy</button>
+        <ul class="space-y-2">
+            <li v-for="item in candidates" class="flex items-center gap-3">
+                <code class="bg-gray-100 px-1 rounded text-sm text-blue-700">[[ item.score.toFixed(4) ]]</code>
+                <b class="text-gray-800">[[ item.text ]]</b>
+                <button @click="copy(item.text)"
+                    class="text-[10px] border border-gray-300 px-1 rounded hover:bg-gray-100">Copy</button>
             </li>
         </ul>
     </div>
 
-    <p v-if="toastMsg" style="position: fixed; bottom: 10px; background: yellow; padding: 5px;">[[ toastMsg ]]</p>
+    <p v-if="toastMsg" class="fixed bottom-2 left-2 bg-yellow-200 px-2 py-1 text-sm border border-yellow-400">
+        [[ toastMsg ]]
+    </p>
 </div>
 {% endblock %}
 
