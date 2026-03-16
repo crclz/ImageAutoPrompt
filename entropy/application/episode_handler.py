@@ -121,8 +121,8 @@ class EpisodeHandler:
                 last_positive_tags, last_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i - 1])
                 this_positive_tags, this_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i])
 
-                timestep.diff_positive_tags = list(set(this_positive_tags) - set(last_positive_tags))
-                timestep.diff_negative_tags = list(set(this_negative_tags) - set(last_negative_tags))
+                timestep.diff_positive_tags = ", ".join(list(set(this_positive_tags) - set(last_positive_tags)))
+                timestep.diff_negative_tags = ", ".join(list(set(this_negative_tags) - set(last_negative_tags)))
 
         # invalid tags
         for i, timestep in enumerate(timesteps):
@@ -130,7 +130,7 @@ class EpisodeHandler:
             all_tags = this_positive_tags + this_negative_tags
             all_tags = list(set(all_tags))
 
-            timestep.invalid_tags = [p for p in all_tags if not TagChecker.exist_tag(p)]
+            timestep.invalid_tags = ", ".join([p for p in all_tags if not TagChecker.exist_tag(p)])
 
         # display highlight:
         highlight_text = dict()  # key=${timestep}_${image_index}, value=${timestep_when_choose}

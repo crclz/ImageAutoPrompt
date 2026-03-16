@@ -78,6 +78,19 @@
                 </template>
             </div>
 
+            <div>
+                <span class="bg-gray-200">+positive:</span> [[ step.diff_positive_tags ]]
+            </div>
+
+            <div>
+                <span class="bg-gray-200">+negative:</span> [[ step.diff_negative_tags ]]
+            </div>
+
+            <div>
+                <span class="bg-gray-200">invalid tags:</span> [[ step.invalid_tags ]]
+            </div>
+
+
             <div class="flex flex-wrap gap-3">
                 <div v-for="img in step.images" :key="img.image_index" class="relative group">
                     <img :src="img.url" @click="openPreview(step.i, img.image_index, img.url)"

@@ -25,10 +25,10 @@ class TimestepQueryModel(pydantic.BaseModel):
     rag_wip: int = 0
     rag_result: str = ""
 
-    diff_positive_tags: List[str] = []
-    diff_negative_tags: List[str] = []
+    diff_positive_tags: str = ""
+    diff_negative_tags: str = ""
 
-    invalid_tags: List[str] = []
+    invalid_tags: str = ""
 
     def sort_images(self) -> None:
         self.images.sort(key=lambda x: x.image_index)

@@ -83,6 +83,8 @@ class TagChecker:
             # 再次清理多余下划线（处理 "reading a  book" 这种多空格情况）
             tag = re.sub(r"_+", "_", tag).strip("_")
 
+            tag = TagChecker.normalize_tag(tag)
+
             if tag:
                 tags.append(tag)
 
@@ -123,7 +125,11 @@ class TagChecker:
         tag = re.sub(r"_+", "_", tag)
 
         # 7. 最终修剪
-        return tag.strip("_ ")
+        tag = tag.strip("_ ")
+
+        # 下划线转空格
+        tag = tag.replace("_", " ")
+        return tag
 
     @staticmethod
     def get_not_exist_tags(s: str) -> List[str]:
