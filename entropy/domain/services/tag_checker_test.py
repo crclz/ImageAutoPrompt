@@ -64,3 +64,9 @@ def test_get_not_exist_tags_happy_1():
     not_exist_tags = TagChecker.get_not_exist_tags(s)
 
     assert ["reading_a_red_book"] == not_exist_tags
+
+
+def test_get_not_exist_tags_2():
+    s = "1girl, solo, breasts, looking at viewer, blush, shirt, skirt, black hair, closed mouth, cleavage, medium breasts, green eyes, underwear, collarbone, white shirt, panties, lying, collared shirt, medium hair, on back, white panties, pantyshot, outstretched arms, messy hair, green skirt, knees up, "
+
+    assert TagChecker.get_not_exist_tags(s) == []
