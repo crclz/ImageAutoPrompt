@@ -189,7 +189,23 @@ null
 
 
 ## 输出格式
-每一次，你需要结合上述信息，在简短文本描述后，输出 4 个prompt。
+1. 简短说明，for用户
+   
+2. 输出探索方向
+
+```exploration
+{
+    "type": string, // "artist_only", "free"
+    "description": string, // 讲一讲探索的方向
+    "keywords": List[string] // 长度为3-5，用中文描述一下探索的关键词
+}
+```
+
+artist_only 时，只能修改artist，不能修改其他。
+free时，可以修改其他。
+
+
+3. 输出 4 个prompt。
 
 index start from 0
 
