@@ -268,13 +268,18 @@ class EpisodeHandler:
             prompts.append(ImagePrompt(positive=positive, negative=negative))
 
         # parse abstract
+        episode = EpisodeRepository.get_eposide(request.episode_name)
+        is_zero_index = len(episode.timesteps) == 0
+        del episode
+
         abstract = LlmParseService.parse_exploration_abstract(request.exploration_output)
-        if not abstract:
+        if not abstract and not is_zero_index:
             raise ValueError("missing exploration abstract")
 
         rag_keywords = []
-        if abstract.type != "artist_only":
-            rag_keywords += abstract.keywords
+        if abstract:
+            if abstract.type != "artist_only":
+                rag_keywords += abstract.keywords
 
         # do diff on tags
         diff_positive, diff_negative = cls.tag_minus_last_timestep(
