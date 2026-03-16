@@ -281,6 +281,8 @@ class EpisodeHandler:
 
     @classmethod
     def danbooru_search_and_save(cls, episode_name: str, timestep: int, query_list: List[str]) -> None:
+        if not query_list:
+            return
         # do search before modify episode
         danbooru_search_outputs = []
 
