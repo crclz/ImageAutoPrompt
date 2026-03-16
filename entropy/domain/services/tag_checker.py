@@ -89,33 +89,38 @@ class TagChecker:
 
     @staticmethod
     def normalize_tag(tag: str) -> str:
-        r"""
-        将标签归一化为 Danbooru 标准存储格式：
-        1. 转小写
-        2. 还原转义字符 ( \( -> ( )
-        3. 空格转下划线 ( long hair -> long_hair )
-        4. 压缩并修剪多余的下划线和空白
-        """
         if not tag:
             return ""
 
-        # 1. 转小写 (Danbooru 标签库不区分大小写)
+        # --- A. 预处理：剥离 SD 特有的权重语法 ---
+        tag = tag.strip()
+
+        # 1. 移除末尾的数值权重，如 ":1.5"
+        tag = re.sub(r":[\d.]+$", "", tag)
+
+        # 2. 移除所有“未被转义”的括号 ( ) [ ]
+        # (?<!\\) 表示：匹配括号，但前提是它前面不能有反斜杠 \ 
+        tag = re.sub(r"(?<!\\)[\(\)\[\]]", "", tag)
+
+        # --- B. 归一化：转换为 Danbooru 标准格式 ---
+        # 3. 转小写
         tag = tag.lower()
 
-        tag = tag.removeprefix("artist:")
+        # 4. 移除特定的前缀 (如 artist:, character: 等)
+        prefixes = ["artist:", "character:", "copyright:", "general:"]
+        for p in prefixes:
+            tag = tag.removeprefix(p)
 
-        # 2. 处理转义符：将 \( 和 \) 还原成普通的 ( 和 )
-        # 这样 'bb \(baalbuddy\)' 和 'bb (baalbuddy)' 就能匹配上
+        # 5. 还原转义后的内容括号：将 \( 还原为 (
+        # 注意：此时剩下的 \( 已经是标签内容的一部分了
         tag = tag.replace(r"\(", "(").replace(r"\)", ")")
         tag = tag.replace(r"\[", "[").replace(r"\]", "]")
 
-        # 3. 将空格替换为下划线
+        # 6. 空格转下划线，压缩连续下划线
         tag = tag.replace(" ", "_")
-
-        # 4. 压缩连续的下划线 (例如 'reading   book' -> 'reading___book' -> 'reading_book')
         tag = re.sub(r"_+", "_", tag)
 
-        # 5. 去除首尾的空格和下划线
+        # 7. 最终修剪
         return tag.strip("_ ")
 
     @staticmethod
