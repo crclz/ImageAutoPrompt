@@ -90,6 +90,7 @@ def test_llm_parse_service_return_false_when_no_negative():
     with pytest.raises(ValueError):
         LlmParseService.parse_exploration_output(s)
 
+
 def test_llm_parse_service_return_true_when_negative_empty():
     s = r"""
         ```prompt0
@@ -102,7 +103,6 @@ def test_llm_parse_service_return_true_when_negative_empty():
 
     positives, negatives = LlmParseService.parse_exploration_output(s)
     assert negatives[0] == ""
-
 
 
 def test_danbooru_search():
@@ -137,3 +137,36 @@ def test_danbooru_search():
 
     query_list = LlmParseService.parse_danbooru_search(s)
     assert ["a", "b", "c"] == query_list
+
+
+def test_exploration_abstract_1():
+    s = r"""
+你好！收到你的需求。目前我们正处于探索的初始阶段（timestep=0），你的原始 prompt 描绘了一个非常经典的秋季校园场景：春日野穹、银杏叶、围巾与制服。
+
+由于你明确要求**先保持其他不变，只探索画风**，我将进入 `artist_only` 模式。我选择了四种截然不同的画风走向：从极致通透的逆光，到充满肉感的官能美，再到带有忧郁气息的水彩感和华丽的萌系美学。
+
+```exploration
+{
+    "type": "artist_only",
+    "description": "在保持春日野穹秋季校园场景不变的基础上，探索四种差异化的画风：1. torino aqua 的极致逆光与透明感；2. kantoku 的湿润肉感与JK美学；3. fly 的忧郁水彩氛围感；4. anmi 的轻盈唯美商业感。旨在测试你对不同光影和材质表现的偏好。",
+    "keywords": ["极致逆光", "湿润肉感", "空气感", "唯美通透"]
+}
+
+```
+
+```prompt0
+positive
+1girl, solo, kasugano sora, artist:torino aqua, long hair, looking at viewer, shirt, skirt, long sleeves, thighhighs, ribbon, closed mouth, very long hair, sitting, twintails, jacket, school uniform, white shirt, grey hair, ahoge, hair ribbon, outdoors, pleated skirt, necktie, shoes, black thighhighs, black footwear, bag, scarf, black jacket, tree, zettai ryouiki, plaid, black ribbon, leaf, blazer, loafers, grey skirt, school bag, red scarf, autumn leaves, plaid scarf, autumn, ginkgo leaf
+
+negative
+null
+
+```
+    """
+
+    abstract = LlmParseService.parse_exploration_abstract(s)
+    assert abstract
+
+    assert abstract.type == "artist_only"
+    assert abstract.description.startswith("在保持")
+    assert abstract.keywords == ["极致逆光", "湿润肉感", "空气感", "唯美通透"]

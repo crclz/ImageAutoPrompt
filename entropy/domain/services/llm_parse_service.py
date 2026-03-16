@@ -1,6 +1,14 @@
 import json
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
+import pydantic
+
+
+class ExplorationAbstract(pydantic.BaseModel):
+    type: str = ""
+    description: str = ""
+    keywords: List[str] = []
 
 
 class LlmParseService:
@@ -70,3 +78,15 @@ class LlmParseService:
 
         # 3. Return the "query_list" field
         return data.get("query_list", [])
+
+    @staticmethod
+    def parse_exploration_abstract(text: str) -> Optional[ExplorationAbstract]:
+        pattern = r"```exploration\s+(.*?)\s+```"
+        match = re.search(pattern, text, re.DOTALL)
+
+        if not match:
+            return None
+
+        # 2. Extract the captured group and parse as JSON
+        json_content = match.group(1)
+        return ExplorationAbstract.model_validate_json(json_content)
