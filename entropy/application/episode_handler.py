@@ -115,6 +115,23 @@ class EpisodeHandler:
 
                 timestep.observation = ob
 
+        # diff tags
+        for i, timestep in enumerate(timesteps):
+            if i > 0:
+                last_positive_tags, last_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i - 1])
+                this_positive_tags, this_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i])
+
+                timestep.diff_positive_tags = list(set(this_positive_tags) - set(last_positive_tags))
+                timestep.diff_negative_tags = list(set(this_negative_tags) - set(last_negative_tags))
+
+        # invalid tags
+        for i, timestep in enumerate(timesteps):
+            this_positive_tags, this_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i])
+            all_tags = this_positive_tags + this_negative_tags
+            all_tags = list(set(all_tags))
+
+            timestep.invalid_tags = [p for p in all_tags if not TagChecker.exist_tag(p)]
+
         # display highlight:
         highlight_text = dict()  # key=${timestep}_${image_index}, value=${timestep_when_choose}
 
@@ -286,11 +303,17 @@ class EpisodeHandler:
         # NOTE: only timestep is locked. update episode should get-modify-save
 
         key = f"{request.episode_name}:{timestep_i}"
-        episode.timesteps.append(
-            EpisodeTimestep(
-                i=timestep_i, prompts=prompts, rag_wip=0 if len(rag_keywords) + len(invalid_tags) == 0 else 1
-            )
-        )
+
+        rag_wip = 0
+        if len(rag_keywords) + len(invalid_tags) > 0:
+            rag_wip = 1
+
+        if timestep_i == 0:
+            rag_wip = 0
+
+        episode.timesteps.append(EpisodeTimestep(i=timestep_i, prompts=prompts, rag_wip=rag_wip))
+        del rag_wip
+
         EpisodeRepository.save_episode(request.episode_name, episode)
 
         del episode  # cannot reuse, because stale
@@ -334,6 +357,10 @@ class EpisodeHandler:
         cls, episode_name: str, timestep: int, invalid_tags: List[str], keywords: List[str]
     ) -> None:
         if len(invalid_tags) + len(keywords) == 0:
+            return
+
+        if timestep == 0:
+            # 用户输入，不用提示
             return
 
         # do search before modify episode
