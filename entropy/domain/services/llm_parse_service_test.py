@@ -90,6 +90,20 @@ def test_llm_parse_service_return_false_when_no_negative():
     with pytest.raises(ValueError):
         LlmParseService.parse_exploration_output(s)
 
+def test_llm_parse_service_return_true_when_negative_empty():
+    s = r"""
+        ```prompt0
+        positive
+        1girl, hatsune miku, solo
+        negative
+        null
+        ```
+    """
+
+    positives, negatives = LlmParseService.parse_exploration_output(s)
+    assert negatives[0] == ""
+
+
 
 def test_danbooru_search():
     s = r"""

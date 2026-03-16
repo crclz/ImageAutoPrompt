@@ -11,8 +11,9 @@
 ```
 positive
 <positive>
+
 negative
-<empty line> 
+null
 ```
 
 为什么不需要negative？因为用户已经按照自己审美积累了负向提示词，并已集成到后续的流程。你无需生成任何negative。
@@ -28,7 +29,7 @@ negative
 
 必须（探索时绝对不要违背）:
 - 为保证高质量
-    - 输出格式必须包含 negative 关键字，但其下方内容必须保持为空（Empty Line）
+    - 输出格式必须包含 negative 关键字，但其下方内容必须保持为null
     - 不添加任何质量词，例如masterpiece, best quality,newest,absurdres等：因为后处理会自动添加
     - 除了artist可以拥有权重外，不主动为其他任何tag添加权重，除非用户要求
     - 采用标准的danbooru tag以对齐到训练数据。除非用户要求，不能使用不太标准的自然语言短语。
@@ -201,16 +202,18 @@ index start from 0
 ```prompt0
 positive
 <positive>
+
 negative
-<empty line>
+null
 ```
 ...
 
 ```prompt3
 positive
 <positive>
+
 negative
-<empty line>
+null
 ```
 
 
@@ -222,7 +225,9 @@ negative
 ```prompt0
 positive
 1girl, solo, kasugano sora, long hair, looking at viewer, shirt, skirt, long sleeves, thighhighs, ribbon, closed mouth, very long hair, sitting, twintails, jacket, school uniform, white shirt, grey hair, ahoge, hair ribbon, outdoors, pleated skirt, necktie, shoes, black thighhighs, black footwear, bag, scarf, black jacket, tree, zettai ryouiki, plaid, black ribbon, leaf, blazer, loafers, grey skirt, school bag, red scarf, autumn leaves, plaid scarf, autumn, ginkgo leaf
+
 negative
+null
 ```
 
 用户：请先保持其他不变，只探索画风。

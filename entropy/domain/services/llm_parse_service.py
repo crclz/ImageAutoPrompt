@@ -46,6 +46,9 @@ class LlmParseService:
             else:
                 raise ValueError(f"format error prompt_{i}")
 
+            if n_part.strip().lower() == "null":
+                n_part = ""
+
             positives.append(p_part)
             negatives.append(n_part)
 
