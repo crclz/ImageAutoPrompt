@@ -1,7 +1,9 @@
-from typing import List, Set
+from typing import List, Set, Tuple
 from pathlib import Path
 import csv
 import re
+
+from entropy.domain.models.episode import EpisodeTimestep
 
 
 class TagChecker:
@@ -99,7 +101,7 @@ class TagChecker:
         tag = re.sub(r":[\d.]+$", "", tag)
 
         # 2. 移除所有“未被转义”的括号 ( ) [ ]
-        # (?<!\\) 表示：匹配括号，但前提是它前面不能有反斜杠 \ 
+        # (?<!\\) 表示：匹配括号，但前提是它前面不能有反斜杠 \
         tag = re.sub(r"(?<!\\)[\(\)\[\]]", "", tag)
 
         # --- B. 归一化：转换为 Danbooru 标准格式 ---
@@ -127,11 +129,29 @@ class TagChecker:
     def get_not_exist_tags(s: str) -> List[str]:
         tags = TagChecker.extract_all_tags(s)
 
-        tags = [TagChecker.normalize_tag(p) for p in tags]
-
-        not_exist = [p for p in tags if p not in TagChecker._tag_set]
+        not_exist = [p for p in tags if not TagChecker.exist_tag(p)]
 
         return not_exist
+
+    @staticmethod
+    def exist_tag(tag: str) -> bool:
+        tag = TagChecker.normalize_tag(tag)
+
+        return tag in TagChecker._tag_set
+
+    @classmethod
+    def all_tags_in_timestep(cls, t: EpisodeTimestep) -> Tuple[List[str], List[str]]:
+        positive_tags = []
+        negative_tags = []
+
+        for prompt in t.prompts:
+            positive_tags += cls.extract_all_tags(prompt.positive)
+            negative_tags += cls.extract_all_tags(prompt.negative)
+
+        positive_tags = list(set(positive_tags))
+        negative_tags = list(set(negative_tags))
+
+        return positive_tags, negative_tags
 
 
 TagChecker.init_tag_set()

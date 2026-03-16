@@ -11,6 +11,11 @@ class ImagePointer(pydantic.BaseModel):
         return f"timestep_{self.timestep}_image[{self.image_index}]"
 
 
+class ImagePrompt(pydantic.BaseModel):
+    positive: str
+    negative: str
+
+
 class EpisodeTimestep(pydantic.BaseModel):
     i: int = 0
 
@@ -19,8 +24,10 @@ class EpisodeTimestep(pydantic.BaseModel):
 
     chosen_highscores: List[ImagePointer] = []
 
-    rag_wip: int = 0
+    rag_wip: int = 0  # 当与上一轮相比多出的tag不认识的时候，进行检索
     rag_result: str = ""
+
+    prompts: List[ImagePrompt] = []
 
 
 class Episode(pydantic.BaseModel):

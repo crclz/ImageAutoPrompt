@@ -5,11 +5,11 @@ from pathlib import Path
 from threading import Thread
 import time
 import traceback
-from typing import List
+from typing import List, Tuple
 
 import shortuuid
 
-from entropy.domain.models.episode import EpisodeTimestep
+from entropy.domain.models.episode import EpisodeTimestep, ImagePrompt
 from entropy.domain.models.http_dtos import (
     ChooseHighScoresRequest,
     ChooseHighScoresResponse,
@@ -21,6 +21,7 @@ from entropy.domain.models.http_dtos import (
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.domain.services.llm_parse_service import LlmParseService
 from entropy.domain.services.rag_service import RagService
+from entropy.domain.services.tag_checker import TagChecker
 from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import Flask, jsonify, make_response, render_template, request
@@ -199,6 +200,26 @@ class EpisodeHandler:
             return cls.wrap_api_exception(e)
 
     @classmethod
+    def tag_minus_last_timestep(
+        cls, episode_name: str, positive_tags: str, negative_tags: str
+    ) -> Tuple[List[str], List[str]]:
+        episode = EpisodeRepository.get_eposide(episode_name)
+
+        last_positive_tags = []
+        last_negative_tags = []
+
+        if episode.timesteps:
+            last_positive_tags, last_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[-1])
+
+        this_positive_tags = TagChecker.extract_all_tags(positive_tags)
+        this_negative_tags = TagChecker.extract_all_tags(negative_tags)
+
+        diff_positive = list(set(this_positive_tags) - set(last_positive_tags))
+        diff_negative = list(set(this_negative_tags) - set(last_negative_tags))
+
+        return diff_positive, diff_negative
+
+    @classmethod
     def start_image_processing(cls, request: StartImageProcessingRequest, join=False) -> StartImageProcessingResponse:
         """
         create new timestep. when done, change status from 0 to 1
@@ -222,11 +243,36 @@ class EpisodeHandler:
         assert request.exploration_output, "exploration_output is empty"
 
         positives, negatives = LlmParseService.parse_exploration_output(request.exploration_output)
-
-        danbooru_search_query_list = LlmParseService.parse_danbooru_search(request.exploration_output)
-
         if not positives:
             raise ValueError("parse exploration_output failed")
+
+        prompts: List[ImagePrompt] = []
+        for positive, negative in zip(positives, negatives):
+            prompts.append(ImagePrompt(positive=positive, negative=negative))
+
+        # parse abstract
+        abstract = LlmParseService.parse_exploration_abstract(request.exploration_output)
+        if not abstract:
+            raise ValueError("missing exploration abstract")
+
+        rag_keywords = []
+        if abstract.type != "artist_only":
+            rag_keywords += abstract.keywords
+
+        # do diff on tags
+        diff_positive, diff_negative = cls.tag_minus_last_timestep(
+            request.episode_name, ",".join(positives), ",".join(negatives)
+        )
+
+        diff_tags = list(set(diff_positive + diff_negative))
+        _logger.info(f"diff_positive: {diff_positive}, diff_negative: {diff_negative}")
+
+        invalid_tags = []
+        for tag in diff_tags:
+            if not TagChecker.exist_tag(tag):
+                invalid_tags.append(tag)
+
+        _logger.info(f"invalid_tags: {invalid_tags}")
 
         # check positives
         episode = EpisodeRepository.get_eposide(request.episode_name)
@@ -240,7 +286,11 @@ class EpisodeHandler:
         # NOTE: only timestep is locked. update episode should get-modify-save
 
         key = f"{request.episode_name}:{timestep_i}"
-        episode.timesteps.append(EpisodeTimestep(i=timestep_i, rag_wip=(1 if danbooru_search_query_list else 0)))
+        episode.timesteps.append(
+            EpisodeTimestep(
+                i=timestep_i, prompts=prompts, rag_wip=0 if len(rag_keywords) + len(invalid_tags) == 0 else 1
+            )
+        )
         EpisodeRepository.save_episode(request.episode_name, episode)
 
         del episode  # cannot reuse, because stale
@@ -264,7 +314,7 @@ class EpisodeHandler:
                 EpisodeRepository.save_episode(request.episode_name, episode)
 
         def danbooru_search():
-            cls.danbooru_search_and_save(request.episode_name, timestep_i, danbooru_search_query_list)
+            cls.danbooru_search_and_save(request.episode_name, timestep_i, invalid_tags, rag_keywords)
 
         if True:
             th = Thread(target=thread_function, daemon=True)
@@ -280,16 +330,33 @@ class EpisodeHandler:
         return StartImageProcessingResponse()
 
     @classmethod
-    def danbooru_search_and_save(cls, episode_name: str, timestep: int, query_list: List[str]) -> None:
-        if not query_list:
+    def danbooru_search_and_save(
+        cls, episode_name: str, timestep: int, invalid_tags: List[str], keywords: List[str]
+    ) -> None:
+        if len(invalid_tags) + len(keywords) == 0:
             return
+
         # do search before modify episode
         danbooru_search_outputs = []
 
-        for query in query_list:
-            tags, scores = RagService.do_rag(query)
+        # invalid tags
+        for invalid_tag in invalid_tags:
+            # 展示给用户的，也是normalize后的
+            invalid_tag = TagChecker.normalize_tag(invalid_tag)
 
-            danbooru_search_outputs.append(f"search {query} => " + ",".join(tags))
+            tags, scores = RagService.do_rag(invalid_tag)
+
+            tags_str = ",".join(tags)
+
+            danbooru_search_outputs.append(f"system: invalid danbooru tag: {invalid_tag}, guess you mean: {tags_str}")
+
+        # keywords
+        for keyword in keywords:
+            tags, score = RagService.do_rag(keyword)
+
+            tags_str = ",".join(tags)
+
+            danbooru_search_outputs.append(f"system: keyword {keyword} search tag results: {tags_str}")
 
         danbooru_search_result = "\n".join(danbooru_search_outputs) + "\n"
 

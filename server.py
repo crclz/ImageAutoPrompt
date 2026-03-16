@@ -6,6 +6,22 @@ from flask import Flask, abort, send_from_directory
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.application.rag_handler import RagHandler
 
+import logging
+
+logging.basicConfig(
+    # 1. 日志输出目标：同时输出到文件和控制台（注：basicConfig默认只输出到控制台，指定filename则只输出到文件；如需双输出需自定义，见下文）
+    # filename="app.log",  # 取消注释则日志写入文件（默认只输出到控制台）
+    # filemode="a",        # 文件写入模式：a=追加（默认），w=覆盖
+    # 2. 日志级别（生产环境用INFO，开发用DEBUG）
+    level=logging.INFO,
+    # 3. 日志格式（包含时间、级别、模块、内容，便于定位问题）
+    format="%(asctime)s - %(name)s - %(module)s:%(lineno)d - %(levelname)s - %(message)s",
+    # 4. 时间格式（可读性优先）
+    datefmt="%Y-%m-%d %H:%M:%S",
+    # 5. 编码（解决中文乱码）
+    encoding="utf-8",
+)
+
 app = Flask(__name__)
 
 
@@ -58,6 +74,7 @@ def rollback_timestep(name: str):
 @app.get("/rag")
 def rag_page():
     return RagHandler.rag_page_wrapper()
+
 
 @app.post("/api/show-rag")
 def show_rag():
