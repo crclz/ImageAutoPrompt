@@ -59,7 +59,7 @@ def test_extract_all_tags_messy_input():
 def test_tag_checker_happy_1():
     s = r"""
     1girl, reading a red book, book, masterpiece, sunset:1.2, keqing \(genshin_impact\):1.5, ganyu \(genshin_impact\),
-    keqing_(genshin_impact), ((masterpiece, absurdres,))
+    keqing_(genshin_impact), ((masterpiece, absurdres)), atdan, artist:atdan
     """
     not_exist_tags = TagChecker.get_not_exist_tags(s)
 

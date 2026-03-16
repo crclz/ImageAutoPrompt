@@ -1,9 +1,37 @@
-from typing import List
-
+from typing import List, Set
+from pathlib import Path
+import csv
 import re
 
 
 class TagChecker:
+    _tag_set: Set[str] = set()
+
+    @staticmethod
+    def init_tag_set():
+        lines = Path("datasets/danbooru-10w.txt").read_text("utf8").splitlines()
+        reader = csv.reader(lines)
+
+        rows: List[dict] = []
+
+        for i, item in enumerate(reader):
+            original = item[0]
+            count = item[1]
+
+            normalized = TagChecker.normalize_tag(original)
+
+            TagChecker._tag_set.add(normalized)
+
+        # extra tags
+        extra_tag_string = """
+        masterpiece, best quality,newest,absurdres,
+        worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands
+        """
+        extra_tags = TagChecker.extract_all_tags(extra_tag_string)
+
+        for extra_tag in extra_tags:
+            TagChecker._tag_set.add(extra_tag)
+
     @staticmethod
     def extract_all_tags(prompt: str) -> list[str]:
         if not prompt:
@@ -60,4 +88,45 @@ class TagChecker:
         return list(dict.fromkeys(tags))
 
     @staticmethod
-    def get_not_exist_tags(s: str) -> List[str]: ...
+    def normalize_tag(tag: str) -> str:
+        r"""
+        将标签归一化为 Danbooru 标准存储格式：
+        1. 转小写
+        2. 还原转义字符 ( \( -> ( )
+        3. 空格转下划线 ( long hair -> long_hair )
+        4. 压缩并修剪多余的下划线和空白
+        """
+        if not tag:
+            return ""
+
+        # 1. 转小写 (Danbooru 标签库不区分大小写)
+        tag = tag.lower()
+
+        tag = tag.removeprefix("artist:")
+
+        # 2. 处理转义符：将 \( 和 \) 还原成普通的 ( 和 )
+        # 这样 'bb \(baalbuddy\)' 和 'bb (baalbuddy)' 就能匹配上
+        tag = tag.replace(r"\(", "(").replace(r"\)", ")")
+        tag = tag.replace(r"\[", "[").replace(r"\]", "]")
+
+        # 3. 将空格替换为下划线
+        tag = tag.replace(" ", "_")
+
+        # 4. 压缩连续的下划线 (例如 'reading   book' -> 'reading___book' -> 'reading_book')
+        tag = re.sub(r"_+", "_", tag)
+
+        # 5. 去除首尾的空格和下划线
+        return tag.strip("_ ")
+
+    @staticmethod
+    def get_not_exist_tags(s: str) -> List[str]:
+        tags = TagChecker.extract_all_tags(s)
+
+        tags = [TagChecker.normalize_tag(p) for p in tags]
+
+        not_exist = [p for p in tags if p not in TagChecker._tag_set]
+
+        return not_exist
+
+
+TagChecker.init_tag_set()
