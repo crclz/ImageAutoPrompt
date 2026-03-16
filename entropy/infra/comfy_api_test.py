@@ -10,8 +10,8 @@ def test_run_workflow_happy_case_1():
     template_json_path = Path(__file__).parent / "template.sample.json"
     template_json = template_json_path.read_text("utf8")
 
-    positive = "ocean, tree, sunset, car, (masterpiece, best quality,newest,absurdres,highres)"
-    negative = "worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands"
+    positive = "ocean, tree, sunset, car"
+    negative = ""
 
     # act
     image_data = ComfyApi.run_workflow(test_base_address, template_json, positive, negative)
@@ -46,7 +46,7 @@ def test_run_many_happy_1():
     positives = [positive] * 4
     negatives = [negative] * 4
 
-    positives[0] = "helicopter, " + positive[0]
+    positives[0] = "helicopter, " + positives[0]
 
     images = ComfyApi.run_many(test_base_address, template_json, positives, negatives)
     assert len(images) == 4

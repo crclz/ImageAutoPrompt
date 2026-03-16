@@ -12,10 +12,7 @@
   },
   "4": {
     "inputs": {
-      "text": [
-        "15",
-        0
-      ],
+      "text": "entropy:positive",
       "clip": [
         "7",
         1
@@ -28,7 +25,7 @@
   },
   "5": {
     "inputs": {
-      "text": "worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands",
+      "text": "entropy:negative",
       "clip": [
         "7",
         1
@@ -117,30 +114,6 @@
     "class_type": "SaveImage",
     "_meta": {
       "title": "保存图像"
-    }
-  },
-  "15": {
-    "inputs": {
-      "string_a": "entropy:positive",
-      "string_b": "masterpiece, best quality,newest,absurdres,highres",
-      "delimiter": ","
-    },
-    "class_type": "StringConcatenate",
-    "_meta": {
-      "title": "连接"
-    }
-  },
-  "16": {
-    "inputs": {
-      "text_0": "entropy:positive,masterpiece, best quality,newest,absurdres,highres",
-      "text": [
-        "15",
-        0
-      ]
-    },
-    "class_type": "ShowText|pysssss",
-    "_meta": {
-      "title": "Show Text 🐍"
     }
   }
 }

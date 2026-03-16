@@ -33,6 +33,9 @@ class ComfyApi:
         # force node to execute, avoid cached
         file_prefix = "entropy_out_" + str(shortuuid.uuid())
 
+        optional_keys = ["entropy:negative"]
+        optional_keys = [json.dumps(p, ensure_ascii=False) for p in optional_keys]
+
         replaces = {
             "entropy:positive": positive,
             "entropy:negative": negative,
@@ -45,7 +48,7 @@ class ComfyApi:
             k = json.dumps(k, ensure_ascii=False)
             v = json.dumps(v, ensure_ascii=False)
 
-            if k not in rendered_workflow:
+            if k not in rendered_workflow and k not in optional_keys:
                 raise ValueError(f"workflow not contains: {k}")
 
             rendered_workflow = rendered_workflow.replace(k, v)
