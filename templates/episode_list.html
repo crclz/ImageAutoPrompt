@@ -6,10 +6,20 @@
 <div id="app" class="p-5 font-sans bg-gray-50 min-h-screen">
     <div class="flex justify-between items-center mb-6 max-w-4xl mx-auto">
         <h3 class="text-xl font-bold text-gray-800">Episodes</h3>
-        <button @click="fetchEpisodes" :disabled="loading"
-            class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition disabled:opacity-50">
-            [[ loading ? 'Refreshing...' : 'Refresh List' ]]
-        </button>
+
+        <div class="flex items-center gap-2">
+            <input v-model="newName" @keyup.enter="createEpisode" placeholder="New episode name..."
+                class="border border-gray-300 px-3 py-1.5 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-48">
+            <button @click="createEpisode" :disabled="creating || !newName.trim()"
+                class="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition disabled:opacity-50">
+                [[ creating ? '...' : 'Create' ]]
+            </button>
+            <div class="w-[1px] h-6 bg-gray-300 mx-1"></div>
+            <button @click="fetchEpisodes" :disabled="loading"
+                class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition disabled:opacity-50">
+                [[ loading ? '...' : 'Refresh' ]]
+            </button>
+        </div>
     </div>
 
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden max-w-4xl mx-auto">
@@ -23,8 +33,8 @@
             <tbody class="divide-y divide-gray-100">
                 <tr v-for="ep in episodes" :key="ep.name" class="hover:bg-gray-50 transition">
                     <td class="px-4 py-3 text-gray-800 font-medium">
-                        <a :href="`/episodes/${ep.name}`"
-                            class="text-blue-600 hover:text-blue-800 hover:underline decoration-blue-400">
+                        <a :href="'/episodes/' + encodeURIComponent(ep.name)"
+                            class="text-blue-600 hover:text-blue-800 hover:underline font-bold">
                             [[ ep.name ]]
                         </a>
                     </td>
@@ -33,9 +43,7 @@
                     </td>
                 </tr>
                 <tr v-if="episodes.length === 0 && !loading">
-                    <td colspan="2" class="px-4 py-10 text-center text-gray-400 italic">
-                        No episodes found.
-                    </td>
+                    <td colspan="2" class="px-4 py-10 text-center text-gray-400 italic">No episodes found.</td>
                 </tr>
             </tbody>
         </table>
@@ -51,18 +59,17 @@
         setup() {
             const episodes = ref([]);
             const loading = ref(false);
+            const creating = ref(false);
+            const newName = ref("");
 
-            // Renders to: yyyy-MM-dd HH:mm
             const formatDateTime = (ts) => {
                 if (!ts) return '-';
-                // Assuming Unix timestamp (seconds); multiply by 1000 if needed
                 const date = new Date(ts * 1000);
-                const y = date.getFullYear();
-                const m = String(date.getMonth() + 1).padStart(2, '0');
-                const d = String(date.getDate()).padStart(2, '0');
-                const hh = String(date.getHours()).padStart(2, '0');
-                const mm = String(date.getMinutes()).padStart(2, '0');
-                return `${y}-${m}-${d} ${hh}:${mm}`;
+                return date.getFullYear() + '-' +
+                    String(date.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(date.getDate()).padStart(2, '0') + ' ' +
+                    String(date.getHours()).padStart(2, '0') + ':' +
+                    String(date.getMinutes()).padStart(2, '0');
             };
 
             const fetchEpisodes = async () => {
@@ -70,18 +77,34 @@
                 try {
                     const res = await fetch('/api/episodes');
                     const data = await res.json();
-                    // Mapping to GetEpisodeListResponse.episodes_list
                     episodes.value = data.episodes_list || [];
-                } catch (e) {
-                    console.error("Fetch error:", e);
-                } finally {
-                    loading.value = false;
-                }
+                } catch (e) { console.error(e); }
+                loading.value = false;
+            };
+
+            const createEpisode = async () => {
+                if (!newName.value.trim()) return;
+                creating.value = true;
+                try {
+                    const res = await fetch('/api/create-episode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: newName.value.trim() })
+                    });
+                    const data = await res.json();
+                    if (data.message) {
+                        alert(data.message);
+                    } else {
+                        newName.value = "";
+                        await fetchEpisodes(); // 刷新列表
+                    }
+                } catch (e) { alert(e); }
+                creating.value = false;
             };
 
             onMounted(fetchEpisodes);
 
-            return { episodes, loading, fetchEpisodes, formatDateTime };
+            return { episodes, loading, creating, newName, fetchEpisodes, createEpisode, formatDateTime };
         },
         delimiters: ['[[', ']]']
     }).mount('#app');

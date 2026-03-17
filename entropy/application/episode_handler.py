@@ -9,20 +9,22 @@ from typing import List, Tuple
 
 import shortuuid
 
-from entropy.domain.models.episode import EpisodeTimestep, ImagePrompt
+from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
 from entropy.domain.models.http_dtos import (
     ChooseHighScoresRequest,
     ChooseHighScoresResponse,
+    CreateEpisodeRequest,
+    CreateEpisodeResponse,
+    EpisodeListItem,
+    GetEpisodeListRequest,
+    GetEpisodeListResponse,
     RollbackTimestepRequest,
     RollbackTimestepResponse,
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
 from entropy.domain.models.query_model import (
-    EpisodeListItem,
     EpisodeQueryModel,
-    GetEpisodeListRequest,
-    GetEpisodeListResponse,
 )
 from entropy.domain.services.llm_parse_service import LlmParseService
 from entropy.domain.services.rag_service import RagService
@@ -488,3 +490,29 @@ class EpisodeHandler:
     @classmethod
     def episode_list_page_wrapper(cls):
         return render_template("episode_list.html")
+
+    @classmethod
+    def create_episode_wrapper(cls):
+        try:
+            req = CreateEpisodeRequest.model_validate(request.get_json())
+            resp = cls.create_episode(req)
+
+            data_object = resp.model_dump()
+            return data_object
+        except Exception as e:
+            _logger.exception("create_episode_wrapper error")
+            return cls.wrap_api_exception(e)  # "message": str(e)
+
+    @classmethod
+    def create_episode(cls, req: CreateEpisodeRequest) -> CreateEpisodeResponse:
+        # TODO: check name is valid: 合理的英文风格的
+
+        d = EpisodeRepository.episodes_dir() / req.name
+        if d.exists():
+            raise ValueError("name already exist")
+
+        episode = Episode(create_time=int(time.time()))
+
+        EpisodeRepository.save_episode(req.name, episode)
+
+        return CreateEpisodeResponse()

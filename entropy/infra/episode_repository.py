@@ -51,7 +51,7 @@ class EpisodeRepository:
         episode_dir = d / name
 
         if not episode_dir.exists():
-            raise ValueError(f"episode not exist: {name}")
+            episode_dir.mkdir()
 
         # read json
         json_file = episode_dir / EpisodeRepository.episode_json()

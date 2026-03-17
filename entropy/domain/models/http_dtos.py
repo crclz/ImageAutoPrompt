@@ -43,3 +43,24 @@ class RagCandidate(pydantic.BaseModel):
 
 class ShowRagResponse(pydantic.BaseModel):
     candidates: List[RagCandidate]
+
+
+class GetEpisodeListRequest(pydantic.BaseModel):
+    pass
+
+
+class EpisodeListItem(pydantic.BaseModel):
+    name: str = ""
+    create_time: int = 0
+
+
+class GetEpisodeListResponse(pydantic.BaseModel):
+    episodes_list: List[EpisodeListItem] = []
+
+
+class CreateEpisodeRequest(pydantic.BaseModel):
+    name: str = ""
+
+
+class CreateEpisodeResponse(pydantic.BaseModel):
+    pass

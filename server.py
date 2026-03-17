@@ -89,3 +89,8 @@ def index_page():
 @app.get("/api/episodes")
 def get_episodes():
     return EpisodeHandler.get_episode_list_wrapper()
+
+
+@app.post("/api/create-episode")
+def create_episode():
+    return EpisodeHandler.create_episode_wrapper()
