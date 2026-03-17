@@ -6,15 +6,10 @@
 <div id="app" class="p-5 font-sans bg-gray-50 min-h-screen">
     <div class="flex justify-between items-center mb-6 max-w-4xl mx-auto">
         <h3 class="text-xl font-bold text-gray-800">Episodes</h3>
-
-        <div class="flex items-center gap-2">
-            <input v-model="newName" @keyup.enter="createEpisode" placeholder="New episode name..."
-                class="border border-gray-300 px-3 py-1.5 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-48">
-            <button @click="createEpisode" :disabled="creating || !newName.trim()"
-                class="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition disabled:opacity-50">
-                [[ creating ? '...' : 'Create' ]]
-            </button>
-            <div class="w-[1px] h-6 bg-gray-300 mx-1"></div>
+        <div class="flex gap-2">
+            <button @click="showModal = true"
+                class="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition">+
+                Create</button>
             <button @click="fetchEpisodes" :disabled="loading"
                 class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition disabled:opacity-50">
                 [[ loading ? '...' : 'Refresh' ]]
@@ -24,29 +19,39 @@
 
     <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden max-w-4xl mx-auto">
         <table class="w-full text-left border-collapse">
-            <thead class="bg-gray-100 border-b border-gray-200">
+            <thead class="bg-gray-100 border-b border-gray-200 text-sm text-gray-600">
                 <tr>
-                    <th class="px-4 py-3 text-sm font-semibold text-gray-600">Episode Name</th>
-                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 w-48">Created At</th>
+                    <th class="px-4 py-3 font-semibold">Episode Name</th>
+                    <th class="px-4 py-3 font-semibold w-48 text-right">Created At</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 <tr v-for="ep in episodes" :key="ep.name" class="hover:bg-gray-50 transition">
-                    <td class="px-4 py-3 text-gray-800 font-medium">
+                    <td class="px-4 py-3 font-medium">
                         <a :href="'/episodes/' + encodeURIComponent(ep.name)"
-                            class="text-blue-600 hover:text-blue-800 hover:underline font-bold">
-                            [[ ep.name ]]
-                        </a>
+                            class="text-blue-600 hover:underline font-bold">[[ ep.name ]]</a>
                     </td>
-                    <td class="px-4 py-3 text-gray-500 text-sm font-mono">
-                        [[ formatDateTime(ep.create_time) ]]
-                    </td>
-                </tr>
-                <tr v-if="episodes.length === 0 && !loading">
-                    <td colspan="2" class="px-4 py-10 text-center text-gray-400 italic">No episodes found.</td>
+                    <td class="px-4 py-3 text-gray-500 text-sm font-mono text-right">[[ formatDateTime(ep.create_time)
+                        ]]</td>
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-80">
+            <h4 class="font-bold mb-4">Create New Episode</h4>
+            <input v-model="newName" @keyup.enter="createEpisode" placeholder="Name..."
+                class="w-full border p-2 rounded mb-4 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+            <div class="flex justify-end gap-2">
+                <button @click="showModal = false"
+                    class="px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded">Cancel</button>
+                <button @click="createEpisode" :disabled="creating || !newName.trim()"
+                    class="px-3 py-1 text-sm bg-blue-600 text-white rounded disabled:opacity-50">
+                    [[ creating ? '...' : 'Confirm' ]]
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -54,22 +59,15 @@
 {% block scripts %}
 <script>
     const { createApp, ref, onMounted } = Vue;
-
     createApp({
         setup() {
-            const episodes = ref([]);
-            const loading = ref(false);
-            const creating = ref(false);
-            const newName = ref("");
+            const episodes = ref([]), loading = ref(false), creating = ref(false);
+            const showModal = ref(false), newName = ref("");
 
             const formatDateTime = (ts) => {
                 if (!ts) return '-';
-                const date = new Date(ts * 1000);
-                return date.getFullYear() + '-' +
-                    String(date.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(date.getDate()).padStart(2, '0') + ' ' +
-                    String(date.getHours()).padStart(2, '0') + ':' +
-                    String(date.getMinutes()).padStart(2, '0');
+                const d = new Date(ts * 1000);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             };
 
             const fetchEpisodes = async () => {
@@ -92,19 +90,18 @@
                         body: JSON.stringify({ name: newName.value.trim() })
                     });
                     const data = await res.json();
-                    if (data.message) {
-                        alert(data.message);
-                    } else {
+                    if (data.message) alert(data.message);
+                    else {
+                        showModal.value = false;
                         newName.value = "";
-                        await fetchEpisodes(); // 刷新列表
+                        await fetchEpisodes();
                     }
                 } catch (e) { alert(e); }
                 creating.value = false;
             };
 
             onMounted(fetchEpisodes);
-
-            return { episodes, loading, creating, newName, fetchEpisodes, createEpisode, formatDateTime };
+            return { episodes, loading, creating, showModal, newName, fetchEpisodes, createEpisode, formatDateTime };
         },
         delimiters: ['[[', ']]']
     }).mount('#app');
