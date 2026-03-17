@@ -79,3 +79,13 @@ def rag_page():
 @app.post("/api/show-rag")
 def show_rag():
     return RagHandler.show_rag_wrapper()
+
+
+@app.get("/episodes")
+def episode_list_page():
+    return EpisodeHandler.episode_list_page_wrapper()
+
+
+@app.get("/api/episodes")
+def get_episodes():
+    return EpisodeHandler.get_episode_list_wrapper()

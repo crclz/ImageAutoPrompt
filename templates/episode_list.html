@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+
+{% block title %}Episode List{% endblock %}
+
+{% block content %}
+<div id="app" class="p-5 font-sans bg-gray-50 min-h-screen">
+    <div class="flex justify-between items-center mb-6 max-w-4xl mx-auto">
+        <h3 class="text-xl font-bold text-gray-800">Episodes</h3>
+        <button @click="fetchEpisodes" :disabled="loading"
+            class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition disabled:opacity-50">
+            [[ loading ? 'Refreshing...' : 'Refresh List' ]]
+        </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden max-w-4xl mx-auto">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-gray-100 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600">Episode Name</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 w-48">Created At</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr v-for="ep in episodes" :key="ep.name" class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3 text-gray-800 font-medium">
+                        <a :href="`/episodes/${ep.name}`"
+                            class="text-blue-600 hover:text-blue-800 hover:underline decoration-blue-400">
+                            [[ ep.name ]]
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-sm font-mono">
+                        [[ formatDateTime(ep.create_time) ]]
+                    </td>
+                </tr>
+                <tr v-if="episodes.length === 0 && !loading">
+                    <td colspan="2" class="px-4 py-10 text-center text-gray-400 italic">
+                        No episodes found.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const { createApp, ref, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const episodes = ref([]);
+            const loading = ref(false);
+
+            // Renders to: yyyy-MM-dd HH:mm
+            const formatDateTime = (ts) => {
+                if (!ts) return '-';
+                // Assuming Unix timestamp (seconds); multiply by 1000 if needed
+                const date = new Date(ts * 1000);
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                const hh = String(date.getHours()).padStart(2, '0');
+                const mm = String(date.getMinutes()).padStart(2, '0');
+                return `${y}-${m}-${d} ${hh}:${mm}`;
+            };
+
+            const fetchEpisodes = async () => {
+                loading.value = true;
+                try {
+                    const res = await fetch('/api/episodes');
+                    const data = await res.json();
+                    // Mapping to GetEpisodeListResponse.episodes_list
+                    episodes.value = data.episodes_list || [];
+                } catch (e) {
+                    console.error("Fetch error:", e);
+                } finally {
+                    loading.value = false;
+                }
+            };
+
+            onMounted(fetchEpisodes);
+
+            return { episodes, loading, fetchEpisodes, formatDateTime };
+        },
+        delimiters: ['[[', ']]']
+    }).mount('#app');
+</script>
+{% endblock %}

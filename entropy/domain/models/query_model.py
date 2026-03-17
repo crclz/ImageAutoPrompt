@@ -5,7 +5,7 @@ from typing import List
 
 import pydantic
 
-from entropy.domain.models.episode import ImagePointer
+from entropy.domain.models.episode import Episode, ImagePointer
 
 
 class ImageQueryModel(pydantic.BaseModel):
@@ -37,3 +37,16 @@ class TimestepQueryModel(pydantic.BaseModel):
 class EpisodeQueryModel(pydantic.BaseModel):
     can_process_image: int = 0
     timesteps: List[TimestepQueryModel] = []
+
+
+class GetEpisodeListRequest(pydantic.BaseModel):
+    pass
+
+
+class EpisodeListItem(pydantic.BaseModel):
+    name: str = ""
+    create_time: int = 0
+
+
+class GetEpisodeListResponse(pydantic.BaseModel):
+    episodes_list: List[EpisodeListItem] = []

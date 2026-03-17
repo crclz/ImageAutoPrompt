@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 import re
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from entropy.domain.models.episode import Episode
 from entropy.domain.models.query_model import ImageQueryModel, TimestepQueryModel
@@ -149,3 +149,25 @@ class EpisodeRepository:
                 results.append(png_file)
 
         return results
+
+    @classmethod
+    def list_episodes(cls) -> List[Tuple[str, Episode]]:
+        """遍历所有子文件夹，加载包含 episode.json 的 Episode"""
+        episodes: List[Tuple[str, Episode]] = []
+        base_dir = cls.episodes_dir()
+
+        # 遍历基础目录下的所有项
+        for item in base_dir.iterdir():
+            # 只有是文件夹且内部包含 episode.json 才进行加载
+            if item.is_dir() and (item / cls.episode_json()).exists():
+                try:
+                    # 复用已有的 get_eposide 方法
+                    episode = cls.get_eposide(item.name)
+                    episodes.append((item.name, episode))
+                except Exception as e:
+                    _logger.error(f"Failed to load episode from {item.name}: {e}")
+
+        # 可选：根据需要进行排序（例如按名称或时间）
+        # episodes.sort(key=lambda x: x.name)
+
+        return episodes

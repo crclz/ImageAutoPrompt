@@ -18,7 +18,12 @@ from entropy.domain.models.http_dtos import (
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
-from entropy.domain.models.query_model import EpisodeQueryModel
+from entropy.domain.models.query_model import (
+    EpisodeListItem,
+    EpisodeQueryModel,
+    GetEpisodeListRequest,
+    GetEpisodeListResponse,
+)
 from entropy.domain.services.llm_parse_service import LlmParseService
 from entropy.domain.services.rag_service import RagService
 from entropy.domain.services.tag_checker import TagChecker
@@ -34,15 +39,6 @@ _episode_timestep_lock = KeyedLock()
 
 
 class EpisodeHandler:
-    @classmethod
-    def episodes_list_page(cls) -> None:
-        """
-        In this page, episodes are listed. Order by create_time desc.
-        Episodes are managed using folder structure.
-        Main data is in episode.json
-        """
-        raise NotImplementedError()
-
     @classmethod
     def new_episode(cls) -> None:
         """
@@ -457,3 +453,38 @@ class EpisodeHandler:
             EpisodeRepository.save_episode(request.episode_name, episode)
 
             return RollbackTimestepResponse()
+
+    @classmethod
+    def get_episode_list_wrapper(cls):
+        try:
+            req = GetEpisodeListRequest()
+
+            resp = cls.get_episode_list(req)
+
+            data_object = resp.model_dump()
+            return data_object
+        except Exception as e:
+            _logger.exception("get_episode_list_wrapper error")
+            return cls.wrap_api_exception(e)
+
+    @classmethod
+    def get_episode_list(cls, req: GetEpisodeListRequest) -> GetEpisodeListResponse:
+        episode_list = EpisodeRepository.list_episodes()
+
+        resp = GetEpisodeListResponse()
+
+        for name, episode in episode_list:
+            resp.episodes_list.append(
+                EpisodeListItem(
+                    name=name,
+                    create_time=episode.create_time,
+                )
+            )
+
+        resp.episodes_list.sort(key=lambda x: -x.create_time)
+
+        return resp
+
+    @classmethod
+    def episode_list_page_wrapper(cls):
+        return render_template("episode_list.html")
