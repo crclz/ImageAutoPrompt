@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from flask import Flask, abort, send_from_directory
+from flask import Flask, abort, redirect, send_from_directory
 
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.application.rag_handler import RagHandler
@@ -23,11 +23,6 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
-
-
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
 
 
 @app.get("/api/episodes/<name>")
@@ -84,6 +79,11 @@ def show_rag():
 @app.get("/episodes")
 def episode_list_page():
     return EpisodeHandler.episode_list_page_wrapper()
+
+
+@app.get("/")
+def index_page():
+    return redirect("/episodes")
 
 
 @app.get("/api/episodes")
