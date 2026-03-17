@@ -7,7 +7,7 @@ comfyui_base_url: http://localhost:8188
 workflow_api_json: workflows/prod.json
 
 # 会影响timestep=0 复制结果的内容
-prompt_file: prompt_recommended.md
+prompt_file: prompts/prompt_recommended.md
 
 # 开启rag 需要建库
 enable_rag: 1

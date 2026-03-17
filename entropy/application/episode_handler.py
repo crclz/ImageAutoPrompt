@@ -10,6 +10,7 @@ from typing import List, Tuple
 
 import shortuuid
 
+from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
 from entropy.domain.models.http_dtos import (
     ChooseHighScoresRequest,
@@ -244,14 +245,14 @@ class EpisodeHandler:
         """
 
         # base url
-        base_url = os.environ.get("COMFY_BASE_URL")
-        assert base_url, "COMFY_BASE_URL not provided"
-        assert base_url.startswith("http"), "COMFY_BASE_URL should start with http"
+        base_url = AppConfig.read().comfyui_base_url
+        assert base_url, "app config comfyui_base_url is empty"
+        assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
 
         # template json
-        json_file = "comfyui_template.json"
+        json_file = AppConfig.read().workflow_api_json
         if not Path(json_file).exists():
-            raise ValueError(f"not exist: {json_file}")
+            raise ValueError(f"workflow_api_json not exist: {json_file}")
 
         template_json = Path(json_file).read_text("utf8")
 

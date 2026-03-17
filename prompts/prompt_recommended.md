@@ -226,22 +226,8 @@ negative
 null
 ```
 
-
 -----
 
 ## 用户原始prompt
-
-
-```prompt0
-positive
-1girl, solo, kasugano sora, long hair, looking at viewer, shirt, skirt, long sleeves, thighhighs, ribbon, closed mouth, very long hair, sitting, twintails, jacket, school uniform, white shirt, grey hair, ahoge, hair ribbon, outdoors, pleated skirt, necktie, shoes, black thighhighs, black footwear, bag, scarf, black jacket, tree, zettai ryouiki, plaid, black ribbon, leaf, blazer, loafers, grey skirt, school bag, red scarf, autumn leaves, plaid scarf, autumn, ginkgo leaf
-
-negative
-null
-```
-
-用户：请先保持其他不变，只探索画风。
-
 timestep=0
-用户: NewHighScore: NO
 
