@@ -35,7 +35,7 @@ def get_episode_data(name):
     return EpisodeHandler.get_episode_data_wrapper(name)
 
 
-@app.get("/episodes/<episode_name>/files/<filename>")
+@app.get("/episodes/<episode_name>/files/<path:filename>")
 def serve_episode_files(episode_name, filename):
     # 1. 构造该 episode 对应的磁盘目录
     episodes_dir = Path("./runs/episodes")

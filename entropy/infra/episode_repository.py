@@ -14,12 +14,18 @@ class EpisodeRepository:
     def episodes_dir(cls) -> Path:
         d = Path("./runs/episodes")
         d.mkdir(parents=True, exist_ok=True)
-
         return d
 
     @staticmethod
     def episode_json() -> str:
         return "episode.json"
+
+    @classmethod
+    def images_dir(cls, episode_name: str) -> Path:
+        """从 ./runs/episodes/{episode}/ 切换到 ./runs/episodes/{episode}/images/"""
+        d = cls.episodes_dir() / episode_name / "images"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
 
     @classmethod
     def get_eposide(cls, name: str) -> Episode:
@@ -58,10 +64,9 @@ class EpisodeRepository:
     def get_timesteps_query_model(cls, episode_name: str) -> List[TimestepQueryModel]:
         episode = cls.get_eposide(episode_name)
 
-        episode_dir = cls.episodes_dir() / episode_name
-
-        png_files = list(episode_dir.glob("*.png"))
-        # _logger.debug(f"png_files: {len(png_files)}")
+        # 修改：从新的 images 目录获取图片
+        img_dir = cls.images_dir(episode_name)
+        png_files = list(img_dir.glob("*.png"))
 
         # t001_05.png
         pattern = r"^t(\d+)_(\d+)\.png$"
@@ -88,22 +93,22 @@ class EpisodeRepository:
             timestep = int(match.group(1))
             image_index = int(match.group(2))
 
-            if timestep >= len(episode.timesteps):
-                continue  # ignore these files
-                # raise ValueError(f"timestep too big: {png_file}")
-
             if timestep_map.get(timestep) is None:
-                raise ValueError(f"png file exceed timestep: {png_file}")
+                # 如果图片超出范围，此处选择忽略或根据业务逻辑处理
+                continue
 
+            # 修改：URL 路径增加 /images/ 段
             timestep_map[timestep].images.append(
-                ImageQueryModel(image_index=image_index, url=f"/episodes/{episode_name}/files/{png_file.name}")
+                ImageQueryModel(image_index=image_index, url=f"/episodes/{episode_name}/files/images/{png_file.name}")
             )
 
         # collect timesteps
         timesteps: List[TimestepQueryModel] = []
 
         for i, timestep in enumerate(episode.timesteps):
-            model = timestep_map[i]
+            model = timestep_map.get(i)
+            if not model:
+                continue
 
             model.chosen_highscores = timestep.chosen_highscores
 
@@ -116,16 +121,18 @@ class EpisodeRepository:
 
     @classmethod
     def pic_path(cls, episode_name: str, timestep: int, image_index: int) -> Path:
-        d = cls.episodes_dir() / episode_name
+        # 修改：使用 images_dir
+        d = cls.images_dir(episode_name)
         f = f"t{timestep:03d}_{image_index:02d}.png"
 
         return d / f
 
     @classmethod
     def timestep_pics(cls, episode_name: str, target_timestep: int) -> List[Path]:
-        episode_dir = cls.episodes_dir() / episode_name
+        # 修改：使用 images_dir
+        img_dir = cls.images_dir(episode_name)
 
-        png_files = list(episode_dir.glob("*.png"))
+        png_files = list(img_dir.glob("*.png"))
         pattern = r"^t(\d+)_(\d+)\.png$"
 
         results: List[Path] = []
@@ -137,7 +144,6 @@ class EpisodeRepository:
                 continue
 
             timestep = int(match.group(1))
-            image_index = int(match.group(2))
 
             if timestep == target_timestep:
                 results.append(png_file)
