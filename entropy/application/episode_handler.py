@@ -371,26 +371,33 @@ class EpisodeHandler:
         # do search before modify episode
         danbooru_search_outputs = []
 
+        enable_rag = AppConfig.read().enable_rag == 1
+
         # invalid tags
         for invalid_tag in invalid_tags:
             # 展示给用户的，也是normalize后的
             invalid_tag = TagChecker.normalize_tag(invalid_tag)
 
-            # 标签纠错,10个比较合理
-            tags, scores = RagService.do_rag(invalid_tag, rerank_output=10)
+            if enable_rag:
+                # 标签纠错,10个比较合理
+                tags, scores = RagService.do_rag(invalid_tag, rerank_output=10)
 
-            tags_str = ",".join(tags)
+                tags_str = ",".join(tags)
 
-            danbooru_search_outputs.append(f"system: invalid danbooru tag: {invalid_tag}, guess you mean: {tags_str}")
+                danbooru_search_outputs.append(f"system: non-standard danbooru tag: {invalid_tag}, guess you mean: {tags_str}")
+            else:
+                danbooru_search_outputs.append(f"system: non-standard danbooru tag: {invalid_tag}")
+
 
         # keywords
-        for keyword in keywords:
-            # 限制一下15
-            tags, score = RagService.do_rag(keyword, rerank_output=15)
+        if enable_rag:
+            for keyword in keywords:
+                # 限制一下15
+                tags, score = RagService.do_rag(keyword, rerank_output=15)
 
-            tags_str = ",".join(tags)
+                tags_str = ",".join(tags)
 
-            danbooru_search_outputs.append(f"system: keyword {keyword} search tag results: {tags_str}")
+                danbooru_search_outputs.append(f"system: keyword {keyword} search tag results: {tags_str}")
 
         danbooru_search_result = "\n".join(danbooru_search_outputs) + "\n"
 
