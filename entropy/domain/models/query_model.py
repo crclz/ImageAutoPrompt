@@ -22,6 +22,7 @@ class TimestepQueryModel(pydantic.BaseModel):
     status: int = 0
     observation: str = ""  # timestep=i, 用户: NewHighScore: xxx
 
+    initial_md_prefix: str = ""
     rag_wip: int = 0
     rag_result: str = ""
 

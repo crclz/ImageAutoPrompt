@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 from typing import Dict, List, Tuple
 
+from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import Episode
 from entropy.domain.models.query_model import ImageQueryModel, TimestepQueryModel
 
@@ -75,9 +76,17 @@ class EpisodeRepository:
 
         # initialize
         for timestep in episode.timesteps:
+            initial_md_prefix = ""
+
+            if timestep.i == 0:
+                initial_md_prefix = Path(AppConfig.read().prompt_file).read_text("utf8")
+                if not initial_md_prefix.endswith("\n"):
+                    initial_md_prefix += "\n"
+
             timestep_map[timestep.i] = TimestepQueryModel(
                 i=timestep.i,
                 images=[],
+                initial_md_prefix=initial_md_prefix,
                 status=timestep.status,
                 rag_result=timestep.rag_result,
                 rag_wip=timestep.rag_wip,
