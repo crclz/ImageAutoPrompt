@@ -4,7 +4,10 @@
 /datasets
 /runs
 /comfyui_template.json
+/workflows.json
 /database
+/app_config.yaml
+/workflows
 
 
 # Python-generated files
