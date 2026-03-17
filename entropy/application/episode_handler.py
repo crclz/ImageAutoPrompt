@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 import os
 from pathlib import Path
+import re
 from threading import Thread
 import time
 import traceback
@@ -505,7 +506,9 @@ class EpisodeHandler:
 
     @classmethod
     def create_episode(cls, req: CreateEpisodeRequest) -> CreateEpisodeResponse:
-        # TODO: check name is valid: 合理的英文风格的
+        # 简单的正则校验：仅限英文、数字、下划线、连字符，长度 1-64
+        if not re.match(r"^[a-zA-Z0-9_-]{1,64}$", req.name):
+            raise ValueError("Invalid name: Use only English letters, numbers, hyphens, or underscores.")
 
         d = EpisodeRepository.episodes_dir() / req.name
         if d.exists():
