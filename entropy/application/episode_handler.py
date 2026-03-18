@@ -280,7 +280,8 @@ class EpisodeHandler:
         # invalid tags interception
         invalid_tag_hint = TagHintingService.get_invalid_tag_hint(positives, negatives)
         if invalid_tag_hint:
-            return StartImageProcessingResponse(message=invalid_tag_hint)
+            message = "system: you should retry this timestep\n" + invalid_tag_hint
+            return StartImageProcessingResponse(message=message)
 
         # rag keywords
         rag_keywords = []
