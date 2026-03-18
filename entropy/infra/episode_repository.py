@@ -1,10 +1,13 @@
+import json
 import logging
 from pathlib import Path
 import re
 from typing import Dict, List, Tuple
 
+import pydantic
+
 from entropy.domain.models.app_config import AppConfig
-from entropy.domain.models.episode import Episode
+from entropy.domain.models.episode import Episode, ImagePrompt
 from entropy.domain.models.query_model import ImageQueryModel, TimestepQueryModel
 
 _logger = logging.getLogger(__name__)
@@ -80,6 +83,11 @@ class EpisodeRepository:
 
             if timestep.i == 0:
                 initial_md_prefix = Path(AppConfig.read().prompt_file).read_text("utf8")
+
+                user_initial_prompt = pydantic.TypeAdapter(List[ImagePrompt]).dump_json(timestep.prompts)
+                user_initial_prompt = user_initial_prompt.decode("utf8")
+                initial_md_prefix += "\n" + user_initial_prompt + "\n"
+
                 if not initial_md_prefix.endswith("\n"):
                     initial_md_prefix += "\n"
 

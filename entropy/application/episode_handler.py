@@ -384,7 +384,7 @@ class EpisodeHandler:
 
                 tags_str = ",".join(tags)
 
-                danbooru_search_outputs.append(f"system: non-standard danbooru tag: {invalid_tag}, guess you mean: {tags_str}")
+                danbooru_search_outputs.append(f"system: invalid danbooru tag: {invalid_tag}, guess you mean: {tags_str}")
             else:
                 danbooru_search_outputs.append(f"system: non-standard danbooru tag: {invalid_tag}")
 
