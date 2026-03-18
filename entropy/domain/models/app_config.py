@@ -10,7 +10,9 @@ class AppConfig(pydantic.BaseModel):
     comfyui_base_url: str
     workflow_api_json: str
     prompt_file: str
-    enable_rag: int
+
+    extra_valid_tag_file: str
+    # enable_rag: int
 
     @staticmethod
     @functools.lru_cache(5)

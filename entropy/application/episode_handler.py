@@ -371,7 +371,8 @@ class EpisodeHandler:
         # do search before modify episode
         danbooru_search_outputs = []
 
-        enable_rag = AppConfig.read().enable_rag == 1
+        # enable_rag = AppConfig.read().enable_rag == 1
+        enable_rag = True
 
         # invalid tags
         for invalid_tag in invalid_tags:

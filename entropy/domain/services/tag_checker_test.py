@@ -70,3 +70,9 @@ def test_get_not_exist_tags_2():
     s = "1girl, solo, breasts, looking at viewer, blush, shirt, skirt, black hair, closed mouth, cleavage, medium breasts, green eyes, underwear, collarbone, white shirt, panties, lying, collared shirt, medium hair, on back, white panties, pantyshot, outstretched arms, messy hair, green skirt, knees up, "
 
     assert TagChecker.get_not_exist_tags(s) == []
+
+
+def test_get_not_exist_support_extra_tag_file():
+    tag = "betanonbeet"
+
+    assert TagChecker.exist_tag(tag)

@@ -1,8 +1,11 @@
+import functools
+import time
 from typing import List, Set, Tuple
 from pathlib import Path
 import csv
 import re
 
+from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import EpisodeTimestep
 
 
@@ -33,6 +36,38 @@ class TagChecker:
 
         for extra_tag in extra_tags:
             TagChecker._tag_set.add(extra_tag)
+
+    @staticmethod
+    @functools.lru_cache(maxsize=5)
+    def _load_tags_from_disk(window_id: int, file_path: str) -> Set[str]:
+        """
+        实际执行磁盘读取的私有方法。
+        window_id 的变化会触发缓存失效，从而重新读取文件。
+        """
+        path = Path(file_path)
+        if not path.exists():
+            raise ValueError(f"not exist: {file_path}")
+
+        # 读取文件，按行分割，去除首尾空格并过滤掉空行
+        content = path.read_text("utf8")
+        tags = [line.strip() for line in content.splitlines() if line.strip()]
+
+        tags = [TagChecker.normalize_tag(p) for p in tags]
+
+        return set(tags)
+
+    @staticmethod
+    def get_extra_valid_tags() -> Set[str]:
+
+        config = AppConfig.read()
+        file_path = config.extra_valid_tag_file
+
+        # 2. 计算当前的时间窗口 ID (每 200ms 切换一次)
+        window_size = 500  # 单位：毫秒
+        window_id = int(time.time() * 1000) // window_size
+
+        # 3. 调用带缓存的读取方法
+        return TagChecker._load_tags_from_disk(window_id, file_path)
 
     @staticmethod
     def extract_all_tags(prompt: str) -> list[str]:
@@ -143,7 +178,15 @@ class TagChecker:
     def exist_tag(tag: str) -> bool:
         tag = TagChecker.normalize_tag(tag)
 
-        return tag in TagChecker._tag_set
+        if tag in TagChecker._tag_set:
+            return True
+
+        extra_tags = TagChecker.get_extra_valid_tags()
+
+        if tag in extra_tags:
+            return True
+
+        return False
 
     @classmethod
     def all_tags_in_timestep(cls, t: EpisodeTimestep) -> Tuple[List[str], List[str]]:
