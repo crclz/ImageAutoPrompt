@@ -54,6 +54,7 @@ class TagHintingService:
                 tags_str = rag_cache[invalid_tag]
 
                 lines.append(f"invalid tag: {invalid_tag}. Guess you mean: {tags_str}")
+                lines.append("")
 
         lines.append("")
 

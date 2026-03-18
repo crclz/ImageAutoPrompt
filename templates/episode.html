@@ -40,6 +40,7 @@
         </div>
 
         {% include "paste_modal.html" %}
+
     </div>
 
     <div class="space-y-3">
@@ -223,6 +224,9 @@
             };
 
             const toastMsg = ref(""); // 控制消息显示
+
+            const startImageProcessingDetailMsg = ref("");
+
             // ... 其他 ref
 
             const showToast = (msg) => {
@@ -413,7 +417,7 @@
                             fetchData(); // 立即刷新
 
                         } else {
-                            alert("message: " + result.message)
+                            startImageProcessingDetailMsg.value = result.message || "未知错误详情 bug";
                         }
 
                     } else {
@@ -485,6 +489,7 @@
                 submitPaste,
                 getEpisodeMessage,
                 handleRollback,
+                startImageProcessingDetailMsg,
             };
         },
         delimiters: ['[[', ']]']
