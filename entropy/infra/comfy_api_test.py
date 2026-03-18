@@ -7,7 +7,7 @@ test_base_address = "http://localhost:8188"
 
 def test_run_workflow_happy_case_1():
     # arrange
-    template_json_path = Path(__file__).parent / "template.sample.json"
+    template_json_path = Path("workflows/dev.json")
     template_json = template_json_path.read_text("utf8")
 
     positive = "ocean, tree, sunset, car"
