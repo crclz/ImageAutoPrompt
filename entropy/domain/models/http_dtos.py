@@ -21,7 +21,8 @@ class StartImageProcessingRequest(pydantic.BaseModel):
 
 
 class StartImageProcessingResponse(pydantic.BaseModel):
-    pass
+    started: int = 0  # 1=成功开始
+    message: str = ""  # 当started=0时，需要将message展示给用户
 
 
 class RollbackTimestepRequest(pydantic.BaseModel):

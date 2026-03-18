@@ -11,6 +11,8 @@ class AppConfig(pydantic.BaseModel):
     workflow_api_json: str
     prompt_file: str
 
+    invalid_tag_tolerance: int
+
     extra_valid_tag_file: str
     # enable_rag: int
 

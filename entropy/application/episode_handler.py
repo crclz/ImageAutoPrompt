@@ -31,6 +31,7 @@ from entropy.domain.models.query_model import (
 from entropy.domain.services.llm_parse_service import LlmParseService
 from entropy.domain.services.rag_service import RagService
 from entropy.domain.services.tag_checker import TagChecker
+from entropy.domain.services.tag_hinting_service import TagHintingService
 from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import Flask, jsonify, make_response, render_template, request
@@ -274,33 +275,26 @@ class EpisodeHandler:
 
         abstract = LlmParseService.parse_exploration_abstract(request.exploration_output)
         if not abstract and not is_zero_index:
-            raise ValueError("missing exploration abstract")
+            raise ValueError("missing exploration abstract (exploration code block)")
 
+        # invalid tags interception
+        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(positives, negatives)
+        if invalid_tag_hint:
+            return StartImageProcessingResponse(message=invalid_tag_hint)
+
+        # rag keywords
         rag_keywords = []
         if abstract:
             if abstract.type != "artist_only":
                 rag_keywords += abstract.keywords
 
-        # do diff on tags
-        diff_positive, diff_negative = cls.tag_minus_last_timestep(
-            request.episode_name, ",".join(positives), ",".join(negatives)
-        )
-
-        diff_tags = list(set(diff_positive + diff_negative))
-        _logger.info(f"diff_positive: {diff_positive}, diff_negative: {diff_negative}")
-
-        invalid_tags = []
-        for tag in diff_tags:
-            if not TagChecker.exist_tag(tag):
-                invalid_tags.append(tag)
-
-        _logger.info(f"invalid_tags: {invalid_tags}")
+        # ======cannot perform time consuming work after here
 
         # check positives
         episode = EpisodeRepository.get_eposide(request.episode_name)
 
         if not episode.can_process_image():
-            raise ValueError("cannot process image")
+            raise ValueError("episode status cannot process image")
 
         # create new timestep
         timestep_i = len(episode.timesteps)
@@ -310,9 +304,8 @@ class EpisodeHandler:
         key = f"{request.episode_name}:{timestep_i}"
 
         rag_wip = 0
-        if len(rag_keywords) + len(invalid_tags) > 0:
+        if len(rag_keywords) > 0:
             rag_wip = 1
-
         if timestep_i == 0:
             rag_wip = 0
 
@@ -342,7 +335,7 @@ class EpisodeHandler:
                 EpisodeRepository.save_episode(request.episode_name, episode)
 
         def danbooru_search():
-            cls.danbooru_search_and_save(request.episode_name, timestep_i, invalid_tags, rag_keywords)
+            cls.danbooru_search_and_save(request.episode_name, timestep_i, [], rag_keywords)
 
         if True:
             th = Thread(target=thread_function, daemon=True)
@@ -355,7 +348,7 @@ class EpisodeHandler:
                 th.join()
                 danbooru_search_thread.join()
 
-        return StartImageProcessingResponse()
+        return StartImageProcessingResponse(started=1)
 
     @classmethod
     def danbooru_search_and_save(
@@ -371,34 +364,29 @@ class EpisodeHandler:
         # do search before modify episode
         danbooru_search_outputs = []
 
-        # enable_rag = AppConfig.read().enable_rag == 1
-        enable_rag = True
+        # 后置先不做标签的纠错。后续觉得有必要，再加。
+        if False:
+            for invalid_tag in invalid_tags:
+                # 展示给用户的，也是normalize后的
+                invalid_tag = TagChecker.normalize_tag(invalid_tag)
 
-        # invalid tags
-        for invalid_tag in invalid_tags:
-            # 展示给用户的，也是normalize后的
-            invalid_tag = TagChecker.normalize_tag(invalid_tag)
-
-            if enable_rag:
                 # 标签纠错,10个比较合理
                 tags, scores = RagService.do_rag(invalid_tag, rerank_output=10)
 
                 tags_str = ",".join(tags)
 
-                danbooru_search_outputs.append(f"system: invalid danbooru tag: {invalid_tag}, guess you mean: {tags_str}")
-            else:
-                danbooru_search_outputs.append(f"system: non-standard danbooru tag: {invalid_tag}")
-
+                danbooru_search_outputs.append(
+                    f"system: invalid danbooru tag: {invalid_tag}, guess you mean: {tags_str}"
+                )
 
         # keywords
-        if enable_rag:
-            for keyword in keywords:
-                # 限制一下15
-                tags, score = RagService.do_rag(keyword, rerank_output=15)
+        for keyword in keywords:
+            # 限制一下15
+            tags, score = RagService.do_rag(keyword, rerank_output=15)
 
-                tags_str = ",".join(tags)
+            tags_str = ",".join(tags)
 
-                danbooru_search_outputs.append(f"system: keyword {keyword} search tag results: {tags_str}")
+            danbooru_search_outputs.append(f"system: keyword {keyword} search tag results: {tags_str}")
 
         danbooru_search_result = "\n".join(danbooru_search_outputs) + "\n"
 
