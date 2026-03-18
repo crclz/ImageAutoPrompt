@@ -63,7 +63,8 @@
                 </template>
 
                 <template v-if="step.observation">
-                    <div @click="copyToClipboard(step.initial_md_prefix + step.rag_result + step.observation)" title="点击复制"
+                    <div @click="copyToClipboard(step.initial_md_prefix + step.rag_result + step.observation)"
+                        title="点击复制"
                         class="flex items-start px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-mono cursor-pointer transition-colors border border-gray-200 group whitespace-normal break-words">
 
                         <span class="flex-1">[[ step.observation ]]</span>
@@ -405,10 +406,16 @@
                     const result = await response.json();
 
                     if (response.ok) {
-                        showToast("处理请求已发送");
-                        pasteContent.value = ""; // 清空
-                        showPasteModal.value = false; // 关闭界面
-                        fetchData(); // 立即刷新
+                        if (result.started == 1) {
+                            showToast("处理请求已发送");
+                            pasteContent.value = ""; // 清空
+                            showPasteModal.value = false; // 关闭界面
+                            fetchData(); // 立即刷新
+
+                        } else {
+                            alert("message: " + result.message)
+                        }
+
                     } else {
                         // 停留在此界面并报错
                         alert("提交失败: " + (result.message || result.error || "未知错误"));

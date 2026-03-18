@@ -412,7 +412,7 @@ class EpisodeHandler:
             data_object = resp.model_dump()
             return data_object
         except Exception as e:
-            _logger.exception("start_image_processing_wrapper error")
+            _logger.exception("rollback_timestep_wrapper error")
             return cls.wrap_api_exception(e)
 
     @classmethod
