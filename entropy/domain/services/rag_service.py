@@ -111,6 +111,13 @@ class RagService:
         # 提取候选文档，results["documents"] 的结构通常是 List[List[str]]
         all_candidates_list = results["documents"]
 
+        for candidates in all_candidates_list:
+            for i in range(len(candidates)):
+                candidates[i] = candidates[i].replace("_", " ")
+
+        if rerank_output == 0:
+            return [(p, []) for p in all_candidates_list]
+
         # 3. 准备重排序的输入对
         # Reranker 通常在处理这种结构化数据时，一次性传入所有 pairs 最快
         all_pairs = []
