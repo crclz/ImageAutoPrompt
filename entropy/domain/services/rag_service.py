@@ -47,12 +47,6 @@ def reranker_model():
 
 class RagService:
     @classmethod
-    def warmup(cls) -> None:
-        """
-        TODO: call when application start
-        """
-
-    @classmethod
     def do_rag(cls, query_text: str, recall_count: int = 500, rerank_output: int = 20) -> Tuple[List[str], List[float]]:
         """
         return: tags, scores
@@ -152,3 +146,28 @@ class RagService:
             final_results.append((top_tags, top_scores))
 
         return final_results
+
+    @classmethod
+    def batch_rag_simple(cls, query_text_list: List[str], recall_count: int) -> List[Tuple[List[str], List[float]]]:
+        if not query_text_list:
+            return []
+
+        # 1. 批量生成 Embedding
+        # 假设 embedding_model().encode 支持传入 List[str]
+        query_embeddings = embedding_model().encode(query_text_list, normalize_embeddings=True).tolist()
+
+        # 2. 向量空间批量检索 (ChromaDB/Milvus 等通常支持 query 传入 list)
+        results = danbooru_tags_collection().query(
+            query_embeddings=query_embeddings,
+            n_results=recall_count,
+        )
+
+        # 提取候选文档，results["documents"] 的结构通常是 List[List[str]]
+        all_candidates_list = results["documents"]
+        assert all_candidates_list
+
+        for candidates in all_candidates_list:
+            for i in range(len(candidates)):
+                candidates[i] = candidates[i].replace("_", " ")
+
+        return list(zip(all_candidates_list, results["distances"]))
