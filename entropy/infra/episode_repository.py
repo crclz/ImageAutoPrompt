@@ -81,7 +81,7 @@ class EpisodeRepository:
         for timestep in episode.timesteps:
             initial_md_prefix = ""
 
-            if timestep.i == 0:
+            if timestep.i == 0 and len(episode.timesteps) == 1:
                 initial_md_prefix = Path(AppConfig.read().prompt_file).read_text("utf8")
 
                 user_initial_prompt = pydantic.TypeAdapter(List[ImagePrompt]).dump_json(timestep.prompts)
