@@ -171,3 +171,9 @@ class RagService:
                 candidates[i] = candidates[i].replace("_", " ")
 
         return list(zip(all_candidates_list, results["distances"]))
+
+    @classmethod
+    def rag_simple(cls, query_text: str, recall_count: int) -> Tuple[List[str], List[float]]:
+        r = cls.batch_rag_simple([query_text], recall_count)
+
+        return r[0]
