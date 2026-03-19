@@ -34,6 +34,8 @@ class TagHintingService:
 
         lines = []
 
+        lines.append("系统报错了，看看") # 加上这一条，可以降低gemini拒绝率
+
         rag_cache: Dict[str, str] = {}
 
         for i, not_exist_tags in enumerate(not_exist_tags_list):

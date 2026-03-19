@@ -10,12 +10,7 @@
         </h2>
         <div class="h-6 w-[1px] bg-gray-300"></div>
         <div class="flex items-center space-x-2">
-            <span class="relative flex h-3 w-3">
-                <span
-                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </span>
-            <span class="text-gray-600 text-sm font-bold tracking-wider">[[getEpisodeMessage]]</span>
+            <span class="text-gray-600 text-sm font-bold tracking-wider">[[ getEpisodeMessage ]]</span>
             <div class="h-6 w-[1px] bg-gray-300 mx-2"></div>
 
             <button @click="showPasteModal = true" :disabled="canProcessImage == 0"
@@ -173,18 +168,12 @@
         </div>
     </div>
 
-    <transition name="fade-top">
-        <div v-if="toastMsg"
-            class="fixed top-10 left-1/2 -translate-x-1/2 z-[200] bg-gray-900/90 backdrop-blur-sm text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-2xl flex items-center space-x-2 pointer-events-none border border-white/10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" viewBox="0 0 20 20"
-                fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd" />
-            </svg>
-            <span>[[ toastMsg ]]</span>
+    <div class="fixed top-5 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none">
+        <div v-for="t in toasts" :key="t.id"
+            class="bg-gray-800/95 text-white px-4 py-1.5 rounded-full shadow-md text-xs font-bold border border-white/10">
+            [[ t.msg ]]
         </div>
-    </transition>
+    </div>
 </div>
 {% endblock %}
 
@@ -223,17 +212,19 @@
                 }
             };
 
-            const toastMsg = ref(""); // 控制消息显示
+            const toasts = ref([]); // 控制消息显示
 
             const startImageProcessingDetailMsg = ref("");
 
             // ... 其他 ref
 
             const showToast = (msg) => {
-                toastMsg.value = msg;
+                const id = Date.now();
+                toasts.value.push({ id, msg });
+                // 3秒后自动从数组中剔除自己
                 setTimeout(() => {
-                    toastMsg.value = "";
-                }, 2000); // 2秒后自动消失
+                    toasts.value = toasts.value.filter(t => t.id !== id);
+                }, 3000);
             };
 
             const copyToClipboard = async (text) => {
@@ -482,7 +473,7 @@
                 clearAllSelected,
                 submitHighscores,
                 copyToClipboard,
-                toastMsg,
+                toasts,
                 showPasteModal,
                 pasteContent,
                 isSubmittingPaste,
