@@ -372,7 +372,7 @@ class EpisodeHandler:
                 invalid_tag = TagChecker.normalize_tag(invalid_tag)
 
                 # 标签纠错,10个比较合理
-                tags, scores = RagService.do_rag(invalid_tag, rerank_output=10)
+                tags, scores = RagService.rag_simple(invalid_tag, rerank_output=10)
 
                 tags_str = ",".join(tags)
 
@@ -383,7 +383,7 @@ class EpisodeHandler:
         # keywords
         for keyword in keywords:
             # 限制一下15
-            tags, score = RagService.do_rag(keyword, rerank_output=15)
+            tags, score = RagService.rag_simple(keyword, 15)
 
             tags_str = ",".join(tags)
 

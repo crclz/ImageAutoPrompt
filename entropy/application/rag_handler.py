@@ -25,7 +25,7 @@ class RagHandler:
             if not req.query_text:
                 raise ValueError("query_text is empty")
 
-            texts, scores = RagService.do_rag(req.query_text)
+            texts, scores = RagService.rag_simple(req.query_text, 20)
 
             candidates = []
 

@@ -47,7 +47,7 @@ class TagHintingService:
             for invalid_tag in not_exist_tags:
                 # do rag
                 if invalid_tag not in rag_cache:
-                    rag_tags, scores = RagService.do_rag(invalid_tag, rerank_output=10)
+                    rag_tags, scores = RagService.rag_simple(invalid_tag, 10)
                     tags_str = ",".join(rag_tags)
                     rag_cache[invalid_tag] = tags_str
 
