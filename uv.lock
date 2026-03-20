@@ -801,7 +801,6 @@ dependencies = [
     { name = "sentence-transformers" },
     { name = "shortuuid" },
     { name = "torch" },
-    { name = "transformers" },
 ]
 
 [package.metadata]
@@ -818,7 +817,6 @@ requires-dist = [
     { name = "sentence-transformers", specifier = ">=5.3.0" },
     { name = "shortuuid", specifier = ">=1.0.13" },
     { name = "torch", specifier = ">=2.10.0", index = "https://download.pytorch.org/whl/cu126" },
-    { name = "transformers", specifier = "<5" },
 ]
 
 [[package]]
