@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 from threading import Thread
 import time
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 from entropy.domain.models.app_config import AppConfig
@@ -26,7 +26,7 @@ from entropy.domain.models.query_model import (
     EpisodeQueryModel,
     TimestepQueryModel,
 )
-from entropy.domain.services.llm_parse_service import LlmParseService
+from entropy.domain.services.llm_parse_service import ExplorationAbstract, LlmParseService
 from entropy.domain.services.rag_service import RagService
 from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.tag_hinting_service import TagHintingService
@@ -240,11 +240,12 @@ class EpisodeHandler:
         return diff_positive, diff_negative
 
     @classmethod
-    def start_image_processing(cls, request: StartImageProcessingRequest, join=False) -> StartImageProcessingResponse:
+    def image_process_guard(
+        cls, request: StartImageProcessingRequest
+    ) -> Tuple[bool, str, Optional[ExplorationAbstract], List[ImagePrompt], Tuple[List[str], List[str]]]:
         """
-        create new timestep. when done, change status from 0 to 1
-        change EpisodeTimestep.status from 0 to 1.
-        when failure, rollback
+        return: do_intercept, message, prompts, (positives, negatives)
+        raise: some exceptions
         """
 
         # base url
@@ -253,12 +254,9 @@ class EpisodeHandler:
         assert base_url, "app config comfyui_base_url is empty"
         assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
 
-        # template json
         json_file = current_app_config.workflow_api_json
         if not Path(json_file).exists():
-            raise ValueError(f"workflow_api_json not exist: {json_file}")
-
-        template_json = Path(json_file).read_text("utf8")
+            raise ValueError(f"not exist: {json_file}")
 
         # parse llm
         assert request.exploration_output, "exploration_output is empty"
@@ -280,10 +278,27 @@ class EpisodeHandler:
         if not abstract and not is_zero_index:
             raise ValueError("missing exploration abstract (exploration code block)")
 
+        do_intercept = False
+        message = ""
+
         # invalid tags interception
         invalid_tag_hint = TagHintingService.get_invalid_tag_hint(positives, negatives)
         if invalid_tag_hint:
+            do_intercept = True
             message = invalid_tag_hint
+
+        return do_intercept, message, abstract, prompts, (positives, negatives)
+
+    @classmethod
+    def start_image_processing(cls, request: StartImageProcessingRequest, join=False) -> StartImageProcessingResponse:
+        """
+        create new timestep. when done, change status from 0 to 1
+        change EpisodeTimestep.status from 0 to 1.
+        """
+        current_app_config = AppConfig.read()
+
+        do_interception, message, abstract, prompts, (positives, negatives) = cls.image_process_guard(request)
+        if do_interception:
             return StartImageProcessingResponse(message=message)
 
         # rag keywords
@@ -295,7 +310,7 @@ class EpisodeHandler:
 
         # ======cannot perform time consuming work after here
 
-        # check positives
+        # check episode status
         episode = EpisodeRepository.get_eposide(request.episode_name)
 
         if not episode.can_process_image():
@@ -306,54 +321,68 @@ class EpisodeHandler:
 
         # NOTE: only timestep is locked. update episode should get-modify-save
 
-        key = f"{request.episode_name}:{timestep_i}"
-
-        rag_wip = 0
-        if len(rag_keywords) > 0:
-            rag_wip = 1
+        rag_wip = len(rag_keywords) > 0  # 这里有逻辑冗余，先不管
         if timestep_i == 0:
             rag_wip = 0
 
         episode.timesteps.append(EpisodeTimestep(i=timestep_i, prompts=prompts, rag_wip=rag_wip))
-        del rag_wip
 
         EpisodeRepository.save_episode(request.episode_name, episode)
-
         del episode  # cannot reuse, because stale
+
+        def fn_run_many():
+            cls.call_comfy_run_many_and_modify_timestep(request.episode_name, timestep_i, positives, negatives)
+
+        run_many_thread = Thread(target=fn_run_many, daemon=True)
+        run_many_thread.start()
+
+        def fn_inspiration():
+            cls.danbooru_search_and_save(request.episode_name, timestep_i, [], rag_keywords)
+
+        inspiration_thread = Thread(target=fn_inspiration, daemon=True)
+        inspiration_thread.start()
+
+        if join:
+            run_many_thread.join()
+            inspiration_thread.join()
+
+        return StartImageProcessingResponse(started=1)
+
+    @classmethod
+    def call_comfy_run_many_and_modify_timestep(
+        cls,
+        episode_name: str,
+        timestep_i: int,
+        positives: List[str],
+        negatives: List[str],
+    ) -> None:
+        key = f"{episode_name}:{timestep_i}"
+
+        current_app_config = AppConfig.read()
+        template_json = Path(current_app_config.workflow_api_json).read_text("utf8")
 
         def complete_hook(image_index: int, image_bytes: bytes) -> None:
             # save so that web page can see the picture
-            pic_save_path = EpisodeRepository.pic_path(request.episode_name, timestep_i, image_index)
+            pic_save_path = EpisodeRepository.pic_path(episode_name, timestep_i, image_index)
             pic_save_path.write_bytes(image_bytes)
 
-        def thread_function():
-            with _episode_timestep_lock.lock(key, 0.5):
-                t0 = datetime.now()
-                ComfyApi.run_many(base_url, template_json, positives, negatives, complete_hook=complete_hook)
+        with _episode_timestep_lock.lock(key, 0.5):
+            t0 = datetime.now()
+            ComfyApi.run_many(
+                current_app_config.comfyui_base_url,
+                template_json,
+                positives,
+                negatives,
+                complete_hook=complete_hook,
+            )
 
-                dt = (datetime.now() - t0).total_seconds()
-                _logger.info(f"run_many takes {dt:.1f} seconds")
+            dt = (datetime.now() - t0).total_seconds()
+            _logger.info(f"run_many takes {dt:.1f} seconds")
 
-                episode = EpisodeRepository.get_eposide(request.episode_name)
-                episode.timesteps[timestep_i].status = 1
+            episode = EpisodeRepository.get_eposide(episode_name)
+            episode.timesteps[timestep_i].status = 1
 
-                EpisodeRepository.save_episode(request.episode_name, episode)
-
-        def danbooru_search():
-            cls.danbooru_search_and_save(request.episode_name, timestep_i, [], rag_keywords)
-
-        if True:
-            th = Thread(target=thread_function, daemon=True)
-            th.start()
-
-            danbooru_search_thread = Thread(target=danbooru_search, daemon=True)
-            danbooru_search_thread.start()
-
-            if join:
-                th.join()
-                danbooru_search_thread.join()
-
-        return StartImageProcessingResponse(started=1)
+            EpisodeRepository.save_episode(episode_name, episode)
 
     @classmethod
     def danbooru_search_and_save(

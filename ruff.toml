@@ -1,7 +1,12 @@
 line-length = 120
 
-[lint.mccabe]
-max-complexity = 10
+# use default method is ok
+
+# [lint.mccabe]
+# max-complexity = 10 # C901
+
+# [lint.pyline]
+# max-statements = 50 # PLR0915
 
 [lint]
-extend-select = ["C901"]
+extend-select = ["C901", "PLR0915"]
