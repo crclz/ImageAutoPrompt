@@ -8,10 +8,18 @@
 /runs
 /comfyui_template.json
 /workflows.json
-/database
+
+/database/*
+!/database/this_is_database
+
+/workflows/*
+!/workflows/this_is_workflows
+
+
 /app_config.yaml
-/workflows
-/ai_models
+
+/ai_models/*
+!/ai_models/this_is_ai_models
 
 
 # Python-generated files
