@@ -92,8 +92,7 @@
                 <div v-for="img in step.images" :key="img.image_index" class="relative group">
                     <img :src="img.url" @click="openPreview(step.i, img.image_index, img.url)"
                         class="h-64 w-auto rounded border-2 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-all cursor-zoom-in"
-                        :class="isImageSelected(step.i, img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'"
-                        @error="handleImgError">
+                        :class="isImageSelected(step.i, img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'">
 
                     <div v-if="img.highlight_text"
                         class="absolute bottom-0 right-0 bg-blue-400 text-red-800 text-[15px] px-1.5 font-bold rounded-tl shadow-sm z-10">
@@ -181,280 +180,350 @@
 <script>
     const { createApp, ref, onMounted, onUnmounted, computed } = Vue;
 
+    function useToast() {
+        const toasts = ref([]); // 控制消息显示
+
+        const showToast = (msg) => {
+            const id = Date.now();
+            toasts.value.push({ id, msg });
+            // 3秒后自动从数组中剔除自己
+            setTimeout(() => {
+                toasts.value = toasts.value.filter(t => t.id !== id);
+            }, 3000);
+        };
+
+        return { toasts, showToast };
+    }
+
+    function useSelection(episodeName, timesteps, closePreview, fetchData) {
+        const selectedPointers = ref([]);
+
+        const isImageSelected = (stepI, imgIndex) => {
+            return selectedPointers.value.some(p => p.timestep === stepI && p.image_index === imgIndex);
+        };
+
+        const toggleSelection = (stepI, imgIndex) => {
+            const index = selectedPointers.value.findIndex(p => p.timestep === stepI && p.image_index === imgIndex);
+            if (index > -1) {
+                selectedPointers.value.splice(index, 1);
+            } else {
+                selectedPointers.value.push({ timestep: stepI, image_index: imgIndex });
+            }
+        };
+
+        const clearAllSelected = () => {
+            selectedPointers.value = [];
+        };
+
+        const submitHighscores = async () => {
+            // if (selectedPointers.value.length === 0) {
+            //     alert("请至少选择一张图片作为高分");
+            //     return;
+            // }
+
+            // 1. 获取当前最大的 timestep 作为完整性检查 (integrity check)
+            const maxTimestep = timesteps.value.length > 0
+                ? Math.max(...timesteps.value.map(t => t.i))
+                : 0;
+
+            // 2. 构建符合 ChooseHighScoresRequest 的 payload
+            const payload = {
+                name: episodeName.value,
+                timestep: maxTimestep,
+                highscores: selectedPointers.value.map(p => ({
+                    timestep: p.timestep,
+                    image_index: p.image_index
+                }))
+            };
+
+            try {
+                const response = await fetch(`/api/episodes/${episodeName.value}/choose-highscore`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    console.log("Success:", result);
+                    // 提交成功后的反馈
+                    // alert(`成功提交 ${selectedPointers.value.length} 个高分结果`);
+
+                    // 清空本地选择并关闭预览（可选）
+                    selectedPointers.value = [];
+                    closePreview();
+
+                    // 立即刷新一次数据以获取最新状态
+                    fetchData();
+                } else {
+                    // 处理后端返回的错误信息 (cls.wrap_api_exception)
+                    alert("提交失败: " + (result.message || result.error || "未知错误"));
+                }
+            } catch (err) {
+                alert("API Error:" + err);
+            }
+        };
+
+
+        return { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores };
+    }
+
+    function usePreview(timesteps, showToast) {
+        const preview = ref(null);
+
+        const openPreview = (stepI, imgIndex, url) => {
+            preview.value = { stepI, imgIndex, url };
+            document.body.style.overflow = 'hidden';
+        };
+
+        const closePreview = () => {
+            preview.value = null;
+            document.body.style.overflow = 'auto';
+        };
+
+        const navigate = (direction) => {
+            if (!preview.value) return;
+
+            // 1. 构建一个有序的线性图片列表
+            // 逻辑：大的 Timestep 在前，小的在后；同一 Timestep 内 Index 从小到大
+            const allImages = [];
+
+            // 先复制一份并按 timestep ID 倒序排列 (从大到小)
+            const sortedSteps = [...timesteps.value].sort((a, b) => b.i - a.i);
+
+            sortedSteps.forEach(step => {
+                // 同一 step 内，image_index 通常已经是升序，如果不确定可以再 sort
+                const sortedImages = [...step.images].sort((a, b) => a.image_index - b.image_index);
+
+                sortedImages.forEach(img => {
+                    allImages.push({
+                        stepI: step.i,
+                        imgIndex: img.image_index,
+                        url: img.url
+                    });
+                });
+            });
+
+            // 2. 找到当前预览图在有序列表中的位置
+            const currentIndex = allImages.findIndex(item =>
+                item.stepI === preview.value.stepI && item.imgIndex === preview.value.imgIndex
+            );
+
+            if (currentIndex === -1) return;
+
+            // 3. 计算新索引
+            const newIndex = currentIndex + direction;
+
+            // 4. 执行跳转
+            if (newIndex >= 0 && newIndex < allImages.length) {
+                preview.value = allImages[newIndex];
+            } else {
+                // 可选：如果到头了，可以加个抖动反馈或者 Toast
+                if (newIndex < 0) showToast("已经是最新的一张了");
+                if (newIndex >= allImages.length) showToast("已经是最旧的一张了");
+            }
+        };
+
+        return { preview, openPreview, closePreview, navigate };
+    }
+
+    function usePasteModal(episodeName, fetchData, showToast) {
+        const showPasteModal = ref(false);
+        const pasteContent = ref("");
+        const isSubmittingPaste = ref(false);
+        const startImageProcessingDetailMsg = ref("");
+
+        const submitPaste = async () => {
+            if (!pasteContent.value.trim()) {
+                alert("内容不能为空");
+                return;
+            }
+
+            isSubmittingPaste.value = true;
+            try {
+                const response = await fetch(`/api/episodes/${episodeName.value}/process-image`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        exploration_output: pasteContent.value
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.started == 1) {
+                        showToast("处理请求已发送");
+                        pasteContent.value = ""; // 清空
+                        showPasteModal.value = false; // 关闭界面
+                        fetchData(); // 立即刷新
+
+                    } else {
+                        startImageProcessingDetailMsg.value = result.message || "未知错误详情 bug";
+                    }
+
+                } else {
+                    // 停留在此界面并报错
+                    alert("提交失败: " + (result.message || result.error || "未知错误"));
+                }
+            } catch (err) {
+                console.error("API Error:", err);
+                alert("网络请求失败，请检查后端服务");
+            } finally {
+                isSubmittingPaste.value = false;
+            }
+        };
+
+        return { showPasteModal, pasteContent, isSubmittingPaste, submitPaste, startImageProcessingDetailMsg };
+    }
+
+
+    function useEpisodeDataFetcher(episodeName) {
+        const timesteps = ref([]);
+        const getEpisodeMessage = ref("");
+        const canProcessImage = ref(0)
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`/api/episodes/${episodeName.value}`);
+                if (!response.ok) throw new Error('Fetch failed');
+                const data = await response.json();
+                timesteps.value = data.timesteps || [];
+                canProcessImage.value = data.can_process_image;
+
+                getEpisodeMessage.value = "sync success";
+            } catch (err) {
+                console.warn("Sync error:", err);
+                getEpisodeMessage.value = "sync error: " + err;
+            }
+        };
+
+
+        const statusMap = {
+            0: { text: 'Processing', class: 'bg-amber-50 text-amber-700 border-amber-200' },
+            1: { text: 'Wait Choice', class: 'bg-blue-50 text-blue-700 border-blue-200' },
+            2: { text: 'High Score Chosen', class: 'bg-green-50 text-green-700 border-green-200' }
+        };
+
+        const getStatusInfo = (status) => statusMap[status] || null;
+
+        let timer = null;
+
+        onMounted(() => {
+            fetchData();
+            timer = setInterval(fetchData, 1000);
+        });
+
+        onUnmounted(() => {
+            if (timer) clearInterval(timer);
+        });
+
+
+        return { timesteps, getEpisodeMessage, canProcessImage, fetchData, getStatusInfo };
+    }
+
+    function useClipboard(showToast) {
+
+        const copyToClipboard = async (text) => {
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast("已复制到剪贴板"); // 调用反馈
+            } catch (err) {
+                showToast("复制失败");
+                console.error(err);
+            }
+        };
+
+        return { copyToClipboard };
+    }
+
+    function useRollback(episodeName, fetchData) {
+
+        const handleRollback = async () => {
+            if (!confirm("确定要回滚最后一个 Timestep 吗？")) return;
+
+            try {
+                const response = await fetch(`/api/episodes/${episodeName.value}/rollback-timestep`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+
+                // 无论成功失败都执行 alert
+                alert(response.ok ? "回滚成功" : "失败: " + (result.message || result.error));
+
+                if (response.ok) fetchData(); // 成功后刷新数据
+            } catch (err) {
+                alert("网络错误: " + err);
+            }
+        };
+
+        return { handleRollback }
+    }
+
+    function useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview }) {
+        const handleKeyDown = (e) => {
+            if (!preview.value) return;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleSelection(preview.value.stepI, preview.value.imgIndex);
+            }
+            if (e.key === 'ArrowLeft') navigate(-1);
+            if (e.key === 'ArrowRight') navigate(1);
+            if (e.key === 'Escape') closePreview();
+        };
+
+        onMounted(() => {
+            window.addEventListener('keydown', handleKeyDown);
+        });
+
+        onUnmounted(() => {
+            window.removeEventListener('keydown', handleKeyDown);
+        })
+
+        return {}
+    }
+
     createApp({
         setup() {
             const episodeName = ref("{{ episode_name }}");
-            const canProcessImage = ref(0)
-            const timesteps = ref([]);
-            const preview = ref(null);
-            const selectedPointers = ref([]);
-            let timer = null;
 
-            const statusMap = {
-                0: { text: 'Processing', class: 'bg-amber-50 text-amber-700 border-amber-200' },
-                1: { text: 'Wait Choice', class: 'bg-blue-50 text-blue-700 border-blue-200' },
-                2: { text: 'High Score Chosen', class: 'bg-green-50 text-green-700 border-green-200' }
-            };
 
-            const getStatusInfo = (status) => statusMap[status] || null;
+
+            // wire dependency graph 
+            const { toasts, showToast } = useToast();
+            const { copyToClipboard } = useClipboard(showToast);
+
+            const { timesteps, getEpisodeMessage, canProcessImage, fetchData, getStatusInfo } = useEpisodeDataFetcher(episodeName);
+
+            const { preview, openPreview, closePreview, navigate } = usePreview(
+                timesteps, showToast
+            );
+
+            const { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores } = useSelection(episodeName, timesteps, closePreview, fetchData);
+
+            // preview handle key down
+            const { } = useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview });
+
+
+            const {
+                showPasteModal, pasteContent, isSubmittingPaste, submitPaste, startImageProcessingDetailMsg,
+            } = usePasteModal(episodeName, fetchData, showToast);
+
+            // end
+
+
             const reversedTimesteps = computed(() => [...timesteps.value].reverse());
 
-            const isImageSelected = (stepI, imgIndex) => {
-                return selectedPointers.value.some(p => p.timestep === stepI && p.image_index === imgIndex);
-            };
-
-            const toggleSelection = (stepI, imgIndex) => {
-                const index = selectedPointers.value.findIndex(p => p.timestep === stepI && p.image_index === imgIndex);
-                if (index > -1) {
-                    selectedPointers.value.splice(index, 1);
-                } else {
-                    selectedPointers.value.push({ timestep: stepI, image_index: imgIndex });
-                }
-            };
-
-            const toasts = ref([]); // 控制消息显示
-
-            const startImageProcessingDetailMsg = ref("");
 
             // ... 其他 ref
+            const { handleRollback } = useRollback(episodeName, fetchData);
 
-            const showToast = (msg) => {
-                const id = Date.now();
-                toasts.value.push({ id, msg });
-                // 3秒后自动从数组中剔除自己
-                setTimeout(() => {
-                    toasts.value = toasts.value.filter(t => t.id !== id);
-                }, 3000);
-            };
-
-            const copyToClipboard = async (text) => {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showToast("已复制到剪贴板"); // 调用反馈
-                } catch (err) {
-                    showToast("复制失败");
-                    console.error(err);
-                }
-            };
-
-            const clearAllSelected = () => {
-                selectedPointers.value = [];
-            };
-
-            const submitHighscores = async () => {
-                // if (selectedPointers.value.length === 0) {
-                //     alert("请至少选择一张图片作为高分");
-                //     return;
-                // }
-
-                // 1. 获取当前最大的 timestep 作为完整性检查 (integrity check)
-                const maxTimestep = timesteps.value.length > 0
-                    ? Math.max(...timesteps.value.map(t => t.i))
-                    : 0;
-
-                // 2. 构建符合 ChooseHighScoresRequest 的 payload
-                const payload = {
-                    name: episodeName.value,
-                    timestep: maxTimestep,
-                    highscores: selectedPointers.value.map(p => ({
-                        timestep: p.timestep,
-                        image_index: p.image_index
-                    }))
-                };
-
-                try {
-                    const response = await fetch(`/api/episodes/${episodeName.value}/choose-highscore`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        console.log("Success:", result);
-                        // 提交成功后的反馈
-                        // alert(`成功提交 ${selectedPointers.value.length} 个高分结果`);
-
-                        // 清空本地选择并关闭预览（可选）
-                        selectedPointers.value = [];
-                        closePreview();
-
-                        // 立即刷新一次数据以获取最新状态
-                        fetchData();
-                    } else {
-                        // 处理后端返回的错误信息 (cls.wrap_api_exception)
-                        alert("提交失败: " + (result.message || result.error || "未知错误"));
-                    }
-                } catch (err) {
-                    alert("API Error:" + err);
-                }
-            };
-
-            const getEpisodeMessage = ref("");
-
-            const fetchData = async () => {
-                try {
-                    const response = await fetch(`/api/episodes/${episodeName.value}`);
-                    if (!response.ok) throw new Error('Fetch failed');
-                    const data = await response.json();
-                    timesteps.value = data.timesteps || [];
-                    canProcessImage.value = data.can_process_image;
-
-                    getEpisodeMessage.value = "sync success";
-                } catch (err) {
-                    console.warn("Sync error:", err);
-                    getEpisodeMessage.value = "sync error: " + err;
-                }
-            };
-
-            const openPreview = (stepI, imgIndex, url) => {
-                preview.value = { stepI, imgIndex, url };
-                document.body.style.overflow = 'hidden';
-            };
-
-            const closePreview = () => {
-                preview.value = null;
-                document.body.style.overflow = 'auto';
-            };
-
-            const navigate = (direction) => {
-                if (!preview.value) return;
-
-                // 1. 构建一个有序的线性图片列表
-                // 逻辑：大的 Timestep 在前，小的在后；同一 Timestep 内 Index 从小到大
-                const allImages = [];
-
-                // 先复制一份并按 timestep ID 倒序排列 (从大到小)
-                const sortedSteps = [...timesteps.value].sort((a, b) => b.i - a.i);
-
-                sortedSteps.forEach(step => {
-                    // 同一 step 内，image_index 通常已经是升序，如果不确定可以再 sort
-                    const sortedImages = [...step.images].sort((a, b) => a.image_index - b.image_index);
-
-                    sortedImages.forEach(img => {
-                        allImages.push({
-                            stepI: step.i,
-                            imgIndex: img.image_index,
-                            url: img.url
-                        });
-                    });
-                });
-
-                // 2. 找到当前预览图在有序列表中的位置
-                const currentIndex = allImages.findIndex(item =>
-                    item.stepI === preview.value.stepI && item.imgIndex === preview.value.imgIndex
-                );
-
-                if (currentIndex === -1) return;
-
-                // 3. 计算新索引
-                const newIndex = currentIndex + direction;
-
-                // 4. 执行跳转
-                if (newIndex >= 0 && newIndex < allImages.length) {
-                    preview.value = allImages[newIndex];
-                } else {
-                    // 可选：如果到头了，可以加个抖动反馈或者 Toast
-                    if (newIndex < 0) showToast("已经是最新的一张了");
-                    if (newIndex >= allImages.length) showToast("已经是最旧的一张了");
-                }
-            };
-
-            const handleKeyDown = (e) => {
-                if (!preview.value) return;
-                if (e.code === 'Space') {
-                    e.preventDefault();
-                    toggleSelection(preview.value.stepI, preview.value.imgIndex);
-                }
-                if (e.key === 'ArrowLeft') navigate(-1);
-                if (e.key === 'ArrowRight') navigate(1);
-                if (e.key === 'Escape') closePreview();
-            };
-
-            const handleImgError = (e) => {
-                e.target.src = 'https://placehold.co/600x400/f3f4f6/9ca3af?text=Processing...';
-            };
-
-            const showPasteModal = ref(false);
-            const pasteContent = ref("");
-            const isSubmittingPaste = ref(false);
-
-            const submitPaste = async () => {
-                if (!pasteContent.value.trim()) {
-                    alert("内容不能为空");
-                    return;
-                }
-
-                isSubmittingPaste.value = true;
-                try {
-                    const response = await fetch(`/api/episodes/${episodeName.value}/process-image`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            exploration_output: pasteContent.value
-                        })
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        if (result.started == 1) {
-                            showToast("处理请求已发送");
-                            pasteContent.value = ""; // 清空
-                            showPasteModal.value = false; // 关闭界面
-                            fetchData(); // 立即刷新
-
-                        } else {
-                            startImageProcessingDetailMsg.value = result.message || "未知错误详情 bug";
-                        }
-
-                    } else {
-                        // 停留在此界面并报错
-                        alert("提交失败: " + (result.message || result.error || "未知错误"));
-                    }
-                } catch (err) {
-                    console.error("API Error:", err);
-                    alert("网络请求失败，请检查后端服务");
-                } finally {
-                    isSubmittingPaste.value = false;
-                }
-            };
-
-            const handleRollback = async () => {
-                if (!confirm("确定要回滚最后一个 Timestep 吗？")) return;
-
-                try {
-                    const response = await fetch(`/api/episodes/${episodeName.value}/rollback-timestep`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({})
-                    });
-                    const result = await response.json();
-
-                    // 无论成功失败都执行 alert
-                    alert(response.ok ? "回滚成功" : "失败: " + (result.message || result.error));
-
-                    if (response.ok) fetchData(); // 成功后刷新数据
-                } catch (err) {
-                    alert("网络错误: " + err);
-                }
-            };
-
-            onMounted(() => {
-                fetchData();
-                timer = setInterval(fetchData, 1000);
-                window.addEventListener('keydown', handleKeyDown);
-            });
-
-            onUnmounted(() => {
-                if (timer) clearInterval(timer);
-                window.removeEventListener('keydown', handleKeyDown);
-            });
 
             return {
                 episodeName,
@@ -463,7 +532,6 @@
                 reversedTimesteps,
                 preview,
                 selectedPointers,
-                handleImgError,
                 getStatusInfo,
                 openPreview,
                 closePreview,

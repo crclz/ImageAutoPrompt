@@ -29,7 +29,7 @@ class NoPollingFilter(logging.Filter):
     def filter(self, record):
         # 这里的 record.getMessage() 包含了请求行信息
         # 如果包含目标接口且状态码为 200，则返回 False（即不打印）
-        return "/api/episodes/dev-1" not in record.getMessage()
+        return "/api/episodes" not in record.getMessage()
 
 
 log = logging.getLogger("werkzeug")
