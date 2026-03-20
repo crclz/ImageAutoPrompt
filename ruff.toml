@@ -1,4 +1,7 @@
 line-length = 120
 
 [lint.mccabe]
-max-complexity = 5
+max-complexity = 10
+
+[lint]
+extend-select = ["C901"]

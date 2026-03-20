@@ -24,6 +24,7 @@ from entropy.domain.models.http_dtos import (
 )
 from entropy.domain.models.query_model import (
     EpisodeQueryModel,
+    TimestepQueryModel,
 )
 from entropy.domain.services.llm_parse_service import LlmParseService
 from entropy.domain.services.rag_service import RagService
@@ -75,15 +76,7 @@ class EpisodeHandler:
             return cls.wrap_api_exception(e)
 
     @classmethod
-    def get_episode_data(cls, name: str) -> EpisodeQueryModel:
-        """
-        get data, which could be rendered on webpages. return EpisodeQueryModel
-        """
-
-        episode = EpisodeRepository.get_eposide(name)
-        timesteps = EpisodeRepository.get_timesteps_query_model(name)
-
-        # format observation
+    def format_observation(cls, timesteps: List[TimestepQueryModel]) -> None:
         for i, timestep in enumerate(timesteps):
             assert i == timestep.i
 
@@ -112,6 +105,18 @@ class EpisodeHandler:
                 ob += "\n"
 
                 timestep.observation = ob
+
+    @classmethod
+    def get_episode_data(cls, name: str) -> EpisodeQueryModel:
+        """
+        get data, which could be rendered on webpages. return EpisodeQueryModel
+        """
+
+        episode = EpisodeRepository.get_eposide(name)
+        timesteps = EpisodeRepository.get_timesteps_query_model(name)
+
+        # format observation
+        cls.format_observation(timesteps)
 
         # diff tags
         for i, timestep in enumerate(timesteps):
