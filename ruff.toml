@@ -1,1 +1,4 @@
 line-length = 120
+
+[lint.mccabe]
+max-complexity = 5

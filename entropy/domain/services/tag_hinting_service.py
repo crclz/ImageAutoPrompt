@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from entropy.domain.models.app_config import AppConfig
 from entropy.domain.services.rag_service import RagService

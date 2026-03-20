@@ -17,11 +17,9 @@ class TagChecker:
         lines = Path("datasets/danbooru-10w.txt").read_text("utf8").splitlines()
         reader = csv.reader(lines)
 
-        rows: List[dict] = []
-
         for i, item in enumerate(reader):
             original = item[0]
-            count = item[1]
+            # count = item[1]
 
             normalized = TagChecker.normalize_tag(original)
 

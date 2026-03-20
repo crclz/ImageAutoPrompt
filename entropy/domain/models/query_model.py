@@ -5,7 +5,7 @@ from typing import List
 
 import pydantic
 
-from entropy.domain.models.episode import Episode, ImagePointer
+from entropy.domain.models.episode import ImagePointer
 
 
 class ImageQueryModel(pydantic.BaseModel):

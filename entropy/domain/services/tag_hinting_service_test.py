@@ -1,4 +1,3 @@
-from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.tag_hinting_service import TagHintingService
 
 

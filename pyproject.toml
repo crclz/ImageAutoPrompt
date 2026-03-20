@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "pytest>=9.0.2",
     "requests>=2.32.5",
+    "ruff>=0.15.7",
     "sentence-transformers>=5.3.0",
     "shortuuid>=1.0.13",
     "torch>=2.10.0",
