@@ -16,6 +16,7 @@ dependencies = [
     "requests>=2.32.5",
     "sentence-transformers>=5.3.0",
     "shortuuid>=1.0.13",
+    "toml>=0.10.2",
     "torch>=2.10.0",
 ]
 
