@@ -8,6 +8,7 @@
 /database
 /app_config.yaml
 /workflows
+/ai_models
 
 
 # Python-generated files
