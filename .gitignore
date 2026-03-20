@@ -1,7 +1,10 @@
 # temp files
 *.tmp.*
 *.log
-/datasets
+
+/datasets/*
+!/datasets/danbooru.txt
+
 /runs
 /comfyui_template.json
 /workflows.json
