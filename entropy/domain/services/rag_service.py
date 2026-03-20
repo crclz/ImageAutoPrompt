@@ -28,6 +28,7 @@ def embedding_model():
 
 @functools.cache
 def reranker_model():
+    raise ValueError("Not supported")
     from FlagEmbedding import FlagReranker
     import torch
 
@@ -132,7 +133,7 @@ class RagService:
         score_idx = 0
         for i, query in enumerate(query_text_list):
             # 获取当前 query 对应的候选集数量
-            current_candidates = [p.replace("_", " ") for p in all_candidates_list[i]]
+            current_candidates = [p.replace("_", " ") for p in all_candidates_list[i]]  # type: ignore
             num_cands = len(current_candidates)
 
             # 截取对应的得分段
