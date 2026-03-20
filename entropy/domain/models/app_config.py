@@ -9,6 +9,7 @@ import yaml
 class AppConfig(pydantic.BaseModel):
     comfyui_base_url: str
     workflow_api_json: str
+    workflow_timeout_seconds: int
     prompt_file: str
 
     invalid_tag_tolerance: int

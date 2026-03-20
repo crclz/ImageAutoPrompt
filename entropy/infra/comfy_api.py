@@ -9,6 +9,8 @@ import requests
 import pydantic
 import shortuuid
 
+from entropy.domain.models.app_config import AppConfig
+
 
 _logger = logging.getLogger(__name__)
 
@@ -75,7 +77,8 @@ class ComfyApi:
         _logger.info(f"prompt_id: {prompt_id}. start polling")
 
         # 3. poll for prompt complete
-        deadline = datetime.now() + timedelta(minutes=3)
+
+        deadline = datetime.now() + timedelta(seconds=AppConfig.workflow_timeout_seconds)
         while True:
             if datetime.now() > deadline:
                 raise ValueError("poll for prompt reached deadline")
