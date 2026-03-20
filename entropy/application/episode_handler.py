@@ -246,12 +246,13 @@ class EpisodeHandler:
         """
 
         # base url
-        base_url = AppConfig.read().comfyui_base_url
+        current_app_config = AppConfig.read()
+        base_url = current_app_config.comfyui_base_url
         assert base_url, "app config comfyui_base_url is empty"
         assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
 
         # template json
-        json_file = AppConfig.read().workflow_api_json
+        json_file = current_app_config.workflow_api_json
         if not Path(json_file).exists():
             raise ValueError(f"workflow_api_json not exist: {json_file}")
 
@@ -285,8 +286,9 @@ class EpisodeHandler:
 
         # rag keywords
         rag_keywords = []
-        if abstract:
-            if abstract.type != "artist_only":
+
+        if current_app_config.rag_for_exploration_keyword == 1:
+            if abstract and abstract.type != "artist_only":
                 rag_keywords += abstract.keywords
 
         # ======cannot perform time consuming work after here

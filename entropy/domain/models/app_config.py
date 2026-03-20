@@ -15,7 +15,7 @@ class AppConfig(pydantic.BaseModel):
     invalid_tag_tolerance: int
 
     extra_valid_tag_file: str
-    # enable_rag: int
+    rag_for_exploration_keyword: int
 
     @staticmethod
     @functools.lru_cache(5)

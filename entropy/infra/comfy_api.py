@@ -78,7 +78,7 @@ class ComfyApi:
 
         # 3. poll for prompt complete
 
-        deadline = datetime.now() + timedelta(seconds=AppConfig.workflow_timeout_seconds)
+        deadline = datetime.now() + timedelta(seconds=AppConfig.read().workflow_timeout_seconds)
         while True:
             if datetime.now() > deadline:
                 raise ValueError("poll for prompt reached deadline")
