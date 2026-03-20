@@ -214,12 +214,17 @@ null
 {
     "type": string, // "artist_only", "free"
     "description": string, // 讲一讲探索的方向
-    "keywords": List[string] // 长度为3-5，用中文描述一下探索的关键词
+    "keywords": List[string], // 长度为3-5，用中文描述一下探索的关键词
+    "format_reminder_constant": {
+        "tag_style": string // "space=yes underscore=no", "space=no underscore=yes"
+    }
 }
 ```
 
 artist_only 时，只能修改artist，不能修改其他。
 free时，可以修改其他。
+
+format_reminder_constant: 常量，所有episode固定，但你需每一个timestep重复输出，由文章开头部分的“prompt格式”决定。
 
 
 3. 输出 4 个prompt。

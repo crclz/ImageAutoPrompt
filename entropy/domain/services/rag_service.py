@@ -105,6 +105,8 @@ class RagService:
         # 提取候选文档，results["documents"] 的结构通常是 List[List[str]]
         all_candidates_list = results["documents"]
 
+        assert isinstance(all_candidates_list, list)
+
         for candidates in all_candidates_list:
             for i in range(len(candidates)):
                 candidates[i] = candidates[i].replace("_", " ")
@@ -162,6 +164,9 @@ class RagService:
             n_results=recall_count,
         )
 
+        distances = results["distances"]
+        assert isinstance(distances, list)
+
         # 提取候选文档，results["documents"] 的结构通常是 List[List[str]]
         all_candidates_list = results["documents"]
         assert all_candidates_list
@@ -170,7 +175,7 @@ class RagService:
             for i in range(len(candidates)):
                 candidates[i] = candidates[i].replace("_", " ")
 
-        return list(zip(all_candidates_list, results["distances"]))
+        return list(zip(all_candidates_list, distances))
 
     @classmethod
     def rag_simple(cls, query_text: str, recall_count: int) -> Tuple[List[str], List[float]]:
