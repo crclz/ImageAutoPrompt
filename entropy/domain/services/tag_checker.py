@@ -14,7 +14,7 @@ class TagChecker:
 
     @staticmethod
     def init_tag_set():
-        lines = Path("datasets/danbooru-10w.txt").read_text("utf8").splitlines()
+        lines = Path("datasets/danbooru.txt").read_text("utf8").splitlines()
         reader = csv.reader(lines)
 
         for i, item in enumerate(reader):
