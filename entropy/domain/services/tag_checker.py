@@ -60,6 +60,9 @@ class TagChecker:
         config = AppConfig.read()
         file_path = config.extra_valid_tag_file
 
+        if not file_path:
+            return set()
+
         # 2. 计算当前的时间窗口 ID (每 200ms 切换一次)
         window_size = 500  # 单位：毫秒
         window_id = int(time.time() * 1000) // window_size
