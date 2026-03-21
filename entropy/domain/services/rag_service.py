@@ -18,7 +18,7 @@ def embedding_model():
 
     # TODO: replace with relative path inside repository
     embedding_model = SentenceTransformer(
-        r"C:\Users\ThePlayer\.cache\huggingface\hub\models--BAAI--bge-m3\snapshots\5617a9f61b028005a4858fdac845db406aefb181",
+        r"./ai_models/BAAI/bge-m3",
         device="cpu",
         local_files_only=True,
     )
