@@ -34,12 +34,12 @@ ImageAutoPrompt适用于需探索prompt的AI图片内容创作场景，它尝试
 pip install toml
 python export_requirements.py
 ```
-如果你会安装cuda，那么请编辑 requirements.txt 文件。不会也没关系。
+如果你会安装cuda，那么请编辑 requirements.txt 文件，将torch系列单独安装。不会也没关系。
 
 
 4. 安装依赖，使用清华pypi加速。
 ```bash
-pip install -r requirements.txt -i http://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 ```
 
 现在你的环境就搭建好了，能使用最主要的功能了。
@@ -72,7 +72,7 @@ pip install -r requirements.txt -i http://mirrors.tuna.tsinghua.edu.cn/pypi/web/
 
 ### 运行初始prompt
 
-1. 启动server: 在仓库根目录，运行 flask --app server run，点击链接，进入网页
+1. 启动server: 在仓库根目录，运行 `flask --app server run`，点击链接，进入网页
 2. 新建episode: 在episodes页面创建一个新episode，英文命名.
 3. 深度阅读 prompts/prompt_recommended.md 的 prompt格式、输出格式这两个章节。看看里面的提示词是否符合你使用的模型的要求。例如质量词，例如提示词格式。
    - 强烈建议仔细查看并进行编辑。可存在多个文件，并利用上文 prompt_file 进行切换。
