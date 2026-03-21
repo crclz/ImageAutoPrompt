@@ -113,19 +113,52 @@ prompts/prompt_recommended.md中预置了一些画师。你可以将你审美的
     - 如果遇见这个问题，说明自然语言太多，标准tag少。后文会有RAG模块解决。
 
 
+### 双buffer打满显卡
+
+如果想要打满显卡，图像正在生成的时候，是可以再次复制的。
+
+gemini会给出新的探索。这样你的显卡永远有事情做。
+
+
 ## 功能：tag纠错与灵感 (RAG)
 
 
+### RAG建库
 
-# run server
+1. 对应app_config.yaml配置: invalid_tag_tolerance建议填写3，但前提是你完成RAG建库（10-40分钟）。
 
-flask --app server run
+2. 安装 torch + gpu （CPU也完全没问题），如果你想建库快点的话。 https://pytorch.org/get-started/locally/
 
-开发的时候，加--debug以享受hot reload
+3. 将建库notebook文件导出为python文件
+```bash
+jupyter nbconvert --to script --output rag_build.tmp ./test_notebooks/rag_build.ipynb   
+```
+
+4. 运行建库python文件
+```bash
+python ./test_notebooks/rag_build.tmp.py
+```
+
+这会进行几个事情：
+- 下载embedding模型(2G+)，到ai_models文件夹
+- 进行建库，到 database 目录
 
 
-## datasets
+5. 建库完成后，启动 `flask --app server run`
 
-10w: https://gist.githubusercontent.com/pythongosssss/1d3efa6050356a08cea975183088159a/raw/a18fb2f94f9156cf4476b0c24a09544d6c0baec6/danbooru-tags.txt
+6. 来到rag网页，输入“鸟语花香”，然后等（首次加载模型会慢，后面光速）
+   - 结果中召回了很多相关的词，能提供灵感
 
-jupyter nbconvert --to script --output rag_build.tmp .\test_notebooks\rag_build.ipynb   
+7. 输入"using a bike"，你会发现有一定的纠错能力“riding bicycle”，以及灵感能力“pushing bicycle”
+
+8. 可以适当使用这个页面，但不是重点
+
+
+### 标签纠错与灵感
+
+修改 app_config.yaml配置: invalid_tag_tolerance建议填写3
+
+然后进行环境、人物的探索。如果跑的太偏，那么你在粘贴后提交的时候，就会被拦截。你需要复制这些信息给gemini，让它修改。
+
+invalid_tag_tolerance：这个是用于平衡自然语言和标准tag的。基于标准的tag的组合是有意义的，但过多会影响稳定性。
+
