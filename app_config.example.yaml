@@ -12,7 +12,7 @@ workflow_timeout_seconds: 180
 # 会影响timestep=0 复制结果的内容
 prompt_file: prompts/prompt_recommended.md
 
-# 无效标签容忍个数，推荐为3. 初始值非常大，rag建库后降低
+# 无效标签容忍个数，推荐为5，也可以自己不断尝试. 初始值非常大，rag建库后降低
 invalid_tag_tolerance: 9999
 
 # 额外的有效标签，会热加载。文本文件，一行一个tag
