@@ -7,7 +7,9 @@ ImageAutoPrompt适用于需探索prompt的AI图片内容创作场景，它尝试
 - 更高效的artist串探索和权重调整
 - 显卡0空转，不间断探索更满意的图片
 
-效果展示: ___
+效果展示: https://www.bilibili.com/video/BV1UAAPzmEd9/
+
+使用教程: https://www.bilibili.com/video/BV1BCAAzhEKs/
 
 ## 环境需求
 
