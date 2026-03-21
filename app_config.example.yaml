@@ -6,7 +6,7 @@ comfyui_base_url: http://127.0.0.1:8188
 # comfyui workflow json
 workflow_api_json: workflows/my-workflow.json
 
-# 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的3倍即可。
+# 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的4*3倍即可。
 workflow_timeout_seconds: 180 
 
 # 会影响timestep=0 复制结果的内容
