@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}My Episode App{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="{{ url_for('static', filename='js/tailwind-3.4.17.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/vue.3.5.30.global.js') }}"></script>
 </head>
 
 <body class="bg-gray-100 min-h-screen">
