@@ -14,6 +14,7 @@
 
 /workflows/*
 !/workflows/this_is_workflows
+!/workflows/workflow.example.json
 
 
 /app_config.yaml
