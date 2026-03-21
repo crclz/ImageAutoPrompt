@@ -1,14 +1,24 @@
 # currently, all config keys are hot reloaded
 
 # comfyui
-comfyui_base_url: http://localhost:8188
+comfyui_base_url: http://127.0.0.1:8188
 
-# comfyui工作量json
-workflow_api_json: workflows/prod.json
+# comfyui workflow json
+workflow_api_json: workflows/my-workflow.json
+
+# 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的3倍即可。
+workflow_timeout_seconds: 180 
 
 # 会影响timestep=0 复制结果的内容
 prompt_file: prompts/prompt_recommended.md
 
-# 开启rag 需要建库
-enable_rag: 1
+# 无效标签容忍个数，推荐为3. 初始值非常大，rag建库后降低
+invalid_tag_tolerance: 9999
+
+# 额外的有效标签，会热加载。文本文件，一行一个tag
+extra_valid_tag_file: "" # datasets/extra_valid_tags.txt
+
+# 实验功能，暂时有负面效果，不默认开启
+rag_for_exploration_keyword: 0
+
 
