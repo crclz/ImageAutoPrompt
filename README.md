@@ -14,6 +14,7 @@ ImageAutoPrompt适用于需探索prompt的AI图片内容创作场景，它尝试
 技能需求：
 - 会使用基础的linux或者windows命令
 - 会使用简单的git命令和python相关命令
+- 会使用vscode进行基础的文件编辑
 - 或者会利用大模型解决问题
 
 环境：
@@ -183,8 +184,3 @@ invalid_tag_tolerance：这个是用于平衡自然语言和标准tag的。基�
     ```
 - 将压缩后的粘贴到 prompt里面
 
-
-## 滑坡
-道德滑坡可用于让LLM帮你探索prompt。
-
-我偶然发现Gemini不加引导也会自己道德滑坡，夸张哦。滑坡到一定程度就可以临门一脚给它踹进去。
