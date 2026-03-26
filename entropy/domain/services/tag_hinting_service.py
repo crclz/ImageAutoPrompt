@@ -44,7 +44,7 @@ class TagHintingService:
                 continue
 
             lines.append(
-                f"system: prompt[{i}] found {len(not_exist_tags)} invalid tags, which exceeds tolerence={tolerence}"
+                f"system: prompt[{i}] found {len(not_exist_tags)} invalid tags, which exceeds budget={tolerence}"
             )
 
             for invalid_tag in not_exist_tags:
