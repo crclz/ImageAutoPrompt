@@ -149,6 +149,11 @@
                     class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95">
                     提交选择
                 </button>
+
+                <button @click="downloadPreviewAsJpg"
+                    class="bg-amber-500 hover:bg-amber-400 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95 mr-2">
+                    JPG
+                </button>
             </div>
 
             <button @click="closePreview"
@@ -524,6 +529,50 @@
             // ... 其他 ref
             const { handleRollback } = useRollback(episodeName, fetchData);
 
+            const downloadPreviewAsJpg = async () => {
+                if (!preview.value || !preview.value.url) return;
+
+                try {
+                    const img = new Image();
+                    // 跨域设置依然必要，否则 Canvas 无法导出
+                    img.crossOrigin = "Anonymous";
+                    img.src = preview.value.url;
+
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = () => reject(new Error('图片加载失败'));
+                    });
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+
+                    // 填充白色背景（JPG 必须）
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+
+                    // 导出并下载
+                    // .toDataURL 比 .toBlob 在简单的下载场景中更直接
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+
+                    // 创建虚拟链接触发下载
+                    const link = document.createElement('a');
+                    // 文件名建议：Episode_Timestep_Index.jpg
+                    const fileName = `TS${preview.value.stepI}_IDX${preview.value.imgIndex}.jpg`;
+
+                    link.href = dataUrl;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                } catch (err) {
+                    console.error(err);
+                    alert('下载失败：' + err.message);
+                }
+            };
 
             return {
                 episodeName,
@@ -549,6 +598,7 @@
                 getEpisodeMessage,
                 handleRollback,
                 startImageProcessingDetailMsg,
+                downloadPreviewAsJpg,
             };
         },
         delimiters: ['[[', ']]']
