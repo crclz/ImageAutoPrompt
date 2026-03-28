@@ -217,7 +217,6 @@ null
     "keywords": List[string], // 长度为3-5，用中文描述一下探索的关键词
     "format_reminder_constant": {
         "tag_style": string, // "space=yes underscore=no", "space=no underscore=yes"
-        "artist_insert": string // "我应该将artist放在这一两个tag后: ____" . 请分析应该放在什么标签之后
     }
 }
 ```
