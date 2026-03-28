@@ -21,7 +21,7 @@ null
 
 对于正向提示词，最佳实践比较建议按照以下格式。
 ```
-[人数 1girl], [角色名], [系列名], [画师名 artist:xxx], [动作/表情], [服装/道具], [背景描述], [质量词]
+`[人数tag 1girl, solo], [角色名 optional], [系列名 optional], [画师tag artist:xxx], [一般tag: 动作/表情 服装/道具 背景描述 等等其他 都属于一般tag], [质量词]`
 ```
 
 其中质量词是像highres之类的词语。这个有标准套路，你也不需要添加。
@@ -206,7 +206,7 @@ null
 
 
 ## 输出格式
-1. 简短说明，for用户
+1. 分析并说明理由
    
 2. 输出探索方向
 
@@ -216,7 +216,8 @@ null
     "description": string, // 讲一讲探索的方向
     "keywords": List[string], // 长度为3-5，用中文描述一下探索的关键词
     "format_reminder_constant": {
-        "tag_style": string // "space=yes underscore=no", "space=no underscore=yes"
+        "tag_style": string, // "space=yes underscore=no", "space=no underscore=yes"
+        "artist_insert": string // "我应该将artist放在这一两个tag后: ____" . 请分析应该放在什么标签之后
     }
 }
 ```

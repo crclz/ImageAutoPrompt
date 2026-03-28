@@ -122,6 +122,12 @@
 
         <div class="w-full flex justify-center items-center px-4 py-1.5 bg-black/60 border-b border-white/5 relative">
             <div class="flex items-center space-x-4">
+
+                <button @click="downloadPreviewAsJpg"
+                    class="bg-amber-500 hover:bg-amber-400 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95 mr-2">
+                    JPG
+                </button>
+                
                 <div class="flex items-center space-x-2 text-sm">
                     <span class="text-indigo-400 font-black uppercase">TS [[ preview.stepI ]]</span>
                     <span class="text-white/40">/</span>
@@ -150,10 +156,6 @@
                     提交选择
                 </button>
 
-                <button @click="downloadPreviewAsJpg"
-                    class="bg-amber-500 hover:bg-amber-400 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95 mr-2">
-                    JPG
-                </button>
             </div>
 
             <button @click="closePreview"
