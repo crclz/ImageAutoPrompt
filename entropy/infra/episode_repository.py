@@ -115,7 +115,11 @@ class EpisodeRepository:
 
             # 修改：URL 路径增加 /images/ 段
             timestep_map[timestep].images.append(
-                ImageQueryModel(image_index=image_index, url=f"/episodes/{episode_name}/files/images/{png_file.name}")
+                ImageQueryModel(
+                    image_index=image_index,
+                    url=f"/episodes/{episode_name}/files/images/{png_file.name}",
+                    local_abs_path=png_file.absolute().__str__(),
+                )
             )
 
         # collect timesteps

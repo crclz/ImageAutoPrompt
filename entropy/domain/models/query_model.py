@@ -11,6 +11,7 @@ from entropy.domain.models.episode import ImagePointer
 class ImageQueryModel(pydantic.BaseModel):
     image_index: int = 0
     url: str = ""
+    local_abs_path: str = ""
 
     highlight_text: str = ""
 
