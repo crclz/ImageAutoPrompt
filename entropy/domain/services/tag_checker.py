@@ -110,14 +110,7 @@ class TagChecker:
             # 5. 处理转义字符与格式转换
             # Danbooru 官方标签使用下划线，Prompt 中常使用空格
             # 移除转义斜杠 \( -> (
-            tag = tag.replace(r"\(", "(").replace(r"\)", ")")
-            tag = tag.replace(r"\[", "[").replace(r"\]", "]")
-
-            # 将空格转换为下划线（这是 Danbooru 数据库的标准存储格式）
-            tag = tag.replace(" ", "_")
-
-            # 再次清理多余下划线（处理 "reading a  book" 这种多空格情况）
-            tag = re.sub(r"_+", "_", tag).strip("_")
+            tag = TagChecker.remove_wrapping_of_tag(tag)
 
             tag = TagChecker.normalize_tag(tag)
 
@@ -128,7 +121,11 @@ class TagChecker:
         return list(dict.fromkeys(tags))
 
     @staticmethod
-    def normalize_tag(tag: str) -> str:
+    def remove_wrapping_of_tag(tag: str) -> str:
+        """
+        注意，这个会移除未被转义的括号，仅能用于prompt。多次调用是不安全的
+        """
+
         if not tag:
             return ""
 
@@ -142,6 +139,24 @@ class TagChecker:
         # (?<!\\) 表示：匹配括号，但前提是它前面不能有反斜杠 \
         tag = re.sub(r"(?<!\\)[\(\)\[\]]", "", tag)
 
+        # 5. 还原转义后的内容括号：将 \( 还原为 (
+        # 注意：此时剩下的 \( 已经是标签内容的一部分了
+        tag = tag.replace(r"\(", "(").replace(r"\)", ")")
+        tag = tag.replace(r"\[", "[").replace(r"\]", "]")
+
+        return tag
+
+    @staticmethod
+    def normalize_tag(tag: str) -> str:
+        """
+        这个多次调用是安全的。归一化：
+        - 大小写 => 小写
+        - 空格 下划线 => 空格
+        - 特定前缀 => 移除
+        """
+        if not tag:
+            return ""
+
         # --- B. 归一化：转换为 Danbooru 标准格式 ---
         # 3. 转小写
         tag = tag.lower()
@@ -150,11 +165,6 @@ class TagChecker:
         prefixes = ["artist:", "character:", "copyright:", "general:"]
         for p in prefixes:
             tag = tag.removeprefix(p)
-
-        # 5. 还原转义后的内容括号：将 \( 还原为 (
-        # 注意：此时剩下的 \( 已经是标签内容的一部分了
-        tag = tag.replace(r"\(", "(").replace(r"\)", ")")
-        tag = tag.replace(r"\[", "[").replace(r"\]", "]")
 
         # 6. 空格转下划线，压缩连续下划线
         tag = tag.replace(" ", "_")
@@ -168,8 +178,11 @@ class TagChecker:
         return tag
 
     @staticmethod
-    def get_not_exist_tags(s: str) -> List[str]:
-        tags = TagChecker.extract_all_tags(s)
+    def get_not_exist_tags(prompt: str) -> List[str]:
+        """
+        这个仅仅能用于prompt，因为存在括号转义这种不幂等的操作
+        """
+        tags = TagChecker.extract_all_tags(prompt)
 
         not_exist = [p for p in tags if not TagChecker.exist_tag(p)]
 

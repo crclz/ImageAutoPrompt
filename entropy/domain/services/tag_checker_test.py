@@ -5,7 +5,7 @@ def test_extract_all_tags_basic_normalization():
     # 场景 1：基础空格处理、空格转下划线、去重
     s = "1girl, reading a book,   highres, reading_a_book"
     # 预期：空格转为下划线，"reading a book" 和 "reading_a_book" 视为同一个并去重
-    expected = ["1girl", "reading_a_book", "highres"]
+    expected = ["1girl", "reading a book", "highres"]
     assert TagChecker.extract_all_tags(s) == expected
 
 
@@ -19,9 +19,9 @@ def test_extract_all_tags_weight_stripping():
 
 def test_extract_all_tags_numeric_weights():
     # 场景 3：数值权重格式 (tag:weight)
-    s = "(best quality:1.4), (solo:0.8), [bad anatomy:1.2], sunset:1.5"
+    s = "(best quality:1.4), (solo:0.8), [bad_anatomy:1.2], sunset:1.5"
     # 预期：冒号及其后的数字权重应被移除
-    expected = ["best_quality", "solo", "bad_anatomy", "sunset"]
+    expected = ["best quality", "solo", "bad anatomy", "sunset"]
     assert TagChecker.extract_all_tags(s) == expected
 
 
@@ -30,7 +30,8 @@ def test_extract_all_tags_escaped_characters():
     # 注意：这里的反斜杠在 Python 字符串中需要转义或者用 raw string
     s = r"keqing \(genshin_impact\), (raiden_shogun_\(genshin_impact\):1.2)"
     # 预期：外层权重括号剥离，内层转义括号保留（去斜杠），空格转下划线
-    expected = ["keqing_(genshin_impact)", "raiden_shogun_(genshin_impact)"]
+    expected = ["keqing (genshin impact)", "raiden shogun (genshin impact)"]
+
     assert TagChecker.extract_all_tags(s) == expected
 
 
@@ -39,7 +40,7 @@ def test_extract_all_tags_sd_special_syntax():
     s = "<lora:style_offset:1>, <hypernet:face:0.5>, [blue hair:red hair:0.2], 1girl"
     # 预期：LoRA 等被过滤，Prompt Editing 语法暂时作为整体保留（或根据你的需求调整）
     # 根据之前提供的代码逻辑，它会保留 [blue hair:red hair:0.2] 剥离后的内容
-    expected = ["blue_hair:red_hair", "1girl"]
+    expected = ["blue hair:red hair", "1girl"]
     assert TagChecker.extract_all_tags(s) == expected
 
 
@@ -52,18 +53,18 @@ def test_extract_all_tags_messy_input():
     __solo__
     """
     # 预期：自动忽略空字符串，处理换行，修剪下划线
-    expected = ["masterpiece", "extremely_detailed_CG", "solo"]
+    expected = ["masterpiece", "extremely detailed cg", "solo"]
     assert TagChecker.extract_all_tags(s) == expected
 
 
 def test_get_not_exist_tags_happy_1():
     s = r"""
     1girl, reading a red book, book, masterpiece, sunset:1.2, keqing \(genshin_impact\):1.5, ganyu \(genshin_impact\),
-    keqing_(genshin_impact), ((masterpiece, absurdres)), atdan, artist:atdan
+    keqing_\(genshin_impact\), ((masterpiece, absurdres)), atdan, artist:atdan
     """
     not_exist_tags = TagChecker.get_not_exist_tags(s)
 
-    assert ["reading_a_red_book"] == not_exist_tags
+    assert ["reading a red book"] == not_exist_tags
 
 
 def test_get_not_exist_tags_2():
@@ -76,3 +77,10 @@ def test_get_not_exist_support_extra_tag_file():
     tag = "betanonbeet"
 
     assert TagChecker.exist_tag(tag)
+
+
+def test_normalize_tag_1():
+    assert TagChecker.normalize_tag("keqing_(genshin_impact)") == "keqing (genshin impact)"
+
+    s = r"keqing \(genshin_impact\)"
+    assert TagChecker.get_not_exist_tags(s) == []
