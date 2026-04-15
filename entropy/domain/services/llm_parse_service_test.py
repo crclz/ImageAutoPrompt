@@ -53,7 +53,7 @@ def test_llm_parse_service_happy_case_1():
         这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
     """
 
-    positives, negatives = LlmParseService.parse_exploration_output(s)
+    positives, negatives, _ = LlmParseService.parse_exploration_output(s)
 
     assert len(positives) == 4
     assert len(negatives) == 4
@@ -101,8 +101,20 @@ def test_llm_parse_service_return_true_when_negative_empty():
         ```
     """
 
-    positives, negatives = LlmParseService.parse_exploration_output(s)
+    positives, negatives, _ = LlmParseService.parse_exploration_output(s)
     assert negatives[0] == ""
+
+
+def test_llm_parse_service_user_manually_input_friendly():
+    s = r"""
+        : 1girl, solo, red hair
+        
+        : 1girl, solo, blue hair
+    """
+
+    positives, negatives, _ = LlmParseService.parse_exploration_output(s)
+    assert positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
+    assert negatives == ["", ""]
 
 
 def test_danbooru_search():

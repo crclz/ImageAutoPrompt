@@ -13,14 +13,23 @@ class ExplorationAbstract(pydantic.BaseModel):
 
 class LlmParseService:
     @staticmethod
-    def parse_exploration_output(text: str) -> Tuple[List[str], List[str]]:
+    def parse_exploration_output(text: str) -> Tuple[List[str], List[str], bool]:
+        """
+        return: positives, negatives, is_user_friendly_format_input
+        """
+        success, positives, negatives = LlmParseService.try_parse_user_friendly(text)
+        if success:
+            return positives, negatives, True
+
+        del success, positives, negatives
+
         # 1. 使用正则匹配所有 ```prompt{n} ... ``` 的块
         # 匹配组1: 索引数字, 匹配组2: 块内文本内容
         pattern = r"```prompt(\d+)\s+(.*?)\s+```"
         matches = re.findall(pattern, text, re.DOTALL)
 
         if not matches:
-            return [], []
+            return [], [], False
 
         positives = []
         negatives = []
@@ -60,7 +69,27 @@ class LlmParseService:
             positives.append(p_part)
             negatives.append(n_part)
 
-        return positives, negatives
+        return positives, negatives, False
+
+    @staticmethod
+    def try_parse_user_friendly(s: str) -> Tuple[bool, List[str], List[str]]:
+        """every line start with semicolon"""
+
+        lines = s.splitlines()
+        lines = [p.strip() for p in lines]
+        lines = [p for p in lines if p]
+
+        positives = []
+
+        for line in lines:
+            if not line.startswith(":"):
+                return False, [], []
+
+            positives.append(line.removeprefix(":").strip())
+
+        negatives = [""] * len(positives)
+
+        return True, positives, negatives
 
     @staticmethod
     def parse_danbooru_search(text: str) -> List[str]:

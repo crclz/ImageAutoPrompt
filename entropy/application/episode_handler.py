@@ -35,7 +35,7 @@ from entropy.infra.episode_repository import EpisodeRepository
 from flask import jsonify, make_response, render_template, request
 
 from entropy.infra.keyed_lock import KeyedLock
- 
+
 _logger = logging.getLogger(__name__)
 
 _episode_timestep_lock = KeyedLock()
@@ -261,7 +261,7 @@ class EpisodeHandler:
         # parse llm
         assert request.exploration_output, "exploration_output is empty"
 
-        positives, negatives = LlmParseService.parse_exploration_output(request.exploration_output)
+        positives, negatives, friendly_format = LlmParseService.parse_exploration_output(request.exploration_output)
         if not positives:
             raise ValueError("parse exploration_output failed")
 
@@ -271,11 +271,13 @@ class EpisodeHandler:
 
         # parse abstract
         episode = EpisodeRepository.get_eposide(request.episode_name)
-        is_zero_index = len(episode.timesteps) == 0
+        # is_zero_index = len(episode.timesteps) == 0
         del episode
 
         abstract = LlmParseService.parse_exploration_abstract(request.exploration_output)
-        if not abstract and not is_zero_index:
+        if not abstract and friendly_format:
+            abstract = ExplorationAbstract()
+        if not abstract:
             raise ValueError("missing exploration abstract (exploration code block)")
 
         do_intercept = False
