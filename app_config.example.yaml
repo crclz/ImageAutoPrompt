@@ -21,4 +21,4 @@ extra_valid_tag_file: "" # datasets/extra_valid_tags.txt
 # 实验功能，暂时有负面效果，不默认开启
 rag_for_exploration_keyword: 0
 
-
+rag_service_base_url: http://127.0.0.1:5000

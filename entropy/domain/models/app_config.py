@@ -17,6 +17,8 @@ class AppConfig(pydantic.BaseModel):
     extra_valid_tag_file: str = ""
     rag_for_exploration_keyword: int
 
+    rag_service_base_url: str = ""
+
     @staticmethod
     @functools.lru_cache(5)
     def _read(window_id: int) -> "AppConfig":
