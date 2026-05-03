@@ -131,7 +131,7 @@ when: 文生图命令失败; do: 根据报错信息，判断是不是md文件格
 
 when: 添加tag前; do: 每次新增的tag数量不能超过6个; do_not: 新增很多很多tag; reason: 因为步子太大会造成不可观测（方差大）。删除不受影响;
 
-when: 用户说 报错invalid tag过多; do: 情况一:报错信息中存在对标准tag的关联推荐，则在这里面找替代品。情况二:无推荐，则去 library/danbooru.txt 中寻找tag; do_not: -; reason: 报错信息中推荐的相关tag（如果有）是基于语义进行的RAG，比按关键词查准确。当然，前提是用户预先进行了RAG配置。;
+when: 用户说 报错invalid tag过多; do: 情况一:报错信息中存在对标准tag的关联推荐，则在这里面找替代品。情况二:无推荐，则去 datasets/danbooru.txt 中寻找tag; do_not: -; reason: 报错信息中推荐的相关tag（如果有）是基于语义进行的RAG，比按关键词查准确。当然，前提是用户预先进行了RAG配置。;
 
 when: 修复invalid tag; do: 将整个timestep进行全量替换效率最高; do_not: 编辑文件，或者分多次编辑；; reason: 编辑文件不如全量替换；多次编辑更差效率太低;
 

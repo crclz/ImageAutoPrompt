@@ -46,7 +46,7 @@ query_list: # 数量限制由语义搜索的限制决定
 
 
 ## 关键词搜索
-去仓库根目录的 library/danbooru.txt 查找可能的tag。
+去仓库根目录的 datasets/danbooru.txt 查找可能的tag。
 
 关键词搜索没有语义搜索强大，建议多使用语义搜索。
 
