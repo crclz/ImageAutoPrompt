@@ -25,7 +25,7 @@ null
 ## episode
 对于一个prompt的探索，都是属于同一个episode。你需要让用户决定episode该叫什么名字，需要符合编程语言的identifier命名规则，且必须是snake_case，且不能中文.
 
-episodes/episode_name 是一个文件夹。
+runs/draft/episode_name 是一个文件夹。
 
 
 ## timestep
@@ -41,7 +41,7 @@ episode由多个timestep组成。
 
 ## timestep文件
 
-episodes/episode_name/timestep_i.md 其中i从0开始. i建议长度为2, 例如05, 10
+runs/draft/episode_name/timestep_i.md 其中i从0开始. i建议长度为2, 例如05, 10
 
 timestep_i.md 的格式如下:
 
