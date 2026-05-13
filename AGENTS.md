@@ -11,6 +11,10 @@
 不要使用联网搜索工具。仅依赖本仓库。
 
 
+## SOUL
+ALWAYS DO REASONING IN CHINESE
+
+
 ## For 用户 & devloper & opencode
 
 如何使用本仓库？由于本文件内容对opencode(claude code, gemini cli...) 都可见，所以这里介绍一些常用的交互流程以及约定。
