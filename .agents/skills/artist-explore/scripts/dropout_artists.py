@@ -1,11 +1,18 @@
 import random
+import re
 import sys
 
 rate = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
 
 # Dynamically read artists from library/artists.md
+artists = []
 with open("./library/artists.md", encoding="utf-8") as fp:
-    artists = [line.removeprefix("## artist:").rstrip("\n\r") for line in fp if line.startswith("## artist:")]
+    for line in fp:
+        if line.startswith("## artist:"):
+            name = line.removeprefix("## artist:").rstrip("\n\r")
+            name = re.sub(r"\s*//.*", "", name).strip()
+            if name:
+                artists.append(name)
 
 random.seed()
 random.shuffle(artists)
