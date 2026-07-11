@@ -1,49 +1,61 @@
-import functools
 import logging
+import threading
 from typing import List, Tuple
 import chromadb
 
+# Thread-safe lazy singletons
+_lock = threading.Lock()
+_danbooru_tags_collection = None
+_embedding_model = None
+_reranker_model = None
 
-@functools.cache
+
 def danbooru_tags_collection():
-    client = chromadb.PersistentClient(path="./database/chroma_1")
-    collection = client.get_collection(name="danbooru_tags")
+    global _danbooru_tags_collection
+    if _danbooru_tags_collection is None:
+        with _lock:
+            if _danbooru_tags_collection is None:  # double-checked locking
+                client = chromadb.PersistentClient(path="./database/chroma_1")
+                _danbooru_tags_collection = client.get_collection(name="danbooru_tags")
+    return _danbooru_tags_collection
 
-    return collection
 
-
-@functools.cache
 def embedding_model():
-    from sentence_transformers import SentenceTransformer
+    global _embedding_model
+    if _embedding_model is None:
+        with _lock:
+            if _embedding_model is None:  # double-checked locking
+                from sentence_transformers import SentenceTransformer
 
-    # TODO: replace with relative path inside repository
-    embedding_model = SentenceTransformer(
-        r"./ai_models/BAAI/bge-m3",
-        device="cpu",
-        local_files_only=True,
-    )
+                # TODO: replace with relative path inside repository
+                _embedding_model = SentenceTransformer(
+                    r"./ai_models/BAAI/bge-m3",
+                    device="cpu",
+                    local_files_only=True,
+                )
+    return _embedding_model
 
-    return embedding_model
 
-
-@functools.cache
 def reranker_model():
-    raise ValueError("Not supported")
-    from FlagEmbedding import FlagReranker
-    import torch
+    global _reranker_model
+    if _reranker_model is None:
+        with _lock:
+            if _reranker_model is None:  # double-checked locking
+                raise ValueError("Not supported")
+                from FlagEmbedding import FlagReranker
+                import torch
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+                device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    logging.info(f"reranker model device: {device}")
+                logging.info(f"reranker model device: {device}")
 
-    reranker = FlagReranker(
-        r"C:\Users\ThePlayer\.cache\huggingface\hub\models--BAAI--bge-reranker-v2-m3\snapshots\953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
-        device=device,
-        use_fp16=True,
-        local_files_only=True,
-    )
-
-    return reranker
+                _reranker_model = FlagReranker(
+                    r"C:\Users\ThePlayer\.cache\huggingface\hub\models--BAAI--bge-reranker-v2-m3\snapshots\953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+                    device=device,
+                    use_fp16=True,
+                    local_files_only=True,
+                )
+    return _reranker_model
 
 
 class RagService:
