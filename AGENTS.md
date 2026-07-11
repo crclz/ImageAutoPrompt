@@ -11,8 +11,9 @@
 不要使用联网搜索工具。仅依赖本仓库。
 
 
-## SOUL
-ALWAYS DO REASONING IN CHINESE
+
+## python
+使用uv
 
 
 ## For 用户 & devloper & opencode
