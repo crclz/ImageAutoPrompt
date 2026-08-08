@@ -25,7 +25,7 @@ import requests
 EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tiff", ".tif", ".jfif", ".avif"}
 BATCHJOB_MARKER = ".batchjob."
 TIMEOUT_SECONDS = 300
-MAX_WORKERS = 5
+MAX_WORKERS = 2 # 注意这个和timeout有关联
 UPLOAD_SUBFOLDER = "batch_job"
 PLACEHOLDER_INPUT = "entropy_input_image"
 PLACEHOLDER_OUTPUT = "entropy_output_image"
