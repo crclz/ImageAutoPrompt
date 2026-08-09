@@ -20,7 +20,7 @@ description: 定义了对于artist(aka画风 画师串)的探索的系统性的�
 uv run .agents/skills/artist-explore/scripts/get_artists.py --dropout=0.3
 ```
 
---dropout 必传，取值 [0,1)，表示随机丢弃的artist比例。脚本每次运行随机抽样，REMAINING 部分输出完整的artist块（标题 + 画风描述），DROPPED 部分仅列出被丢弃的artist名字。如需更大的候选集，调低 --dropout；多次运行可获得不同子集。
+--dropout 必传，取值 [0,1)，表示随机丢弃的artist比例。脚本每次运行随机抽样，输出完整的artist块（标题 + 画风描述），被丢弃的artist仅显示个数不列出。如需更大的候选集，调低 --dropout；多次运行可获得不同子集。
 
 
 ## workflow: artist exploration and exploitation

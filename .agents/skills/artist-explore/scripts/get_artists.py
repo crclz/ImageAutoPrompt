@@ -10,7 +10,6 @@
 
 import argparse
 import random
-import re
 import sys
 from pathlib import Path
 
@@ -29,13 +28,6 @@ def parse_artist_blocks(text: str) -> list[str]:
     if cur is not None:
         blocks.append("\n".join(cur))
     return blocks
-
-
-def block_name(block: str) -> str:
-    """从 artist 块中提取纯名字（去掉 "## artist:" 前缀和 // 注释）。"""
-    first = block.splitlines()[0]
-    name = first.removeprefix("## artist:").strip()
-    return re.sub(r"\s*//.*", "", name).strip()
 
 
 def main() -> None:
@@ -68,11 +60,6 @@ def main() -> None:
     for b in remaining:
         print()
         print(b)
-
-    print()
-    print("=== DROPPED ARTISTS ===")
-    for b in dropped:
-        print(f"artist:{block_name(b)}")
 
 
 if __name__ == "__main__":
