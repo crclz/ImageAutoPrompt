@@ -13,7 +13,14 @@ description: 定义了对于artist(aka画风 画师串)的探索的系统性的�
 另外，有一个高级技巧，能更精细化组合画师，将tag括号括起来并添加权重，例如 (artist:aaa:1.2), (artist:bbb:0.8)。
 在权重属于高级技巧，不要一上来就用。另外，权重严格限制在0.5-1.2闭区间之间，且step=0.1
 
-在寻找artist的时候，请一定要在 library/artists.md 中寻找，不要脱离此文件的范围.
+在寻找artist的时候，请一定要通过 get_artists.py 获取候选artist，这是artist库的唯一出口；不要直接阅读artist库原始文件，也不要使用脚本输出范围以外的artist。
+
+运行方式（在仓库根目录执行）：
+```bash
+uv run .agents/skills/artist-explore/scripts/get_artists.py --dropout=0.3
+```
+
+--dropout 必传，取值 [0,1)，表示随机丢弃的artist比例。脚本每次运行随机抽样，REMAINING 部分输出完整的artist块（标题 + 画风描述），DROPPED 部分仅列出被丢弃的artist名字。如需更大的候选集，调低 --dropout；多次运行可获得不同子集。
 
 
 ## workflow: artist exploration and exploitation
@@ -26,7 +33,7 @@ description: 定义了对于artist(aka画风 画师串)的探索的系统性的�
 
 | 持续timestep个数 | 思路                                                          | prompt数量 per timestep | 备注                                                    |
 | ------------ | ----------------------------------------------------------- | --------------------- | ----------------------------------------------------- |
-| 1            | 进行单画师探索。全量阅读从artist library，大范围地选择artist，然后选择你认为适合的画师，不能重复。 | 16                    | artist_only；如果用户无明显停留意图，你需要主动推进到下一个阶段。                |
+| 1            | 进行单画师探索。运行 get_artists.py 获取候选artist（建议 --dropout 取较小值如 0.1~0.3，以获得较全的候选集），大范围地选择artist，然后选择你认为适合的画师，不能重复。 | 16                    | artist_only；如果用户无明显停留意图，你需要主动推进到下一个阶段。                |
 | 1            | 2画师无权重混合。不要用上一阶段用户完全未看过的。重点关注用户在单artist阶段更喜欢的。              | 8                     | 同上                                                    |
 | 1            | 23画师带权重.                                                    | 8                     | 同上；注意一般1画师没有2画师好，但是再往上就没这个规律，得试错。                     |
 | 2            | 2345画师带权重                                                   | 8                     | 同上；注意最后一个timestep需平衡exploration和exploitation。前3名都很重要。 |

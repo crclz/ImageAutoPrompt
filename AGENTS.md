@@ -13,7 +13,9 @@
 
 
 ## python
-使用uv
+使用uv，而不是python（除非用户显式要求使用其他环境）（当用户不那么专业的时候，主动询问是否需要帮助发现python环境）。
+
+uv示例: 使用uv run xxx.py
 
 
 ## For 用户 & devloper & opencode
