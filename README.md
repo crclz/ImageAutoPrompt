@@ -23,11 +23,11 @@
 
 探索画师串:
 ```
-帮我探索artist. prompt: 1girl, solo, ...
+在新episode中,帮我探索artist. prompt: 1girl, solo, ...
 ```
 
 不探索画师串，探索其他的tag:
 
 ```
-帮我探索free. prompt: 1girl, solo, ...
+在新episode中,帮我探索free. prompt: 1girl, solo, ...
 ```

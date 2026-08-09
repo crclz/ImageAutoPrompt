@@ -18,6 +18,7 @@ description: 定义了对于artist(aka画风 画师串)的探索的系统性的�
 
 ### 前置澄清
 如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
+- 别忘了episode skill中需要用户确认的
 - dropout比例 (默认推荐0.5). dropout功能的含义是在每一episode开始时，dropout掉一部分artist，以避免与之前的episode选到过于相似的artist。
 - prompt数量 (默认下表，但需询问用户是否需要更多)
 - 执行计划（简要说明即可）。记得告知（而非询问），这几个计划的timestep都是 artist_only 的
