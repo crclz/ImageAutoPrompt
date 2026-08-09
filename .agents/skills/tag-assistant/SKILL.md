@@ -1,6 +1,6 @@
 ---
 name: tag-assistant
-description: 定义了一些系统化的 danbooru tag 探索、验证和灵感方法。
+description: 定义了一些系统化的 danbooru tag 探索、验证和灵感方法。适用于free阶段，不适用于artist_only
 ---
 
 ## 基本流程
@@ -40,6 +40,7 @@ query_list: # 数量限制由语义搜索的限制决定
 - 可同时起到这两个作用:
   - 按语义查询: 比关键词匹配更聪明的查询，并且能查出提供灵感的
   - 寻找标准tag (例如query=outdoor，在结果中能发现 outdoors 才是标准的)
+- 不要怀疑语义搜索的结果：语义搜索的结果都是标准tag.
 
 
 如果工具不可用/报错，让用户修，别自己修。
