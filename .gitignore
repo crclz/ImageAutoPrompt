@@ -1,6 +1,7 @@
 # temp files
 *.tmp.*
 *.log
+.civitai-cache
 
 /.vscode
 
