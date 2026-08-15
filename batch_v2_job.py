@@ -131,31 +131,29 @@ def main():
     # 有界提交窗口执行（errgroup 效果）
     sem = threading.Semaphore(MAX_WORKERS)
     results: dict[str, list] = {"success": [], "failed": []}
+    futures: list = []
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for combo, relpath in to_process:
-            sem.acquire()
+            sem.acquire()  # 窗口满时阻塞在此，保证最多 MAX_WORKERS 在飞（背压）
 
             def _run(c=combo, rp=relpath):
                 try:
                     _process_one(base_url, workflow_template, vars_meta, var_order, c, out_dir, rp)
-                    status = "success"
-                    msg = "OK"
+                    results["success"].append(rp)
+                    print(f"✅ {rp}")
                 except Exception as e:  # noqa: BLE001
-                    status = "failed"
-                    msg = str(e)
+                    results["failed"].append((rp, str(e)))
+                    print(f"❌ {rp} — {e}")
                 finally:
                     sem.release()
-                return status, rp, msg
 
-            future = executor.submit(_run)
-            status, rp, msg = future.result()
-            if status == "success":
-                results["success"].append(rp)
-                print(f"✅ {rp} — {msg}")
-            else:
-                results["failed"].append((rp, msg))
-                print(f"❌ {rp} — {msg}")
+            # 只提交、不立即取结果，真正并行；提交顺序保持 job.yaml
+            futures.append(executor.submit(_run))
+
+        # 全部提交完，等待所有任务结束（打印已在各任务内部完成）
+        for future in futures:
+            future.result()
 
     # 汇总
     print("-" * 50)
@@ -260,6 +258,8 @@ def _process_one(base_url, workflow_template, vars_meta, var_order, combo, out_d
 
     # 2. 提交
     prompt_id = _submit(base_url, workflow)
+
+    # print("submitted:", prompt_id)
 
     # 3. 轮询（按唯一前缀匹配输出）
     desc = _poll(base_url, prompt_id)
