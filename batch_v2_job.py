@@ -184,7 +184,7 @@ def _parse_vars(cfg):
     var_order = []
     for var, mapping in cfg["vars"].items():
         if not isinstance(mapping, dict) or not mapping:
-            print(f"❌ 错误: 变量 '{var}' 必须是非空映射（{var}: {key: value}）")
+            print(f"❌ 错误: 变量 '{var}' 必须是非空映射（{var}: {{key: value}}）")
             sys.exit(1)
         vars_map[var] = dict(mapping)
         var_order.append(var)
