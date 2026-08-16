@@ -2,6 +2,7 @@
 *.tmp.*
 *.log
 .civitai-cache
+/lora_search
 
 /.vscode
 

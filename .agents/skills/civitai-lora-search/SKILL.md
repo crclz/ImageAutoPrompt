@@ -35,7 +35,7 @@ Most list endpoints (/models, /images, /creators, /tags) support both page-based
 
 
 ## 输出格式
-search-xxx-date-time.md 这一类的。放到当前仓库目录下。
+search-xxx-date-time.md 这一类的。优先放到 ./lora_search 目录
 
 - id
 - version id
@@ -45,7 +45,8 @@ search-xxx-date-time.md 这一类的。放到当前仓库目录下。
 - 推荐权重
 - 兼容性说明
 - 其他你认为重要的信息
-- 本地文件名（仅当用户主动要求download才下载）（优先下载到当前仓库或目录下）
+- 本地文件名（仅当用户主动要求download才下载）
+  - 优先下载到当前仓库或目录下的 ./lora_search 目录
   - 命名: 模型架构_画师_合理后缀
   - 例如 noob_xxx_1
   - 合理后缀: 多个模型想不出合理后缀，可以 _1 _2 _3这样
@@ -53,7 +54,7 @@ search-xxx-date-time.md 这一类的。放到当前仓库目录下。
 
 ## 筛选标准
 
-数量: 按合理顺序列出给用户，数量尽量多，将决定权交给用户。但给用户的不能太多，至多10个。
+数量: 按合理顺序列出给用户，数量尽量多，将决定权交给用户。但给用户的不能太多，每1名画师至多5个。
 
 如果用户未说明想要什么模型架构的lora，则拒绝得出结论。
 
