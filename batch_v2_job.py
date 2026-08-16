@@ -35,6 +35,7 @@ PLACEHOLDER_OUTPUT = "entropy_output_image"
 TIMEOUT_SECONDS = 300
 MAX_WORKERS = 2
 OUTPUT_SUBDIR = "output"
+HEALTH_TIMEOUT_SECONDS = 2
 
 # 文件名非法字符（Windows 通用）及控制字符
 _FILENAME_BAD_CHARS = re.compile(r'[/\\:*?"<>|\x00-\x1f]')
@@ -119,6 +120,8 @@ def main():
     if not to_process:
         print("✅ 所有组合已生成完毕，无需执行。")
         sys.exit(0)
+
+    _check_health(base_url)
 
     print(f"📁 job 目录 : {job_folder}")
     print(f"🧩 组合总数 : {len(combos)} , 待处理 {len(to_process)} , 跳过 {len(skipped)}")
@@ -249,6 +252,20 @@ def _fmt_list(items: list[str], max_show: int = 5) -> str:
 # ============================================================
 # 单组合处理链路
 # ============================================================
+
+
+def _check_health(base_url):
+    """端口健康检查：探测 ComfyUI 服务是否可达，失败即报错退出。"""
+    try:
+        resp = requests.get(f"{base_url}/system_stats", timeout=HEALTH_TIMEOUT_SECONDS)
+        if resp.ok:
+            print(f"🩺 健康检查通过: {base_url}")
+            return
+        err = f"HTTP {resp.status_code}"
+    except requests.RequestException as e:
+        err = str(e)
+    print(f"❌ 错误: 无法连接到 ComfyUI 服务 {base_url}（{err}），请确认服务已启动且端口正确。")
+    sys.exit(1)
 
 
 def _process_one(base_url, workflow_template, vars_meta, var_order, combo, out_dir, relpath):
