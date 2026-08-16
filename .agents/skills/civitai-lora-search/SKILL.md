@@ -1,9 +1,22 @@
 ---
 name: civitai-lora-search
 description: 搜索civitai的lora。如果用户不显式要求，请勿调用。
----
+--- 
 
-环境变量要求: HTTPS_PROXY="http://localhost:7897"
+## 前置确认
+显式向用户确认（如果用户未主动说明）
+- 梯子端口。对应 HTTPS_PROXY="http://localhost:xxxx"
+- 模型架构
+- 是否下载
+- 其他必要信息 例如关键词或画师名称（如果用户提供的不充分，请向用户确认）
+
+
+## 发现搜索关键词
+参考 skill:artist-name-search
+
+lora的作者可能会以pixiv昵称（日文名），或者danbooru tag发布。
+你需要正向或者反向地查询它的昵称或者danbooru tag，以达到不漏掉资源的目的.
+
 
 ## 搜索
 
@@ -17,6 +30,10 @@ Pagination
 Most list endpoints (/models, /images, /creators, /tags) support both page-based and cursor-based pagination. Choose cursor-based for anything beyond a handful of pages.
 
 
+
+
+
+
 ## 输出格式
 search-xxx-date-time.md 这一类的。放到当前仓库目录下。
 
@@ -28,6 +45,10 @@ search-xxx-date-time.md 这一类的。放到当前仓库目录下。
 - 推荐权重
 - 兼容性说明
 - 其他你认为重要的信息
+- 本地文件名（仅当用户主动要求download才下载）（优先下载到当前仓库或目录下）
+  - 命名: 模型架构_画师_合理后缀
+  - 例如 noob_xxx_1
+  - 合理后缀: 多个模型想不出合理后缀，可以 _1 _2 _3这样
 
 
 ## 筛选标准
@@ -135,5 +156,13 @@ civitai models get 2706335 --json > 1.json
 推荐lora权重: description里面找
 
 
+## 如何下载
+
+civitai download --version=1762339 # model version
+
+值得注意的是，如果遇上这个bug，则需要去掉https proxy进行尝试。如果还是不行，就提醒用户开启梯子的TUN模式。
+```
+Error: download sush1spin-000018.safetensors: Get "https://civitai.com/api/download/models/1762339?fileId=1663074": proxyconnect tcp: dial tcp 127.0.0.1:7897: refusing to download from a private/loopback address (127.0.0.1) — the download URL resolved to a non-public IP
+```
 
 
