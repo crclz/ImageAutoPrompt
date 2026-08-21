@@ -51,7 +51,7 @@ begin timestep_i.md
 <exploration>
 ```exploration
 {
-    "type": string, // "artist_only", "free". 
+    "type": string, // "artist_only", "lora_only", "free". 
     "description": string, // 讲一讲探索的方向. 30字以内
     "keywords": List[string], // 长度为3-5，用中文描述一下探索的关键词
     "format_reminder_constant": {
@@ -92,11 +92,12 @@ end timestep_i.md
 注意
 
 artist_only 时，只能修改artist，不能修改其他。
+lora_only 时，只能修改lora，不能修改其他。
 free时，可以修改其他。
 
 format_reminder_constant: 常量，所有episode固定，但你需每一个timestep重复输出，由文章开头部分的“prompt格式”决定。
 
-输出prompt前，请思考一下artist tag应该放在哪个位置，免得放错。
+输出prompt前，请思考一下artist/lora tag应该放在哪个位置，免得放错。
 
 
 ## 前置澄清
@@ -105,7 +106,7 @@ format_reminder_constant: 常量，所有episode固定，但你需每一个times
 如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
 
 - episode_name: 是新建，还是沿用现有？如果是新建，则帮用户想一个，但是得用户确认
-- 进行的工作流的种类: 是artist(对应skill: artist-explore)，还是free(对应skill: free-explore)
+- 进行的工作流的种类: 是artist(对应skill: artist-explore)，lora(对应skill: lora-explore)，还是free(对应skill: free-explore)
 
 
 ## 工作流通用规则
