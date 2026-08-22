@@ -2,7 +2,7 @@
 创建 episode（对齐 Web 端 POST /api/create-episode）。
 
 用法:
-    PYTHONPATH="." uv run cli/create_episode.py --name hello
+    uv run cli/create_episode.py --name hello
 
 成功: stdout 打印 "episode created: hello", exit 0
 失败: stderr 打印原始错误消息（与 Web 端 message 一致）, exit 1
@@ -10,6 +10,9 @@
 
 import argparse
 import sys
+
+# 约定在仓库根运行：将当前目录加入 sys.path（entropy 是 namespace package，未安装到环境中）
+sys.path.append(".")
 
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.models.http_dtos import CreateEpisodeRequest

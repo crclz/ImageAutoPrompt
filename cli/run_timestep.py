@@ -2,7 +2,7 @@
 运行一个 timestep：解析 draft 文件，创建 timestep 并跑文生图（对齐 Web 端 POST /api/episodes/<name>/process-image）。
 
 用法:
-    uv run cli/run_timestep.py --name hello --draft hello.draft.md
+    uv run cli/run_timestep.py --name hello --draft hello.new_timestep.draft.md
 
 成功流程:
     1. 将 draft 移动到 runs/episodes/{name}/timestep_{i}_{sha256前8位}.md, 并打印:
@@ -21,6 +21,7 @@ import hashlib
 import sys
 import time
 from pathlib import Path
+# 约定在仓库根运行：将当前目录加入 sys.path（entropy 是 namespace package，未安装到环境中）
 sys.path.append(".")
 
 from entropy.application.episode_handler import EpisodeHandler

@@ -25,7 +25,12 @@ null
 ## episode
 对于一个prompt的探索，都是属于同一个episode。你需要让用户决定episode该叫什么名字，需要符合编程语言的identifier命名规则，且必须是snake_case，且不能中文.
 
-runs/draft/episode_name 是一个文件夹。
+episode 通过 CLI 创建:
+
+```
+uv run cli/create_episode.py --name {episode_name}
+```
+
 
 
 ## timestep
@@ -34,19 +39,19 @@ episode由多个timestep组成。
 
 | 动作                                            | 备注                                                                  |
 | --------------------------------------------- | ------------------------------------------------------------------- |
-| 1.  基于之前的prompt，以及用户的反馈，生成新timestep，并存放到磁盘文件。 | 需根据用户的反馈，仔细思考新的timestep。注意平衡exploration和exploitation                |
-| 2.  告诉用户文件相对地址，用户自己会跑文生图         | 注意前后需要空格且冒号用英文不然跳转卡手. 文件地址: xxx.md |
+| 1.  基于之前的prompt，以及用户的反馈，生成新timestep，写入当前目录的 {episode_name}.new_timestep.draft.md。 | 需根据用户的反馈，仔细思考新的timestep。注意平衡exploration和exploitation                |
+| 2.  执行 `uv run cli/run_timestep.py --name {episode_name} --draft {episode_name}.new_timestep.draft.md` 跑文生图。 | 新episode需先用 cli/create_episode.py 创建。命令耗时较长（出图慢），请将命令超时设置为10分钟以上。文件地址告知用户只是顺带 |
 | 3.  用户会给出反馈                                   | \-                                                                  |
 | 4.  你开启下一个timestep，回到 1                       | \-                                                                  |
 
 
 ## timestep文件
 
-runs/draft/episode_name/timestep_i.md 其中i从0开始. i建议长度为2, 例如05, 10
+draft 文件放在当前目录，命名为 {episode_name}.new_timestep.draft.md（例如 hello.new_timestep.draft.md）。每个timestep都复用这个文件名（运行成功后文件会被移动到 episode 目录存档）。
 
-timestep_i.md 的示例如下（不包含begin/end timestep_i.md）
+{episode_name}.new_timestep.draft.md 的示例如下（不包含begin/end）
 
-begin timestep_i.md
+begin {episode_name}.new_timestep.draft.md
 
 <exploration>
 {
@@ -90,7 +95,7 @@ null
 ```
 </prompts>
 
-end timestep_i.md
+end
 
 注意
 
@@ -118,7 +123,9 @@ when: 没有episode_name; do: 需要用户想一个，或者帮用户想一个; 
 
 when: 生成timestep时; do: 一次只生成1个timestep; do_not: 一次多个;
 
-when: timestep文件写入后; do: 告诉用户文件相对地址; do_not: 将timestep文件内容重复给用户;
+when: timestep文件写入后; do: 执行 cli/run_timestep.py 跑文生图（文件地址告知用户只是顺带）; do_not: 将timestep文件内容重复给用户;
 
-when: 文生图命令失败; do: 根据报错信息，判断是不是md文件格式问题，如果是则修改；否则让用户处理; do_not: 试图处理不该由你处理的问题;
+when: 执行 run_timestep 时; do: 将命令超时设置为10分钟以上（出图耗时较长）; do_not: 使用默认短超时导致命令被中断;
+
+when: 文生图命令失败; do: 根据报错信息，判断是不是md文件格式问题，如果是则修改draft后重新执行；否则让用户处理; do_not: 试图处理不该由你处理的问题;
 
