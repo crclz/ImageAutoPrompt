@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 import json
 import logging
+import threading
 import time
 from typing import List, Tuple
 
@@ -13,6 +14,9 @@ from entropy.domain.models.app_config import AppConfig
 
 
 _logger = logging.getLogger(__name__)
+
+# 并发固定为2：并发=1会有浪费的时间（等待单张出图），并发=2刚好不浪费
+MAX_WORKERS = 2
 
 
 class ImageDescriptor(pydantic.BaseModel):
@@ -186,15 +190,20 @@ class ComfyApi:
     ) -> List[bytes]:
         """
         return, keep order
+
+        背压提交（参考 batch_v2_job.py 的有界提交窗口设计）：
+        Semaphore + 固定并发 MAX_WORKERS，comfy 队列最多 MAX_WORKERS 个在飞，
+        提交节奏=执行节奏，不会一次性全部堆积到 comfy 队列。
         """
 
         assert batch_size == 1, "batchsize not supported"
 
-        # multi thread
         assert len(positives) == len(negative)
         assert len(positives) == len(loras)
 
         results: List[bytes] = [None] * len(positives)  # type: ignore
+
+        sem = threading.Semaphore(MAX_WORKERS)
 
         def run(i, positive, negative, lora) -> None:
             assert isinstance(i, int)
@@ -202,20 +211,26 @@ class ComfyApi:
             assert isinstance(negative, str)
             assert isinstance(lora, str)
 
-            if i > 0:
-                # useless, but makes me feel better
-                time.sleep(i * 0.5)
+            try:
+                image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative, lora)
+                results[i] = image_bytes
 
-            image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative, lora)
-            results[i] = image_bytes
+                if complete_hook:
+                    complete_hook(i, image_bytes)
+            finally:
+                sem.release()
 
-            if complete_hook:
-                complete_hook(i, image_bytes)
+        with ThreadPoolExecutor(MAX_WORKERS) as executor:
+            futures = []
 
-        with ThreadPoolExecutor(10) as executor:
             args_list = zip(range(len(positives)), positives, negative, loras)
-            a = executor.map(lambda x: run(x[0], x[1], x[2], x[3]), args_list)
-            a = list(a)  # wait
+            for args in args_list:
+                sem.acquire()  # 窗口满时阻塞在此，保证最多 MAX_WORKERS 在飞（背压）
+                futures.append(executor.submit(lambda a=args: run(a[0], a[1], a[2], a[3])))
+
+            # 全部提交完，等待所有任务结束（任一失败即抛出）
+            for future in futures:
+                future.result()
 
         for image in results:
             assert image is not None

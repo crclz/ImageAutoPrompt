@@ -11,7 +11,7 @@ test_base_address = "http://localhost:8188"
 
 def test_run_workflow_happy_case_1():
     # arrange
-    template_json_path = Path("workflows/dev.json")
+    template_json_path = Path("workflows/dev_fast.json")
     template_json = template_json_path.read_text("utf8")
 
     positive = "ocean, tree, sunset, car"
@@ -41,7 +41,7 @@ def test_get_workflow_result_no_cache_1():
 
 
 def test_run_many_happy_1():
-    template_json_path = Path(__file__).parent / "template.sample.json"
+    template_json_path = Path("workflows/dev_fast.json")
     template_json = template_json_path.read_text("utf8")
 
     positive = "ocean, tree, sunset, car, (masterpiece, best quality,newest,absurdres,highres)"

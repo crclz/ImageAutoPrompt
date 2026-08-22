@@ -21,6 +21,7 @@ import hashlib
 import sys
 import time
 from pathlib import Path
+import os
 # 约定在仓库根运行：将当前目录加入 sys.path（entropy 是 namespace package，未安装到环境中）
 sys.path.append(".")
 
@@ -91,6 +92,10 @@ def main():
     # 1. 移动 draft 到 episode 目录
     digest = hashlib.sha256(draft_text.encode("utf8")).hexdigest()[:8]
     dst = EpisodeRepository.episodes_dir() / args.name / f"timestep_{timestep_i}_{digest}.md"
+
+    if Path(dst).exists():
+        os.remove(dst)
+
     draft_path.rename(dst)
     print(f"draft moved to {dst.as_posix()}")
 
