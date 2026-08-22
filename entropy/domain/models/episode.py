@@ -37,24 +37,19 @@ class Episode(pydantic.BaseModel):
     timesteps: List[EpisodeTimestep] = []
 
     def can_process_image(self) -> bool:
-        if len(self.timesteps) <= 2:
+        """上一个 timestep 需跑完且已提交反馈（status==2），才能开始下一个"""
+        if not self.timesteps:
             return True
-
-        last_two_status = reversed([p.status for p in self.timesteps[-2:]])
-        if any([p for p in last_two_status if p == 2]):
-            return True
-        return False
+        return self.timesteps[-1].status == 2
 
     def get_to_be_chosen(self) -> Optional[EpisodeTimestep]:
         """
-        返回需要进行评最高分的timestep.
+        返回可评价/覆盖的 timestep：最新的一个（status 1=跑完待反馈, 2=已反馈可覆盖）
         """
+        if not self.timesteps:
+            return None
 
-        last_two_timesteps = reversed(self.timesteps[-2:])
-
-        # 1和2都可以进行最高分选择，其中2是覆盖
-        for timestep in last_two_timesteps:
-            if timestep.status in (1, 2):  # 优先打没打分的
-                return timestep
-
+        last = self.timesteps[-1]
+        if last.status in (1, 2):
+            return last
         return None

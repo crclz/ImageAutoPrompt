@@ -104,11 +104,6 @@ class EpisodeHandler:
             if timestep.status == 2:
                 ob = "System:"
 
-                # double buffer: if [-1] is running, [-2] must give system message to llm
-                if i == len(timesteps) - 2:
-                    if timesteps[-1].status == 0:  # running
-                        ob += f" timestep={len(timesteps) - 1} 的highscore正在评价中 用户还未给出(由于double-buffer)"
-
                 ob += f" 下列是用户对 timestep={i} 的评价:\n"
 
                 ob += "用户: NewHighScore: "
@@ -121,7 +116,7 @@ class EpisodeHandler:
 
                 ob += "\n"
 
-                if i >= len(timesteps) - 2:
+                if i == len(timesteps) - 1:
                     ob += f"System: 接下来请给出timestep={len(timesteps)}的探索"
                 ob += "\n"
 
