@@ -1,4 +1,8 @@
+import pytest
+
 from entropy.domain.services.rag_service import RagService
+
+pytestmark = pytest.mark.slow  # 加载 bge-m3 模型 + chromadb，慢
 
 
 def test_rag_simple_happy_1():

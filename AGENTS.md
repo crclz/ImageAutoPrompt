@@ -55,3 +55,11 @@ episode代表了探索的过程。(涉及skill: episode)
   - 涉及skill: episode, tag-assistant, 以及对应的format-xxx
 
 
+## for developer
+
+测试分级:
+- 默认: 无须环境也无须很多时间. uv run pytest运行。记得将所有.py用__name__保护，避免pytest发现用例时运行代码
+- slow: 慢测试（RAG 模型加载 / 真实 comfy 出图 / 真实数据操作）。默认跳过，用 `pytest -m slow` 运行
+- once: 手动临时测试（一次性验证用）。默认跳过，用 `pytest -m once` 运行
+
+

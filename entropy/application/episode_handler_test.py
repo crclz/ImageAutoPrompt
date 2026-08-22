@@ -1,3 +1,5 @@
+import pytest
+
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.models.episode import ImagePointer
 from entropy.domain.models.http_dtos import (
@@ -5,6 +7,8 @@ from entropy.domain.models.http_dtos import (
     RollbackTimestepRequest,
     StartImageProcessingRequest,
 )
+
+pytestmark = pytest.mark.slow  # 真实 comfy 出图 / 修改真实 episode 数据，默认跳过
 
 
 def test_get_episode_data_happy_1():

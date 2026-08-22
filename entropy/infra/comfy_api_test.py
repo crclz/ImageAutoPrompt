@@ -1,6 +1,10 @@
 from pathlib import Path
 
+import pytest
+
 from entropy.infra.comfy_api import ComfyApi
+
+pytestmark = pytest.mark.slow  # 真实访问 ComfyUI 出图，慢
 
 test_base_address = "http://localhost:8188"
 
