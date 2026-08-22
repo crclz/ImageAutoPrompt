@@ -282,7 +282,10 @@ class EpisodeHandler:
 
         positives, negatives, loras, friendly_format = LlmParseService.parse_exploration_output(request.exploration_output)
         if not positives:
-            raise ValueError("parse exploration_output failed")
+            raise ValueError(
+                "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
+                "或以 \":\" 开头的行（一行一个 tag）"
+            )
 
         prompts: List[ImagePrompt] = []
         for positive, negative, lora in zip(positives, negatives, loras):
@@ -297,7 +300,10 @@ class EpisodeHandler:
         if not abstract and friendly_format:
             abstract = ExplorationAbstract()
         if not abstract:
-            raise ValueError("missing exploration abstract (exploration code block)")
+            raise ValueError(
+                "缺少 <exploration> 块：请在文件头部用 <exploration>{\"type\":...,\"description\":...,\"keywords\":[...]}</exploration>"
+                " 描述探索方向（type 为 artist_only / lora_only / free）"
+            )
 
         do_intercept = False
         message = ""

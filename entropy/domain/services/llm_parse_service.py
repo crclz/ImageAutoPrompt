@@ -116,12 +116,35 @@ class LlmParseService:
 
     @staticmethod
     def parse_exploration_abstract(text: str) -> Optional[ExplorationAbstract]:
-        pattern = r"```exploration\s+(.*?)\s+```"
-        match = re.search(pattern, text, re.DOTALL)
+        """
+        兼容三种形态:
+        1. <exploration>```exploration {json}```</exploration> (旧 draft)
+        2. <exploration> {json} </exploration> (新 draft)
+        3. ```exploration {json}``` (LLM 直接回复的裸围栏)
 
-        if not match:
+        raise: ValueError, JSON 非法时给中文指导式报错
+        """
+        json_content = None
+
+        # 1. 先找 <exploration> 标签包裹的内容（围栏可选）
+        match = re.search(r"<exploration>\s*(?:```exploration\s*)?(.*?)(?:\s*```)?\s*</exploration>", text, re.DOTALL)
+        if match:
+            json_content = match.group(1)
+        else:
+            # 2. 兜底：裸 ```exploration 围栏
+            match = re.search(r"```exploration\s+(.*?)\s+```", text, re.DOTALL)
+            if match:
+                json_content = match.group(1)
+
+        if not json_content:
             return None
 
-        # 2. Extract the captured group and parse as JSON
-        json_content = match.group(1)
-        return ExplorationAbstract.model_validate_json(json_content)
+        try:
+            obj = json.loads(json_content)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"<exploration> 内容不是合法 JSON：{e}")
+
+        try:
+            return ExplorationAbstract.model_validate(obj)
+        except pydantic.ValidationError as e:
+            raise ValueError(f"<exploration> 字段校验失败：{e}")

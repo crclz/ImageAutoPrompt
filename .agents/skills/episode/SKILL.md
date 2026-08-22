@@ -49,7 +49,6 @@ timestep_i.md 的示例如下（不包含begin/end timestep_i.md）
 begin timestep_i.md
 
 <exploration>
-```exploration
 {
     "type": string, // "artist_only", "lora_only", "free". 
     "description": string, // 讲一讲探索的方向. 30字以内
@@ -58,7 +57,6 @@ begin timestep_i.md
         "tag_style": string, // "space=yes underscore=no", "space=no underscore=yes"
     }
 }
-```
 </exploration>
 
 <prompts>
