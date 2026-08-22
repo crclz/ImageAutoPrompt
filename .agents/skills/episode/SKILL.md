@@ -41,7 +41,7 @@ episode由多个timestep组成。
 | --------------------------------------------- | ------------------------------------------------------------------- |
 | 1.  基于之前的prompt，以及用户的反馈，生成新timestep，写入当前目录的 {episode_name}.new_timestep.draft.md。 | 需根据用户的反馈，仔细思考新的timestep。注意平衡exploration和exploitation                |
 | 2.  执行 `uv run cli/run_timestep.py --name {episode_name} --draft {episode_name}.new_timestep.draft.md` 跑文生图。 | 新episode需先用 cli/create_episode.py 创建。命令耗时较长（出图慢），请将命令超时设置为10分钟以上。文件地址告知用户只是顺带 |
-| 3.  用户会给出反馈                                   | \-                                                                  |
+| 3.  用户会在网页端标记高分图片，并告诉你。你用 `uv run cli/get_feedback.py --name {episode_name}` 获取反馈。 | 默认取最新timestep；`--timestep i` 可指定（绝大部分情况不用传）。若反馈与上次相同（没变），停止并向用户二次确认 |
 | 4.  你开启下一个timestep，回到 1                       | \-                                                                  |
 
 
@@ -126,6 +126,8 @@ when: 生成timestep时; do: 一次只生成1个timestep; do_not: 一次多个;
 when: timestep文件写入后; do: 执行 cli/run_timestep.py 跑文生图（文件地址告知用户只是顺带）; do_not: 将timestep文件内容重复给用户;
 
 when: 执行 run_timestep 时; do: 将命令超时设置为10分钟以上（出图耗时较长）; do_not: 使用默认短超时导致命令被中断;
+
+when: 获取用户反馈; do: 执行 `uv run cli/get_feedback.py --name {episode_name}`（不带 --timestep）；若反馈与上次相同，停止并向用户二次确认; do_not: 基于猜测代替用户评价;
 
 when: 文生图命令失败; do: 根据报错信息，判断是不是md文件格式问题，如果是则修改draft后重新执行；否则让用户处理; do_not: 试图处理不该由你处理的问题;
 
