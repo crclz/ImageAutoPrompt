@@ -34,8 +34,7 @@ class RagHandler:
 
             response = ShowRagResponse(candidates=candidates)
 
-            data_object = response.model_dump()
-            return data_object
+            return EpisodeHandler.wrap_api_response(response)
         except Exception as e:
             _logger.exception("show_rag_wrapper error")
             return EpisodeHandler.wrap_api_exception(e)

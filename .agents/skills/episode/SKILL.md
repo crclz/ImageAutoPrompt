@@ -71,7 +71,12 @@ positive
 
 negative
 null
+
+lora
+<lora:xxx:1.0> <lora:yyy:0.9>
 ```
+
+lora 部分是可选的：有 lora 就写 `lora` 行 + 对应的 `<lora:name:weight>` 列表；没有 lora 时，`lora` 行整段去掉。
 
 ...
 

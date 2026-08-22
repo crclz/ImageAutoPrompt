@@ -53,16 +53,20 @@ def test_llm_parse_service_happy_case_1():
         这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
     """
 
-    positives, negatives, _ = LlmParseService.parse_exploration_output(s)
+    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
 
     assert len(positives) == 4
     assert len(negatives) == 4
+    assert len(loras) == 4
 
     assert positives[0].startswith("1girl")
     assert "artist:torino aqua" in positives[0]
     assert positives[0].endswith("highres")
 
     assert negatives[0].startswith("worst quality")
+
+    # 旧格式没有 lora 段，应解析为空字符串
+    assert loras == [""] * 4
 
 
 def test_llm_parse_service_return_false_when_negative_empty_1():
@@ -101,8 +105,76 @@ def test_llm_parse_service_return_true_when_negative_empty():
         ```
     """
 
-    positives, negatives, _ = LlmParseService.parse_exploration_output(s)
+    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
     assert negatives[0] == ""
+    assert loras == [""]
+
+
+def test_llm_parse_service_with_lora():
+    s = r"""
+        ```prompt0
+        positive
+        1girl, hatsune miku, solo, long hair, looking at viewer, blue eyes
+
+        negative
+        null
+
+        lora
+        <lora:noob_mignon:1.0> <lora:noob_real_tweaker:0.9>
+        ```
+
+        ```prompt1
+        positive
+        1girl, hatsune miku, solo
+
+        negative
+        null
+        ```
+    """
+
+    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
+
+    assert len(positives) == 2
+    assert positives[0].startswith("1girl")
+    assert positives[0].endswith("blue eyes")
+
+    assert negatives == ["", ""]
+
+    # prompt0 有 lora，prompt1 没有 lora 段
+    assert loras[0] == "<lora:noob_mignon:1.0> <lora:noob_real_tweaker:0.9>"
+    assert loras[1] == ""
+
+
+def test_llm_parse_service_lora_only_some_prompts():
+    s = r"""
+        ```prompt0
+        positive
+        1girl, solo, red hair
+
+        negative
+        null
+
+        lora
+        <lora:noob_fkey:0.9>
+        ```
+
+        ```prompt1
+        positive
+        1girl, solo, blue hair
+
+        negative
+        null
+
+        lora
+        <lora:noob_myowa:1.0>
+        ```
+    """
+
+    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
+
+    assert positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
+    assert negatives == ["", ""]
+    assert loras == ["<lora:noob_fkey:0.9>", "<lora:noob_myowa:1.0>"]
 
 
 def test_llm_parse_service_user_manually_input_friendly():
@@ -112,9 +184,11 @@ def test_llm_parse_service_user_manually_input_friendly():
         : 1girl, solo, blue hair
     """
 
-    positives, negatives, _ = LlmParseService.parse_exploration_output(s)
+    positives, negatives, loras, is_friendly = LlmParseService.parse_exploration_output(s)
     assert positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
     assert negatives == ["", ""]
+    assert loras == ["", ""]  # friendly 格式不支持 lora
+    assert is_friendly is True
 
 
 def test_danbooru_search():

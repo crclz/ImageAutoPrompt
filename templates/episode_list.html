@@ -75,6 +75,7 @@
                 try {
                     const res = await fetch('/api/episodes');
                     const data = await res.json();
+                    if (!res.ok || data.code !== 0) console.error(data.message || 'Fetch failed');
                     episodes.value = data.episodes_list || [];
                 } catch (e) { console.error(e); }
                 loading.value = false;
@@ -90,7 +91,7 @@
                         body: JSON.stringify({ name: newName.value.trim() })
                     });
                     const data = await res.json();
-                    if (data.message) alert(data.message);
+                    if (!res.ok || data.code !== 0) alert(data.message || "创建失败");
                     else {
                         showModal.value = false;
                         newName.value = "";

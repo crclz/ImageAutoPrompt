@@ -50,16 +50,8 @@
                     </span>
                 </template>
 
-                <template v-if="step.rag_wip">
-                    <span class="bg-amber-300 px-2.5 py-0.5 rounded text-xs font-bold border shadow-sm">RAG_WIP</span>
-                </template>
-
-                <template v-if="step.rag_result">
-                    <span class="bg-green-300 px-2.5 py-0.5 rounded text-xs font-bold border shadow-sm">RAG_DONE</span>
-                </template>
-
                 <template v-if="step.observation">
-                    <div @click="copyToClipboard(step.initial_md_prefix + step.rag_result + step.observation)"
+                    <div @click="copyToClipboard(step.initial_md_prefix + step.observation)"
                         title="点击复制"
                         class="flex items-start px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-xs font-mono cursor-pointer transition-colors border border-gray-200 group whitespace-normal break-words">
 
@@ -254,7 +246,7 @@
 
                 const result = await response.json();
 
-                if (response.ok) {
+                if (response.ok && result.code === 0) {
                     console.log("Success:", result);
                     // 提交成功后的反馈
                     // alert(`成功提交 ${selectedPointers.value.length} 个高分结果`);
@@ -361,20 +353,15 @@
 
                 const result = await response.json();
 
-                if (response.ok) {
-                    if (result.started == 1) {
-                        showToast("处理请求已发送");
-                        pasteContent.value = ""; // 清空
-                        showPasteModal.value = false; // 关闭界面
-                        fetchData(); // 立即刷新
-
-                    } else {
-                        startImageProcessingDetailMsg.value = result.message || "未知错误详情 bug";
-                    }
+                if (response.ok && result.code === 0) {
+                    showToast("处理请求已发送");
+                    pasteContent.value = ""; // 清空
+                    showPasteModal.value = false; // 关闭界面
+                    fetchData(); // 立即刷新
 
                 } else {
-                    // 停留在此界面并报错
-                    alert("提交失败: " + (result.message || result.error || "未知错误"));
+                    // 失败（拦截提示/异常）统一展示 message，拦截提示是长文本，放详情区而非 alert
+                    startImageProcessingDetailMsg.value = result.message || "未知错误";
                 }
             } catch (err) {
                 console.error("API Error:", err);
@@ -395,8 +382,8 @@
         const fetchData = async () => {
             try {
                 const response = await fetch(`/api/episodes/${episodeName.value}`);
-                if (!response.ok) throw new Error('Fetch failed');
                 const data = await response.json();
+                if (!response.ok || data.code !== 0) throw new Error(data.message || 'Fetch failed');
                 timesteps.value = data.timesteps || [];
                 canProcessImage.value = data.can_process_image;
 
@@ -462,9 +449,9 @@
                 const result = await response.json();
 
                 // 无论成功失败都执行 alert
-                alert(response.ok ? "回滚成功" : "失败: " + (result.message || result.error));
+                alert((response.ok && result.code === 0) ? "回滚成功" : "失败: " + (result.message || "未知错误"));
 
-                if (response.ok) fetchData(); // 成功后刷新数据
+                if (response.ok && result.code === 0) fetchData(); // 成功后刷新数据
             } catch (err) {
                 alert("网络错误: " + err);
             }

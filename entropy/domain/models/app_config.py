@@ -15,7 +15,6 @@ class AppConfig(pydantic.BaseModel):
     invalid_tag_tolerance: int
 
     extra_valid_tag_file: str = ""
-    rag_for_exploration_keyword: int
 
     rag_service_base_url: str = ""
 

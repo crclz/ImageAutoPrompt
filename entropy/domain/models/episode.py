@@ -14,6 +14,7 @@ class ImagePointer(pydantic.BaseModel):
 class ImagePrompt(pydantic.BaseModel):
     positive: str
     negative: str
+    lora: str = ""  # 可选，形如 "<lora:xxx:1.0> <lora:yyy:0.9>"；为空表示无 lora
 
 
 class EpisodeTimestep(pydantic.BaseModel):

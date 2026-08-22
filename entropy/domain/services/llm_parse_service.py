@@ -13,13 +13,14 @@ class ExplorationAbstract(pydantic.BaseModel):
 
 class LlmParseService:
     @staticmethod
-    def parse_exploration_output(text: str) -> Tuple[List[str], List[str], bool]:
+    def parse_exploration_output(text: str) -> Tuple[List[str], List[str], List[str], bool]:
         """
-        return: positives, negatives, is_user_friendly_format_input
+        return: positives, negatives, loras, is_user_friendly_format_input
         """
         success, positives, negatives = LlmParseService.try_parse_user_friendly(text)
         if success:
-            return positives, negatives, True
+            loras = [""] * len(positives)
+            return positives, negatives, loras, True
 
         del success, positives, negatives
 
@@ -29,10 +30,11 @@ class LlmParseService:
         matches = re.findall(pattern, text, re.DOTALL)
 
         if not matches:
-            return [], [], False
+            return [], [], [], False
 
         positives = []
         negatives = []
+        loras = []
 
         # 2. 检查索引是否从0开始且连续
         for i, (index_str, content) in enumerate(matches):
@@ -40,26 +42,29 @@ class LlmParseService:
             if actual_index != i:
                 raise ValueError(f"Prompt index mismatch: expected {i}, got {actual_index}")
 
-            # 3. 解析 Positive 和 Negative 部分
-            # 逻辑：寻找 positive 关键字后的内容，直到遇到 negative 或结束
-            # 寻找 negative 关键字后的内容，直到结束
+            # 3. 解析 Positive、Negative、Lora 部分
+            # 逻辑：寻找 positive 关键字后的内容，直到遇到 negative / lora 或结束
+            # lora 部分可选：没有 lora 关键字时 lora 为空字符串
 
             # 清理内容中的首尾空格
             content = content.strip()
 
             p_part = ""
             n_part = ""
+            l_part = ""
 
             if not ("positive" in content and "negative" in content):
                 raise ValueError(f"positive and negative not found. prompt_{i}")
 
-            parts = re.split(r"positive\s+|negative\s+", content)
+            parts = re.split(r"positive\s+|negative\s+|lora\s+", content)
             # split 之后第一个元素通常是空的（如果 positive 在开头）
             # 过滤掉空字符串并拿取对应部分
             valid_parts = [p.strip() for p in parts if p.strip()]
             if len(valid_parts) >= 2:
                 p_part = valid_parts[0]
                 n_part = valid_parts[1]
+                if len(valid_parts) >= 3:
+                    l_part = valid_parts[2]
             else:
                 raise ValueError(f"format error prompt_{i}")
 
@@ -68,8 +73,9 @@ class LlmParseService:
 
             positives.append(p_part)
             negatives.append(n_part)
+            loras.append(l_part)
 
-        return positives, negatives, False
+        return positives, negatives, loras, False
 
     @staticmethod
     def try_parse_user_friendly(s: str) -> Tuple[bool, List[str], List[str]]:

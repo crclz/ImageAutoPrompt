@@ -62,6 +62,7 @@
                         body: JSON.stringify({ query_text: queryText.value })
                     });
                     const data = await res.json();
+                    if (!res.ok || data.code !== 0) alert(data.message || "检索失败");
                     candidates.value = data.candidates || [];
                     duration.value = Date.now() - start;
                 } catch (e) { alert(e); }

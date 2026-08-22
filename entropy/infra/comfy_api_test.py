@@ -45,10 +45,11 @@ def test_run_many_happy_1():
 
     positives = [positive] * 4
     negatives = [negative] * 4
+    loras = [""] * 4
 
     positives[0] = "helicopter, " + positives[0]
 
-    images = ComfyApi.run_many(test_base_address, template_json, positives, negatives)
+    images = ComfyApi.run_many(test_base_address, template_json, positives, negatives, loras)
     assert len(images) == 4
 
     for i, image_bytes in enumerate(images):

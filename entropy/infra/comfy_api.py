@@ -23,7 +23,7 @@ class ImageDescriptor(pydantic.BaseModel):
 
 class ComfyApi:
     @staticmethod
-    def run_workflow(base_url: str, workflow_template_json: str, positive: str, negative: str) -> bytes:
+    def run_workflow(base_url: str, workflow_template_json: str, positive: str, negative: str, lora: str = "") -> bytes:
         """
         return: png binary
         """
@@ -35,12 +35,13 @@ class ComfyApi:
         # force node to execute, avoid cached
         file_prefix = "entropy_out_" + str(shortuuid.uuid())
 
-        optional_keys = ["entropy:negative"]
+        optional_keys = ["entropy:negative", "entropy:lora"]
         optional_keys = [json.dumps(p, ensure_ascii=False) for p in optional_keys]
 
         replaces = {
             "entropy:positive": positive,
             "entropy:negative": negative,
+            "entropy:lora": lora,
             "entropy_out_placeholder": file_prefix,
         }
 
@@ -179,6 +180,7 @@ class ComfyApi:
         workflow_template_json: str,
         positives: List[str],
         negative: List[str],
+        loras: List[str],
         batch_size=1,
         complete_hook=None,
     ) -> List[bytes]:
@@ -190,27 +192,29 @@ class ComfyApi:
 
         # multi thread
         assert len(positives) == len(negative)
+        assert len(positives) == len(loras)
 
         results: List[bytes] = [None] * len(positives)  # type: ignore
 
-        def run(i, positive, negative) -> None:
+        def run(i, positive, negative, lora) -> None:
             assert isinstance(i, int)
             assert isinstance(positive, str)
             assert isinstance(negative, str)
+            assert isinstance(lora, str)
 
             if i > 0:
                 # useless, but makes me feel better
                 time.sleep(i * 0.5)
 
-            image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative)
+            image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative, lora)
             results[i] = image_bytes
 
             if complete_hook:
                 complete_hook(i, image_bytes)
 
         with ThreadPoolExecutor(10) as executor:
-            args_list = zip(range(len(positives)), positives, negative)
-            a = executor.map(lambda x: run(x[0], x[1], x[2]), args_list)
+            args_list = zip(range(len(positives)), positives, negative, loras)
+            a = executor.map(lambda x: run(x[0], x[1], x[2], x[3]), args_list)
             a = list(a)  # wait
 
         for image in results:

@@ -27,10 +27,10 @@ from entropy.domain.models.query_model import (
     TimestepQueryModel,
 )
 from entropy.domain.services.llm_parse_service import ExplorationAbstract, LlmParseService
-from entropy.domain.services.rag_service import RagService
 from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.tag_hinting_service import TagHintingService
 from entropy.infra.comfy_api import ComfyApi
+from entropy.infra.comfy_health import ComfyHealth
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import jsonify, make_response, render_template, request
 
@@ -56,11 +56,32 @@ class EpisodeHandler:
     @staticmethod
     def wrap_api_exception(e: Exception):
         err_data = {
+            "code": -1,  # -1 = 未分类错误
             "message": str(e),
             # "stack": traceback.format_exc(),
         }
 
         return make_response(jsonify(err_data), 400)
+
+    @staticmethod
+    def wrap_api_ok(data: Optional[dict] = None) -> dict:
+        """
+        统一成功响应结构: {code: 0, message: "", ...业务字段平铺}
+        """
+        resp = {"code": 0, "message": ""}
+        if data:
+            resp.update(data)
+        return resp
+
+    @staticmethod
+    def wrap_api_response(resp):
+        """
+        统一响应: Response model 自带 code/message。
+        code==0 -> HTTP 200; code!=0 -> HTTP 400
+        """
+        data = resp.model_dump()
+        status = 200 if data.get("code", 0) == 0 else 400
+        return make_response(jsonify(data), status)
 
     @classmethod
     def get_episode_data_wrapper(cls, episode_name: str):
@@ -70,7 +91,7 @@ class EpisodeHandler:
         try:
             data = cls.get_episode_data(episode_name)
             data_object = data.model_dump()
-            return data_object
+            return cls.wrap_api_ok(data_object)
         except Exception as e:
             _logger.exception("get_episode_data_wrapper error")
             return cls.wrap_api_exception(e)
@@ -166,8 +187,7 @@ class EpisodeHandler:
             req.name = episode_name
 
             resp = cls.choose_high_scores(req)
-            data_object = resp.model_dump()
-            return data_object
+            return cls.wrap_api_response(resp)
         except Exception as e:
             _logger.exception("choose_high_scores_wrapper error")
             return cls.wrap_api_exception(e)
@@ -213,8 +233,7 @@ class EpisodeHandler:
 
             resp = cls.start_image_processing(req)
 
-            data_object = resp.model_dump()
-            return data_object
+            return cls.wrap_api_response(resp)
         except Exception as e:
             _logger.exception("start_image_processing_wrapper error")
             return cls.wrap_api_exception(e)
@@ -242,7 +261,7 @@ class EpisodeHandler:
     @classmethod
     def image_process_guard(
         cls, request: StartImageProcessingRequest
-    ) -> Tuple[bool, str, Optional[ExplorationAbstract], List[ImagePrompt], Tuple[List[str], List[str]]]:
+    ) -> Tuple[bool, str, Optional[ExplorationAbstract], List[ImagePrompt], Tuple[List[str], List[str], List[str]]]:
         """
         return: do_intercept, message, prompts, (positives, negatives)
         raise: some exceptions
@@ -261,13 +280,13 @@ class EpisodeHandler:
         # parse llm
         assert request.exploration_output, "exploration_output is empty"
 
-        positives, negatives, friendly_format = LlmParseService.parse_exploration_output(request.exploration_output)
+        positives, negatives, loras, friendly_format = LlmParseService.parse_exploration_output(request.exploration_output)
         if not positives:
             raise ValueError("parse exploration_output failed")
 
         prompts: List[ImagePrompt] = []
-        for positive, negative in zip(positives, negatives):
-            prompts.append(ImagePrompt(positive=positive, negative=negative))
+        for positive, negative, lora in zip(positives, negatives, loras):
+            prompts.append(ImagePrompt(positive=positive, negative=negative, lora=lora))
 
         # parse abstract
         episode = EpisodeRepository.get_eposide(request.episode_name)
@@ -289,7 +308,7 @@ class EpisodeHandler:
             do_intercept = True
             message = invalid_tag_hint
 
-        return do_intercept, message, abstract, prompts, (positives, negatives)
+        return do_intercept, message, abstract, prompts, (positives, negatives, loras)
 
     @classmethod
     def start_image_processing(cls, request: StartImageProcessingRequest, join=False) -> StartImageProcessingResponse:
@@ -299,16 +318,13 @@ class EpisodeHandler:
         """
         current_app_config = AppConfig.read()
 
-        do_interception, message, abstract, prompts, (positives, negatives) = cls.image_process_guard(request)
+        do_interception, message, _abstract, prompts, (positives, negatives, loras) = cls.image_process_guard(request)
         if do_interception:
-            return StartImageProcessingResponse(message=message)
+            # 拦截（如无效 tag 提示）：内层有权返回任意 code/message
+            return StartImageProcessingResponse(code=-1, message=message)
 
-        # rag keywords
-        rag_keywords = []
-
-        if current_app_config.rag_for_exploration_keyword == 1:
-            if abstract and abstract.type != "artist_only":
-                rag_keywords += abstract.keywords
+        # 任何 comfyui 访问前，先健康检查（进程内 10 分钟缓存）
+        ComfyHealth.ensure_comfy_healthy(current_app_config.comfyui_base_url)
 
         # ======cannot perform time consuming work after here
 
@@ -321,34 +337,21 @@ class EpisodeHandler:
         # create new timestep
         timestep_i = len(episode.timesteps)
 
-        # NOTE: only timestep is locked. update episode should get-modify-save
-
-        rag_wip = len(rag_keywords) > 0  # 这里有逻辑冗余，先不管
-        if timestep_i == 0:
-            rag_wip = 0
-
-        episode.timesteps.append(EpisodeTimestep(i=timestep_i, prompts=prompts, rag_wip=rag_wip))
+        episode.timesteps.append(EpisodeTimestep(i=timestep_i, prompts=prompts))
 
         EpisodeRepository.save_episode(request.episode_name, episode)
         del episode  # cannot reuse, because stale
 
         def fn_run_many():
-            cls.call_comfy_run_many_and_modify_timestep(request.episode_name, timestep_i, positives, negatives)
+            cls.call_comfy_run_many_and_modify_timestep(request.episode_name, timestep_i, positives, negatives, loras)
 
         run_many_thread = Thread(target=fn_run_many, daemon=True)
         run_many_thread.start()
 
-        def fn_inspiration():
-            cls.danbooru_search_and_save(request.episode_name, timestep_i, [], rag_keywords)
-
-        inspiration_thread = Thread(target=fn_inspiration, daemon=True)
-        inspiration_thread.start()
-
         if join:
             run_many_thread.join()
-            inspiration_thread.join()
 
-        return StartImageProcessingResponse(started=1)
+        return StartImageProcessingResponse()
 
     @classmethod
     def call_comfy_run_many_and_modify_timestep(
@@ -357,6 +360,7 @@ class EpisodeHandler:
         timestep_i: int,
         positives: List[str],
         negatives: List[str],
+        loras: List[str],
     ) -> None:
         key = f"{episode_name}:{timestep_i}"
 
@@ -375,6 +379,7 @@ class EpisodeHandler:
                 template_json,
                 positives,
                 negatives,
+                loras,
                 complete_hook=complete_hook,
             )
 
@@ -385,53 +390,6 @@ class EpisodeHandler:
             episode.timesteps[timestep_i].status = 1
 
             EpisodeRepository.save_episode(episode_name, episode)
-
-    @classmethod
-    def danbooru_search_and_save(
-        cls, episode_name: str, timestep: int, invalid_tags: List[str], keywords: List[str]
-    ) -> None:
-        if len(invalid_tags) + len(keywords) == 0:
-            return
-
-        if timestep == 0:
-            # 用户输入，不用提示
-            return
-
-        # do search before modify episode
-        danbooru_search_outputs = []
-
-        # 后置先不做标签的纠错。后续觉得有必要，再加。
-        if False:
-            for invalid_tag in invalid_tags:
-                # 展示给用户的，也是normalize后的
-                invalid_tag = TagChecker.normalize_tag(invalid_tag)
-
-                # 标签纠错,10个比较合理
-                tags, scores = RagService.rag_simple(invalid_tag, rerank_output=10)
-
-                tags_str = ",".join(tags)
-
-                danbooru_search_outputs.append(
-                    f"system: invalid danbooru tag: {invalid_tag}, guess you mean: {tags_str}"
-                )
-
-        # keywords
-        for keyword in keywords:
-            # 限制一下15
-            tags, score = RagService.rag_simple(keyword, 15)
-
-            tags_str = ",".join(tags)
-
-            danbooru_search_outputs.append(f"system: keyword {keyword} search tag results: {tags_str}")
-
-        danbooru_search_result = "\n".join(danbooru_search_outputs) + "\n"
-
-        # update episode
-        episode = EpisodeRepository.get_eposide(episode_name)
-        episode.timesteps[timestep].rag_wip = 0
-        episode.timesteps[timestep].rag_result = danbooru_search_result
-
-        EpisodeRepository.save_episode(episode_name, episode)
 
     @classmethod
     def rollback_timestep_wrapper(cls, episode_name: str):
@@ -445,8 +403,7 @@ class EpisodeHandler:
 
             resp = cls.rollback_timestep(req)
 
-            data_object = resp.model_dump()
-            return data_object
+            return cls.wrap_api_response(resp)
         except Exception as e:
             _logger.exception("rollback_timestep_wrapper error")
             return cls.wrap_api_exception(e)
@@ -497,8 +454,7 @@ class EpisodeHandler:
 
             resp = cls.get_episode_list(req)
 
-            data_object = resp.model_dump()
-            return data_object
+            return cls.wrap_api_response(resp)
         except Exception as e:
             _logger.exception("get_episode_list_wrapper error")
             return cls.wrap_api_exception(e)
@@ -531,8 +487,7 @@ class EpisodeHandler:
             req = CreateEpisodeRequest.model_validate(request.get_json())
             resp = cls.create_episode(req)
 
-            data_object = resp.model_dump()
-            return data_object
+            return cls.wrap_api_response(resp)
         except Exception as e:
             _logger.exception("create_episode_wrapper error")
             return cls.wrap_api_exception(e)  # "message": str(e)
