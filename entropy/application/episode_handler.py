@@ -317,17 +317,22 @@ class EpisodeHandler:
         return do_intercept, message, abstract, prompts, (positives, negatives, loras)
 
     @classmethod
-    def start_image_processing(cls, request: StartImageProcessingRequest, join=False) -> StartImageProcessingResponse:
+    def create_timestep_with_exploration_output(cls, episode_name: str, exploration_output: str) -> int:
         """
-        create new timestep. when done, change status from 0 to 1
-        change EpisodeTimestep.status from 0 to 1.
+        创建新 timestep 的公共流程（web 与 cli 共用）：
+        guard（无效 tag 拦截 raise）→ comfy 健康检查 → episode 状态守卫 → append timestep + save
+
+        return: 新 timestep 的序号 timestep_i
+        raise: ValueError（拦截提示 / 状态不允许等）
         """
+        request = StartImageProcessingRequest(episode_name=episode_name, exploration_output=exploration_output)
+
         current_app_config = AppConfig.read()
 
         do_interception, message, _abstract, prompts, (positives, negatives, loras) = cls.image_process_guard(request)
         if do_interception:
-            # 拦截（如无效 tag 提示）：内层有权返回任意 code/message
-            return StartImageProcessingResponse(code=-1, message=message)
+            # 拦截（如无效 tag 提示）：统一视为失败
+            raise ValueError(message)
 
         # 任何 comfyui 访问前，先健康检查（进程内 10 分钟缓存）
         ComfyHealth.ensure_comfy_healthy(current_app_config.comfyui_base_url)
@@ -335,21 +340,43 @@ class EpisodeHandler:
         # ======cannot perform time consuming work after here
 
         # check episode status
-        episode = EpisodeRepository.get_eposide(request.episode_name)
+        episode = EpisodeRepository.get_eposide(episode_name)
 
         if not episode.can_process_image():
-            raise ValueError("episode status cannot process image")
+            raise ValueError("user should submit feedback before going on")
 
         # create new timestep
         timestep_i = len(episode.timesteps)
 
         episode.timesteps.append(EpisodeTimestep(i=timestep_i, prompts=prompts))
 
-        EpisodeRepository.save_episode(request.episode_name, episode)
+        EpisodeRepository.save_episode(episode_name, episode)
         del episode  # cannot reuse, because stale
 
+        return timestep_i
+
+    @classmethod
+    def start_image_processing(
+        cls,
+        request: StartImageProcessingRequest,
+        join=False,
+        extra_hook=None,
+        created_hook=None,
+    ) -> StartImageProcessingResponse:
+        """
+        create new timestep. when done, change status from 0 to 1
+        change EpisodeTimestep.status from 0 to 1.
+
+        created_hook: 创建 timestep 后、跑图前调用 (timestep_i)
+        extra_hook: 每张图完成后调用 (image_index, image_bytes)（存图之后）
+        """
+        timestep_i = cls.create_timestep_with_exploration_output(request.episode_name, request.exploration_output)
+
+        if created_hook:
+            created_hook(timestep_i)
+
         def fn_run_many():
-            cls.call_comfy_run_many_and_modify_timestep(request.episode_name, timestep_i, positives, negatives, loras)
+            cls.run_timestep_images(request.episode_name, timestep_i, extra_hook=extra_hook)
 
         run_many_thread = Thread(target=fn_run_many, daemon=True)
         run_many_thread.start()
@@ -360,23 +387,37 @@ class EpisodeHandler:
         return StartImageProcessingResponse()
 
     @classmethod
-    def call_comfy_run_many_and_modify_timestep(
+    def run_timestep_images(
         cls,
         episode_name: str,
         timestep_i: int,
-        positives: List[str],
-        negatives: List[str],
-        loras: List[str],
+        extra_hook=None,
     ) -> None:
+        """
+        跑指定 timestep 的所有图片（锁内 run_many），全部完成后 status 置 1。
+        每张图完成时默认存图到 images/；extra_hook 在存图后追加调用 (image_index, image_bytes)
+        """
         key = f"{episode_name}:{timestep_i}"
 
         current_app_config = AppConfig.read()
         template_json = Path(current_app_config.workflow_api_json).read_text("utf8")
 
+        # 从 episode 读取该 timestep 的 prompts
+        episode = EpisodeRepository.get_eposide(episode_name)
+        timestep = episode.timesteps[timestep_i]
+        positives = [p.positive for p in timestep.prompts]
+        negatives = [p.negative for p in timestep.prompts]
+        loras = [p.lora for p in timestep.prompts]
+        del episode  # cannot reuse, because stale
+
         def complete_hook(image_index: int, image_bytes: bytes) -> None:
-            # save so that web page can see the picture
+            # 存图（web 与 cli 共用）：save so that web page can see the picture
             pic_save_path = EpisodeRepository.pic_path(episode_name, timestep_i, image_index)
             pic_save_path.write_bytes(image_bytes)
+
+            # 附加 hook（如 cli 打印进度）
+            if extra_hook:
+                extra_hook(image_index, image_bytes)
 
         with _episode_timestep_lock.lock(key, 0.5):
             t0 = datetime.now()
