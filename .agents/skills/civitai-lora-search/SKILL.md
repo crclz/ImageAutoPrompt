@@ -35,7 +35,7 @@ Most list endpoints (/models, /images, /creators, /tags) support both page-based
 
 
 ## 输出格式
-search-xxx-date-time.md 这一类的。优先放到 ./lora_search 目录
+search-xxx-date-time.md 这一类的。优先放到 .cache/lora_search 目录
 
 - id
 - version id
@@ -46,7 +46,7 @@ search-xxx-date-time.md 这一类的。优先放到 ./lora_search 目录
 - 兼容性说明
 - 其他你认为重要的信息
 - 本地文件名（仅当用户主动要求download才下载）
-  - 优先下载到当前仓库或目录下的 ./lora_search 目录
+  - 优先下载到当前仓库或目录下的 .cache/lora_search 目录
   - 命名: 模型架构_画师_合理后缀
   - 例如 noob_xxx_1
   - 合理后缀: 多个模型想不出合理后缀，可以 _1 _2 _3这样
@@ -102,7 +102,7 @@ anon betanonbeet style 【anima&il】 (id 2706335)
 ```
 
 
-获取完整信息. 永远将json放到当前项目或仓库目录的./.civitai-cache/*.json里面，避免多次访问网络浪费API。
+获取完整信息. 永远将json放到当前项目或仓库目录的.cache/.civitai-cache/*.json里面，避免多次访问网络浪费API。
 
 *.json的文件名需要自己决定。没必要的使用model_id.json，有重复风险的的进行随机化。
 

@@ -1,8 +1,8 @@
 # temp files
 *.tmp.*
 *.log
-.civitai-cache
-/lora_search
+.cache/.civitai-cache
+.cache/lora_search
 
 /.vscode
 

@@ -62,4 +62,4 @@ episode代表了探索的过程。(涉及skill: episode)
 - slow: 慢测试（RAG 模型加载 / 真实 comfy 出图 / 真实数据操作）。默认跳过，用 `pytest -m slow` 运行
 - once: 手动临时测试（一次性验证用）。默认跳过，用 `pytest -m once` 运行
 
-
+ruff: remember `ruff check ./entropy`
