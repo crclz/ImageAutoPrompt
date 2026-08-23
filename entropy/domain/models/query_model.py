@@ -1,7 +1,6 @@
 # frontend models
 
 
-from typing import List
 
 import pydantic
 

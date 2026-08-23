@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 import pydantic
 
@@ -42,7 +41,7 @@ class Episode(pydantic.BaseModel):
             return True
         return self.timesteps[-1].status == 2
 
-    def get_to_be_chosen(self) -> Optional[EpisodeTimestep]:
+    def get_to_be_chosen(self) -> EpisodeTimestep | None:
         """
         返回可评价/覆盖的 timestep：最新的一个（status 1=跑完待反馈, 2=已反馈可覆盖）
         """
