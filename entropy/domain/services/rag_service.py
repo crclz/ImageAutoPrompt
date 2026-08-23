@@ -1,7 +1,10 @@
 import logging
+import os
 import threading
+import time
 from typing import List, Tuple
-import chromadb
+
+_logger = logging.getLogger(__name__)
 
 # Thread-safe lazy singletons
 _lock = threading.Lock()
@@ -15,8 +18,18 @@ def danbooru_tags_collection():
     if _danbooru_tags_collection is None:
         with _lock:
             if _danbooru_tags_collection is None:  # double-checked locking
+                t0 = time.perf_counter()
+                _logger.info("loading danbooru_tags collection from chroma...")
+
+                os.environ["ANONYMOUS_TELEMETRY"] = "False"
+                import chromadb
+
+                _logger.info("lazy import chromadb done in %.2fs", time.perf_counter() - t0)
+
+                t0 = time.perf_counter()
                 client = chromadb.PersistentClient(path="./database/chroma_1")
                 _danbooru_tags_collection = client.get_collection(name="danbooru_tags")
+                _logger.info("danbooru_tags collection loaded in %.2fs", time.perf_counter() - t0)
     return _danbooru_tags_collection
 
 
@@ -25,7 +38,17 @@ def embedding_model():
     if _embedding_model is None:
         with _lock:
             if _embedding_model is None:  # double-checked locking
+                t0 = time.perf_counter()
+                _logger.info("lazy import sentence_transformers...")
+
+                os.environ["HF_HUB_OFFLINE"] = "1"
+                os.environ["TRANSFORMERS_OFFLINE"] = "1"
                 from sentence_transformers import SentenceTransformer
+
+                _logger.info("lazy import sentence_transformers done in %.2fs", time.perf_counter() - t0)
+
+                t0 = time.perf_counter()
+                _logger.info("loading embedding model bge-m3...")
 
                 # TODO: replace with relative path inside repository
                 _embedding_model = SentenceTransformer(
@@ -33,6 +56,7 @@ def embedding_model():
                     device="cpu",
                     local_files_only=True,
                 )
+                _logger.info("embedding model loaded in %.2fs", time.perf_counter() - t0)
     return _embedding_model
 
 
