@@ -129,5 +129,5 @@ when: 执行 run_timestep 时; do: 将命令超时设置为10分钟以上（出�
 
 when: 获取用户反馈; do: 执行 `uv run cli/get_feedback.py --name {episode_name}`（不带 --timestep）；若反馈与上次相同，停止并向用户二次确认; do_not: 基于猜测代替用户评价;
 
-when: 文生图命令失败; do: 根据报错信息，判断是不是md文件格式问题，如果是则修改draft后重新执行；否则让用户处理; do_not: 试图处理不该由你处理的问题;
+when: 文生图命令失败; do: 根据报错信息，判断是不是md文件格式问题，如果是则修改draft后重新执行；若报错提示invalid tag超预算（见budget），按提示把无效tag压回预算内（保留表达关键特征的tag，替换可有可无的，不必清零）；否则让用户处理; do_not: 试图处理不该由你处理的问题;
 

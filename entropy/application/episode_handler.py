@@ -305,7 +305,9 @@ class EpisodeHandler:
         message = ""
 
         # invalid tags interception
-        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(parse_result.positives, parse_result.negatives)
+        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(
+            parse_result.positives, parse_result.negatives, current_app_config.invalid_tag_tolerance
+        )
         if invalid_tag_hint:
             do_intercept = True
             message = invalid_tag_hint
