@@ -22,14 +22,12 @@ from entropy.application.app_dtos import (
     StartImageProcessingResponse,
 )
 from entropy.domain.models.app_config import AppConfig
-from entropy.domain.models.draft import ExplorationAbstract
-from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
+from entropy.domain.models.episode import Episode, EpisodeTimestep
 from entropy.domain.models.error_code import ErrorCode
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.domain.services.draft_parse_service import DraftParseService
 from entropy.domain.services.episode_heartbeat_service import EpisodeHeartbeatService
 from entropy.domain.services.tag_checker import TagChecker
-from entropy.domain.services.tag_hinting_service import TagHintingService
 from entropy.infra.cancellation import FileCancellationSource, send_cancel
 from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.comfy_health import ComfyHealth
@@ -226,69 +224,6 @@ class EpisodeHandler:
         return diff_positive, diff_negative
 
     @classmethod
-    def image_process_guard(
-        cls, request: StartImageProcessingRequest
-    ) -> tuple[bool, str, ExplorationAbstract | None, list[ImagePrompt], tuple[list[str], list[str], list[str]]]:
-        """
-        return: do_intercept, message, prompts, (positives, negatives)
-        raise: some exceptions
-        """
-
-        # base url
-        current_app_config = AppConfig.read()
-        base_url = current_app_config.comfyui_base_url
-        assert base_url, "app config comfyui_base_url is empty"
-        assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
-
-        json_file = current_app_config.workflow_api_json
-        if not Path(json_file).exists():
-            raise ValueError(f"not exist: {json_file}")
-
-        # parse llm
-        assert request.timestep_draft, "timestep_draft is empty"
-
-        parse_result = DraftParseService.parse_timestep_draft(request.timestep_draft)
-        if not parse_result.positives:
-            raise ValueError(
-                "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
-                '或以 ":" 开头的行（一行一个 tag）'
-            )
-
-        prompts: list[ImagePrompt] = []
-        for positive, negative, lora in zip(parse_result.positives, parse_result.negatives, parse_result.loras):
-            prompts.append(ImagePrompt(positive=positive, negative=negative, lora=lora))
-
-        # parse abstract
-        episode = EpisodeRepository.get_eposide(request.episode_name)
-        # is_zero_index = len(episode.timesteps) == 0
-        del episode
-
-        abstract = DraftParseService.parse_exploration_abstract(request.timestep_draft)
-        if not abstract and parse_result.is_friendly:
-            abstract = ExplorationAbstract()
-        if not abstract:
-            raise ValueError("缺少 <exploration> 块")
-
-        do_intercept = False
-        message = ""
-
-        # invalid tags interception
-        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(
-            parse_result.positives, parse_result.negatives, current_app_config.invalid_tag_tolerance
-        )
-        if invalid_tag_hint:
-            do_intercept = True
-            message = invalid_tag_hint
-
-        return (
-            do_intercept,
-            message,
-            abstract,
-            prompts,
-            (parse_result.positives, parse_result.negatives, parse_result.loras),
-        )
-
-    @classmethod
     def create_timestep_with_draft(cls, episode_name: str, timestep_draft: str) -> int:
         """
         创建新 timestep 的公共流程（web 与 cli 共用）：
@@ -297,11 +232,9 @@ class EpisodeHandler:
         return: 新 timestep 的序号 timestep_i
         raise: ValueError（拦截提示 / 状态不允许等）
         """
-        request = StartImageProcessingRequest(episode_name=episode_name, timestep_draft=timestep_draft)
-
         current_app_config = AppConfig.read()
 
-        do_interception, message, _, prompts, _ = cls.image_process_guard(request)
+        do_interception, message, prompts = DraftParseService.image_process_guard(timestep_draft)
         if do_interception:
             # 拦截（如无效 tag 提示）：统一视为失败
             raise ValueError(message)

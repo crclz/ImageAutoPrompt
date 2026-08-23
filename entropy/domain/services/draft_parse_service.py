@@ -1,9 +1,13 @@
 import json
 import re
+from pathlib import Path
 
 import pydantic
 
+from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.draft import ExplorationAbstract, TimestepDraftParseResult
+from entropy.domain.models.episode import ImagePrompt
+from entropy.domain.services.tag_hinting_service import TagHintingService
 
 
 class DraftParseService:
@@ -132,3 +136,57 @@ class DraftParseService:
             return ExplorationAbstract.model_validate(obj)
         except pydantic.ValidationError as e:
             raise ValueError(f"<exploration> 字段校验失败：{e}")
+
+    @classmethod
+    def image_process_guard(cls, timestep_draft: str) -> tuple[bool, str, list[ImagePrompt]]:
+        """
+        校验并解析 timestep draft，返回 (do_intercept, message, prompts)。
+
+        校验内容：配置（comfyui_base_url / workflow_api_json）、prompt 块、<exploration> 块、无效 tag 拦截。
+        <exploration> 解析结果仅用于校验（缺块则 raise），不外传。
+
+        raise: ValueError（配置缺失 / 缺 prompt 块 / 缺 exploration 块）
+        """
+        # base url
+        current_app_config = AppConfig.read()
+        base_url = current_app_config.comfyui_base_url
+        assert base_url, "app config comfyui_base_url is empty"
+        assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
+
+        json_file = current_app_config.workflow_api_json
+        if not Path(json_file).exists():
+            raise ValueError(f"not exist: {json_file}")
+
+        # parse llm
+        assert timestep_draft, "timestep_draft is empty"
+
+        parse_result = cls.parse_timestep_draft(timestep_draft)
+        if not parse_result.positives:
+            raise ValueError(
+                "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
+                '或以 ":" 开头的行（一行一个 tag）'
+            )
+
+        prompts: list[ImagePrompt] = []
+        for positive, negative, lora in zip(parse_result.positives, parse_result.negatives, parse_result.loras):
+            prompts.append(ImagePrompt(positive=positive, negative=negative, lora=lora))
+
+        # parse abstract（仅校验缺块，结果不外传）
+        abstract = cls.parse_exploration_abstract(timestep_draft)
+        if not abstract and parse_result.is_friendly:
+            abstract = ExplorationAbstract()
+        if not abstract:
+            raise ValueError("缺少 <exploration> 块")
+
+        do_intercept = False
+        message = ""
+
+        # invalid tags interception
+        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(
+            parse_result.positives, parse_result.negatives, current_app_config.invalid_tag_tolerance
+        )
+        if invalid_tag_hint:
+            do_intercept = True
+            message = invalid_tag_hint
+
+        return do_intercept, message, prompts

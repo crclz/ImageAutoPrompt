@@ -1,6 +1,25 @@
 import pytest
 
+from entropy.domain.models.app_config import AppConfig
 from entropy.domain.services.draft_parse_service import DraftParseService
+
+
+def _fake_config(**overrides):
+    data = {
+        "comfyui_base_url": "http://127.0.0.1:8188",
+        "workflow_api_json": "workflows/dev.json",
+        "workflow_timeout_seconds": 180,
+        "prompt_file": "prompts/prompt_recommended.md",
+        "invalid_tag_tolerance": 9999,
+        "extra_valid_tag_file": "",
+        "port": 5000,
+    }
+    data.update(overrides)
+    return AppConfig.model_validate(data)
+
+
+def _mock_app_config(monkeypatch, **overrides):
+    monkeypatch.setattr(AppConfig, "read", staticmethod(lambda: _fake_config(**overrides)))
 
 
 def test_parse_timestep_draft_shouldParseMultiplePromptBlocks_whenHappy():
@@ -229,3 +248,72 @@ null
     assert abstract.type == "artist_only"
     assert abstract.description.startswith("在保持")
     assert abstract.keywords == ["极致逆光", "湿润肉感", "空气感", "唯美通透"]
+
+
+def test_DraftParseService_image_process_guard_shouldReturnInterceptFalseAndPrompts_whenFriendlyDraftValid(monkeypatch):
+    # arrange
+    _mock_app_config(monkeypatch)
+    s = ": 1girl, solo, red hair"
+
+    # act
+    do_intercept, message, prompts = DraftParseService.image_process_guard(s)
+
+    # assert
+    assert do_intercept is False
+    assert message == ""
+    assert len(prompts) == 1
+    assert prompts[0].positive == "1girl, solo, red hair"
+    assert prompts[0].negative == ""
+
+
+def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenPromptBlockMissing(monkeypatch):
+    # arrange
+    _mock_app_config(monkeypatch)
+    s = "<exploration>{'type': 'artist_only', 'description': 'd', 'keywords': []}</exploration>"
+
+    # act & assert
+    with pytest.raises(ValueError, match="未找到 prompt 块"):
+        DraftParseService.image_process_guard(s)
+
+
+def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenExplorationBlockMissing(monkeypatch):
+    # arrange
+    _mock_app_config(monkeypatch)
+    s = r"""
+```prompt0
+positive
+1girl, solo
+
+negative
+null
+
+```
+    """
+
+    # act & assert
+    with pytest.raises(ValueError, match="缺少 <exploration> 块"):
+        DraftParseService.image_process_guard(s)
+
+
+def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInvalidTagsExceedTolerance(monkeypatch):
+    # arrange
+    _mock_app_config(monkeypatch, invalid_tag_tolerance=1)
+    s = ": 1girl, solo, cinematic lightingss, raindropsss"
+
+    # act
+    do_intercept, message, prompts = DraftParseService.image_process_guard(s)
+
+    # assert
+    assert do_intercept is True
+    assert "budget=1" in message
+    assert len(prompts) == 1
+
+
+def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenWorkflowJsonNotExist(monkeypatch):
+    # arrange
+    _mock_app_config(monkeypatch, workflow_api_json="workflows/not_exist.json")
+    s = ": 1girl, solo"
+
+    # act & assert
+    with pytest.raises(ValueError, match="not exist"):
+        DraftParseService.image_process_guard(s)
