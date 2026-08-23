@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -6,8 +7,6 @@ from flask import Flask, abort, redirect, send_from_directory
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.application.rag_handler import RagHandler
 from entropy.domain.models.app_config import AppConfig
-
-import logging
 
 logging.basicConfig(
     # 1. 日志输出目标：同时输出到文件和控制台（注：basicConfig默认只输出到控制台，指定filename则只输出到文件；如需双输出需自定义，见下文）
@@ -20,7 +19,7 @@ logging.basicConfig(
     # 4. 时间格式（可读性优先）
     datefmt="%Y-%m-%d %H:%M:%S",
     # 5. 编码（解决中文乱码）
-    encoding="utf-8",
+    encoding="utf-8",  # type: ignore
 )
 
 app = Flask(__name__)
