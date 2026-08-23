@@ -15,6 +15,7 @@ class ChooseHighScoresRequest(pydantic.BaseModel):
     name: str = ""
     # timestep: int = 0  # for integrity check
     highscores: list[ImagePointer] = []
+    overwrite: int = 0  # 1=确认覆盖已反馈的 timestep（前端二次确认后传递）
 
 
 class ChooseHighScoresResponse(ApiResponse):

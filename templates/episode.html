@@ -226,7 +226,7 @@
                 : 0;
 
             // 2. 构建符合 ChooseHighScoresRequest 的 payload
-            const payload = {
+            const basePayload = {
                 name: episodeName.value,
                 timestep: maxTimestep,
                 highscores: selectedPointers.value.map(p => ({
@@ -235,7 +235,17 @@
                 }))
             };
 
-            try {
+            const onSuccess = () => {
+                // 清空本地选择并关闭预览（可选）
+                selectedPointers.value = [];
+                closePreview();
+
+                // 立即刷新一次数据以获取最新状态
+                fetchData();
+            };
+
+            const doSubmit = async (overwrite) => {
+                const payload = overwrite ? { ...basePayload, overwrite: 1 } : basePayload;
                 const response = await fetch(`/api/episodes/${episodeName.value}/choose-highscore`, {
                     method: 'POST',
                     headers: {
@@ -245,22 +255,37 @@
                 });
 
                 const result = await response.json();
+                return { ok: response.ok && result.code === 0, result };
+            };
 
-                if (response.ok && result.code === 0) {
-                    console.log("Success:", result);
-                    // 提交成功后的反馈
-                    // alert(`成功提交 ${selectedPointers.value.length} 个高分结果`);
+            try {
+                const first = await doSubmit(0);
 
-                    // 清空本地选择并关闭预览（可选）
-                    selectedPointers.value = [];
-                    closePreview();
-
-                    // 立即刷新一次数据以获取最新状态
-                    fetchData();
-                } else {
-                    // 处理后端返回的错误信息 (cls.wrap_api_exception)
-                    alert("提交失败: " + (result.message || result.error || "未知错误"));
+                if (first.ok) {
+                    console.log("Success:", first.result);
+                    onSuccess();
+                    return;
                 }
+
+                // 已反馈过的 timestep 再次打分：需要二次确认后带 overwrite=1 重试
+                if (first.result.code === 601899001) {
+                    const confirmed = confirm(first.result.message || "该 timestep 已提交过反馈，再次提交将覆盖原选择，是否继续？");
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    const second = await doSubmit(1);
+                    if (second.ok) {
+                        onSuccess();
+                        return;
+                    }
+
+                    alert("提交失败: " + (second.result.message || second.result.error || "未知错误"));
+                    return;
+                }
+
+                // 其他失败
+                alert("提交失败: " + (first.result.message || first.result.error || "未知错误"));
             } catch (err) {
                 alert("API Error:" + err);
             }

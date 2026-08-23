@@ -9,6 +9,7 @@ from typing import List, Optional, Tuple
 
 from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
+from entropy.domain.models.error_code import ErrorCode
 from entropy.application.app_dtos import (
     ChooseHighScoresRequest,
     ChooseHighScoresResponse,
@@ -206,6 +207,13 @@ class EpisodeHandler:
         feedbackable = episode.get_feedbackable_timestep()
         if feedbackable is None:
             raise ValueError("cannot choose highscore")
+
+        # 已反馈过的 timestep 再次打分 = 覆盖，需前端二次确认（带 overwrite=1 重试）
+        if feedbackable.status == 2 and request.overwrite != 1:
+            return ChooseHighScoresResponse(
+                code=ErrorCode.NEED_OVERWRITE_CONFIRMATION,
+                message="该 timestep 已提交过反馈，再次提交将覆盖原选择，是否继续？",
+            )
 
         # choose
 
