@@ -16,6 +16,7 @@ dependencies = [
     "pydantic>=2.12.5",
     "pytest>=9.0.2",
     "requests>=2.32.5",
+    "ruff>=0.16.3",
     "sentence-transformers>=5.3.0",
     "shortuuid>=1.0.13",
     "toml>=0.10.2",

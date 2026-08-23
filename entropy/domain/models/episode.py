@@ -23,18 +23,18 @@ class EpisodeTimestep(pydantic.BaseModel):
     status: int = 0
     """0=image processing, 1=image done, 2=high score chosen"""
 
-    chosen_highscores: List[ImagePointer] = []
+    chosen_highscores: list[ImagePointer] = []
 
     rag_wip: int = 0  # 当与上一轮相比多出的tag不认识的时候，进行检索
     rag_result: str = ""
 
-    prompts: List[ImagePrompt] = []
+    prompts: list[ImagePrompt] = []
 
 
 
 class Episode(pydantic.BaseModel):
     create_time: int = 0
-    timesteps: List[EpisodeTimestep] = []
+    timesteps: list[EpisodeTimestep] = []
 
     def can_process_image(self) -> bool:
         """上一个 timestep 需跑完且已提交反馈（status==2），才能开始下一个"""

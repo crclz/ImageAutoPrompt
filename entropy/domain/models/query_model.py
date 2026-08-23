@@ -18,8 +18,8 @@ class ImageQueryModel(pydantic.BaseModel):
 
 class TimestepQueryModel(pydantic.BaseModel):
     i: int = 0
-    images: List[ImageQueryModel] = []
-    chosen_highscores: List[ImagePointer] = []
+    images: list[ImageQueryModel] = []
+    chosen_highscores: list[ImagePointer] = []
     status: int = 0
     observation: str = ""  # timestep=i, 用户: NewHighScore: xxx
 
@@ -38,4 +38,4 @@ class TimestepQueryModel(pydantic.BaseModel):
 
 class EpisodeQueryModel(pydantic.BaseModel):
     can_process_image: int = 0
-    timesteps: List[TimestepQueryModel] = []
+    timesteps: list[TimestepQueryModel] = []

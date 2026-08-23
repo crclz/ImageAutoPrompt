@@ -10,3 +10,6 @@ line-length = 120
 
 [lint]
 extend-select = ["C901", "PLR0915"]
+ignore = ["UP006", "I001", "SIM102"]
+
+# example: uv run ruff check entropy/domain/models --select UP006

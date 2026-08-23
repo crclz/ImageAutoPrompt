@@ -15,7 +15,7 @@ class ApiResponse(pydantic.BaseModel):
 class ChooseHighScoresRequest(pydantic.BaseModel):
     name: str = ""
     # timestep: int = 0  # for integrity check
-    highscores: List[ImagePointer] = []
+    highscores: list[ImagePointer] = []
 
 
 class ChooseHighScoresResponse(ApiResponse):
@@ -49,7 +49,7 @@ class RagCandidate(pydantic.BaseModel):
 
 
 class ShowRagResponse(ApiResponse):
-    candidates: List[RagCandidate]
+    candidates: list[RagCandidate]
 
 
 class GetEpisodeListRequest(pydantic.BaseModel):
@@ -62,7 +62,7 @@ class EpisodeListItem(pydantic.BaseModel):
 
 
 class GetEpisodeListResponse(ApiResponse):
-    episodes_list: List[EpisodeListItem] = []
+    episodes_list: list[EpisodeListItem] = []
 
 
 class CreateEpisodeRequest(pydantic.BaseModel):
