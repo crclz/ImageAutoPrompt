@@ -1,4 +1,3 @@
-from typing import List
 
 import pydantic
 import requests
@@ -16,7 +15,7 @@ class RagCandidate(pydantic.BaseModel):
 
 
 class ShowRagResponse(pydantic.BaseModel):
-    candidates: List[RagCandidate]
+    candidates: list[RagCandidate]
 
 
 class RagProxy:

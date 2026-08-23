@@ -1,17 +1,15 @@
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
 import json
 import logging
 import threading
 import time
-from typing import List, Tuple
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 
-import requests
 import pydantic
+import requests
 import shortuuid
 
 from entropy.domain.models.app_config import AppConfig
-
 
 _logger = logging.getLogger(__name__)
 
@@ -97,11 +95,11 @@ class ComfyApi:
 
         # 3. poll for prompt complete
 
-        deadline = datetime.now() + timedelta(seconds=AppConfig.read().workflow_timeout_seconds)
+        deadline = datetime.now(UTC) + timedelta(seconds=AppConfig.read().workflow_timeout_seconds)
         while True:
             ComfyApi._check_cancel(cancellation_source)
 
-            if datetime.now() > deadline:
+            if datetime.now(UTC) > deadline:
                 raise ValueError("poll for prompt reached deadline")
 
             complete, images = ComfyApi.get_workflow_result(base_url, prompt_id, file_prefix)
@@ -131,7 +129,7 @@ class ComfyApi:
         return response.content
 
     @staticmethod
-    def get_workflow_result(base_url: str, prompt_id: str, file_prefix: str) -> Tuple[bool, List[ImageDescriptor]]:
+    def get_workflow_result(base_url: str, prompt_id: str, file_prefix: str) -> tuple[bool, list[ImageDescriptor]]:
         """
         return: false when not complete, true when complete
         throw: when failure
@@ -165,11 +163,11 @@ class ComfyApi:
         return True, images
 
     @classmethod
-    def find_output_images(cls, data, file_prefix) -> List[ImageDescriptor]:
+    def find_output_images(cls, data, file_prefix) -> list[ImageDescriptor]:
         """
         递归遍历 JSON，寻找所有符合 type='output' 且 filename 匹配 pattern 的字典对象。
         """
-        results: List[ImageDescriptor] = []
+        results: list[ImageDescriptor] = []
 
         if isinstance(data, dict):
             # 健壮性检查：判断当前字典是否同时包含 filename 和 type
@@ -198,13 +196,13 @@ class ComfyApi:
         cls,
         base_url: str,
         workflow_template_json: str,
-        positives: List[str],
-        negative: List[str],
-        loras: List[str],
+        positives: list[str],
+        negative: list[str],
+        loras: list[str],
         batch_size=1,
         complete_hook=None,
         cancellation_source=None,
-    ) -> List[bytes]:
+    ) -> list[bytes]:
         """
         return, keep order
 
@@ -218,7 +216,7 @@ class ComfyApi:
         assert len(positives) == len(negative)
         assert len(positives) == len(loras)
 
-        results: List[bytes] = [None] * len(positives)  # type: ignore
+        results: list[bytes] = [None] * len(positives)  # type: ignore
 
         sem = threading.Semaphore(MAX_WORKERS)
 

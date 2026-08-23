@@ -10,7 +10,6 @@ ComfyUI 健康检查（进程内缓存）。
 import logging
 import threading
 import time
-from typing import Dict
 
 import requests
 
@@ -20,7 +19,7 @@ HEALTH_TIMEOUT_SECONDS = 2
 HEALTH_CACHE_TTL_SECONDS = 10 * 60  # 10 分钟
 
 _lock = threading.Lock()
-_healthy_cache: Dict[str, float] = {}  # base_url -> 上次探测成功的时间戳
+_healthy_cache: dict[str, float] = {}  # base_url -> 上次探测成功的时间戳
 
 
 class ComfyHealth:
