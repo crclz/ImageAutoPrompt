@@ -1,8 +1,8 @@
-from pathlib import Path
+import functools
 import time
+from pathlib import Path
 
 import pydantic
-import functools
 import yaml
 
 
