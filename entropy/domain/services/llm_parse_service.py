@@ -4,6 +4,8 @@ from typing import List, Optional, Tuple
 
 import pydantic
 
+from entropy.domain.models.draft import TimestepDraftParseResult
+
 
 class ExplorationAbstract(pydantic.BaseModel):
     type: str = ""
@@ -13,14 +15,14 @@ class ExplorationAbstract(pydantic.BaseModel):
 
 class LlmParseService:
     @staticmethod
-    def parse_exploration_output(text: str) -> Tuple[List[str], List[str], List[str], bool]:
+    def parse_timestep_draft(text: str) -> TimestepDraftParseResult:
         """
         return: positives, negatives, loras, is_user_friendly_format_input
         """
         success, positives, negatives = LlmParseService.try_parse_user_friendly(text)
         if success:
             loras = [""] * len(positives)
-            return positives, negatives, loras, True
+            return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=True)
 
         del success, positives, negatives
 
@@ -30,7 +32,7 @@ class LlmParseService:
         matches = re.findall(pattern, text, re.DOTALL)
 
         if not matches:
-            return [], [], [], False
+            return TimestepDraftParseResult()
 
         positives = []
         negatives = []
@@ -78,7 +80,7 @@ class LlmParseService:
             negatives.append(n_part)
             loras.append(l_part)
 
-        return positives, negatives, loras, False
+        return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=False)
 
     @staticmethod
     def try_parse_user_friendly(s: str) -> Tuple[bool, List[str], List[str]]:
@@ -99,23 +101,6 @@ class LlmParseService:
         negatives = [""] * len(positives)
 
         return True, positives, negatives
-
-    @staticmethod
-    def parse_danbooru_search(text: str) -> List[str]:
-        # 1. Use regex to find the content inside the ```danbooru_search block
-        # re.DOTALL allows the '.' to match newlines
-        pattern = r"```danbooru_search\s+(.*?)\s+```"
-        match = re.search(pattern, text, re.DOTALL)
-
-        if not match:
-            return []
-
-        # 2. Extract the captured group and parse as JSON
-        json_content = match.group(1)
-        data = json.loads(json_content)
-
-        # 3. Return the "query_list" field
-        return data.get("query_list", [])
 
     @staticmethod
     def parse_exploration_abstract(text: str) -> Optional[ExplorationAbstract]:

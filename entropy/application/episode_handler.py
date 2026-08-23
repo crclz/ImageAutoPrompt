@@ -273,17 +273,17 @@ class EpisodeHandler:
             raise ValueError(f"not exist: {json_file}")
 
         # parse llm
-        assert request.exploration_output, "exploration_output is empty"
+        assert request.timestep_draft, "timestep_draft is empty"
 
-        positives, negatives, loras, friendly_format = LlmParseService.parse_exploration_output(request.exploration_output)
-        if not positives:
+        parse_result = LlmParseService.parse_timestep_draft(request.timestep_draft)
+        if not parse_result.positives:
             raise ValueError(
                 "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
                 "或以 \":\" 开头的行（一行一个 tag）"
             )
 
         prompts: List[ImagePrompt] = []
-        for positive, negative, lora in zip(positives, negatives, loras):
+        for positive, negative, lora in zip(parse_result.positives, parse_result.negatives, parse_result.loras):
             prompts.append(ImagePrompt(positive=positive, negative=negative, lora=lora))
 
         # parse abstract
@@ -291,8 +291,8 @@ class EpisodeHandler:
         # is_zero_index = len(episode.timesteps) == 0
         del episode
 
-        abstract = LlmParseService.parse_exploration_abstract(request.exploration_output)
-        if not abstract and friendly_format:
+        abstract = LlmParseService.parse_exploration_abstract(request.timestep_draft)
+        if not abstract and parse_result.is_friendly:
             abstract = ExplorationAbstract()
         if not abstract:
             raise ValueError(
@@ -304,15 +304,15 @@ class EpisodeHandler:
         message = ""
 
         # invalid tags interception
-        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(positives, negatives)
+        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(parse_result.positives, parse_result.negatives)
         if invalid_tag_hint:
             do_intercept = True
             message = invalid_tag_hint
 
-        return do_intercept, message, abstract, prompts, (positives, negatives, loras)
+        return do_intercept, message, abstract, prompts, (parse_result.positives, parse_result.negatives, parse_result.loras)
 
     @classmethod
-    def create_timestep_with_exploration_output(cls, episode_name: str, exploration_output: str) -> int:
+    def create_timestep_with_draft(cls, episode_name: str, timestep_draft: str) -> int:
         """
         创建新 timestep 的公共流程（web 与 cli 共用）：
         guard（无效 tag 拦截 raise）→ comfy 健康检查 → episode 状态守卫 → append timestep + save
@@ -320,7 +320,7 @@ class EpisodeHandler:
         return: 新 timestep 的序号 timestep_i
         raise: ValueError（拦截提示 / 状态不允许等）
         """
-        request = StartImageProcessingRequest(episode_name=episode_name, exploration_output=exploration_output)
+        request = StartImageProcessingRequest(episode_name=episode_name, timestep_draft=timestep_draft)
 
         current_app_config = AppConfig.read()
 
@@ -365,7 +365,7 @@ class EpisodeHandler:
         created_hook: 创建 timestep 后、跑图前调用 (timestep_i)
         extra_hook: 每张图完成后调用 (image_index, image_bytes)（存图之后）
         """
-        timestep_i = cls.create_timestep_with_exploration_output(request.episode_name, request.exploration_output)
+        timestep_i = cls.create_timestep_with_draft(request.episode_name, request.timestep_draft)
 
         if created_hook:
             created_hook(timestep_i)

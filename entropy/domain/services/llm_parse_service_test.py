@@ -3,7 +3,7 @@ import pytest
 from entropy.domain.services.llm_parse_service import LlmParseService
 
 
-def test_parse_exploration_output_shouldParseMultiplePromptBlocks_whenHappy():
+def test_parse_timestep_draft_shouldParseMultiplePromptBlocks_whenHappy():
     s = r"""
         看来你对 **torino aqua / tiv** 的通透碎光感，以及 **hiten / anmi** 的湿润肉感与逆光氛围非常满意！
 
@@ -53,7 +53,8 @@ def test_parse_exploration_output_shouldParseMultiplePromptBlocks_whenHappy():
         这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
     """
 
-    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
+    result = LlmParseService.parse_timestep_draft(s)
+    positives, negatives, loras = result.positives, result.negatives, result.loras
 
     assert len(positives) == 4
     assert len(negatives) == 4
@@ -69,7 +70,7 @@ def test_parse_exploration_output_shouldParseMultiplePromptBlocks_whenHappy():
     assert loras == [""] * 4
 
 
-def test_parse_exploration_output_shouldRaiseValueError_whenNegativeSectionIsEmpty():
+def test_parse_timestep_draft_shouldRaiseValueError_whenNegativeSectionIsEmpty():
     s = r"""
         ```prompt0
         positive
@@ -80,10 +81,10 @@ def test_parse_exploration_output_shouldRaiseValueError_whenNegativeSectionIsEmp
     """
 
     with pytest.raises(ValueError):
-        LlmParseService.parse_exploration_output(s)
+        LlmParseService.parse_timestep_draft(s)
 
 
-def test_parse_exploration_output_shouldRaiseValueError_whenNegativeSectionMissing():
+def test_parse_timestep_draft_shouldRaiseValueError_whenNegativeSectionMissing():
     s = r"""
         ```prompt0
         positive
@@ -92,10 +93,10 @@ def test_parse_exploration_output_shouldRaiseValueError_whenNegativeSectionMissi
     """
 
     with pytest.raises(ValueError):
-        LlmParseService.parse_exploration_output(s)
+        LlmParseService.parse_timestep_draft(s)
 
 
-def test_parse_exploration_output_shouldTreatNullNegativeAsEmpty_whenNegativeIsNull():
+def test_parse_timestep_draft_shouldTreatNullNegativeAsEmpty_whenNegativeIsNull():
     s = r"""
         ```prompt0
         positive
@@ -105,12 +106,13 @@ def test_parse_exploration_output_shouldTreatNullNegativeAsEmpty_whenNegativeIsN
         ```
     """
 
-    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
+    result = LlmParseService.parse_timestep_draft(s)
+    positives, negatives, loras = result.positives, result.negatives, result.loras
     assert negatives[0] == ""
     assert loras == [""]
 
 
-def test_parse_exploration_output_shouldReturnLoraValues_whenLoraHappy():
+def test_parse_timestep_draft_shouldReturnLoraValues_whenLoraHappy():
     s = r"""
         ```prompt0
         positive
@@ -135,7 +137,8 @@ def test_parse_exploration_output_shouldReturnLoraValues_whenLoraHappy():
         ```
     """
 
-    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
+    result = LlmParseService.parse_timestep_draft(s)
+    positives, negatives, loras = result.positives, result.negatives, result.loras
 
     assert len(positives) == 2
     assert positives[0].startswith("1girl")
@@ -148,7 +151,7 @@ def test_parse_exploration_output_shouldReturnLoraValues_whenLoraHappy():
     assert loras[1] == ""
 
 
-def test_parse_exploration_output_shouldReturnLoraForEachPrompt_whenAllPromptsHaveLoraSection():
+def test_parse_timestep_draft_shouldReturnLoraForEachPrompt_whenAllPromptsHaveLoraSection():
     s = r"""
         ```prompt0
         positive
@@ -173,59 +176,26 @@ def test_parse_exploration_output_shouldReturnLoraForEachPrompt_whenAllPromptsHa
         ```
     """
 
-    positives, negatives, loras, _ = LlmParseService.parse_exploration_output(s)
+    result = LlmParseService.parse_timestep_draft(s)
+    positives, negatives, loras = result.positives, result.negatives, result.loras
 
     assert positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
     assert negatives == ["", ""]
     assert loras == ["<lora:noob_fkey:0.9>", "<lora:noob_myowa:1.0>"]
 
 
-def test_parse_exploration_output_shouldParseFriendlyFormat_whenHappy():
+def test_parse_timestep_draft_shouldParseFriendlyFormat_whenHappy():
     s = r"""
         : 1girl, solo, red hair
         
         : 1girl, solo, blue hair
     """
 
-    positives, negatives, loras, is_friendly = LlmParseService.parse_exploration_output(s)
-    assert positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
-    assert negatives == ["", ""]
-    assert loras == ["", ""]  # friendly 格式不支持 lora
-    assert is_friendly is True
-
-
-def test_parse_danbooru_search_shouldReturnQueryList_whenDanbooruSearchBlockPresent():
-    s = r"""
-        ```prompt0
-        positive
-        1girl, hatsune miku, solo, (artist:torino aqua:1.1), (artist:hiten \(hitenkei\):0.9), (artist:tiv:0.8), long hair, looking at viewer, blue eyes, shirt, skirt, hair ornament, thighhighs, holding, closed mouth, bare shoulders, very long hair, twintails, standing, blue hair, white shirt, full body, ahoge, outdoors, pleated skirt, necktie, detached sleeves, sky, sleeveless, ocean, collared shirt, day, black thighhighs, cloud, black skirt, black footwear, blue sky, aqua eyes, zettai ryouiki, sleeveless shirt, floating hair, aqua hair, instrument, black sleeves, guitar, holding instrument, aqua necktie, cumulonimbus cloud, cinematic lighting, tyndall effect, lens flare, water refraction, masterpiece, best quality, newest, absurdres, highres
-
-        negative
-        worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands
-
-        ```
-
-        ```prompt1
-        positive
-        1girl, hatsune miku, solo, (artist:anmi:1.1), (artist:kantoku:0.9), artist:tiv, long hair, looking at viewer, blue eyes, shirt, skirt, hair ornament, thighhighs, holding, closed mouth, bare shoulders, very long hair, twintails, standing, blue hair, white shirt, full body, ahoge, outdoors, pleated skirt, necktie, detached sleeves, sky, sleeveless, ocean, collared shirt, day, black thighhighs, cloud, black skirt, black footwear, blue sky, aqua eyes, zettai ryouiki, sleeveless shirt, floating hair, aqua hair, instrument, black sleeves, guitar, holding instrument, aqua necktie, cumulonimbus cloud, wet, wet clothes, sea spray, masterpiece, best quality, newest, absurdres, highres
-
-        negative
-        worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands
-
-        ```
-
-        ```danbooru_search
-        {
-            "query_list": ["a", "b", "c"]
-        }
-        ```
-
-
-        这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
-    """
-
-    query_list = LlmParseService.parse_danbooru_search(s)
-    assert ["a", "b", "c"] == query_list
+    result = LlmParseService.parse_timestep_draft(s)
+    assert result.positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
+    assert result.negatives == ["", ""]
+    assert result.loras == ["", ""]  # friendly 格式不支持 lora
+    assert result.is_friendly is True
 
 
 def test_parse_exploration_abstract_shouldReturnAbstract_whenExplorationBlockPresent():

@@ -62,7 +62,7 @@ def main():
     # 同步全流程：解析 + 拦截 + 健康检查 + 创建 + 跑图（失败时 draft 不动、不创建 timestep）
     try:
         EpisodeHandler.start_image_processing(
-            StartImageProcessingRequest(episode_name=args.name, exploration_output=draft_text),
+            StartImageProcessingRequest(episode_name=args.name, timestep_draft=draft_text),
             join=True,
             extra_hook=extra_hook,
             created_hook=created_hook,

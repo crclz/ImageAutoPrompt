@@ -23,7 +23,7 @@ class ChooseHighScoresResponse(ApiResponse):
 
 class StartImageProcessingRequest(pydantic.BaseModel):
     episode_name: str = ""
-    exploration_output: str = ""
+    timestep_draft: str = ""
 
 
 class StartImageProcessingResponse(ApiResponse):
