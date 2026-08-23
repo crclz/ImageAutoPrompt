@@ -27,14 +27,14 @@ import hashlib
 import os
 import signal
 import sys
-from threading import Thread
 import time
 from pathlib import Path
+from threading import Thread
+
 # 约定在仓库根运行：将当前目录加入 sys.path（entropy 是 namespace package，未安装到环境中）
 sys.path.append(".")
 
-from entropy.application.episode_handler import EpisodeHandler
-from entropy.application.app_dtos import StartImageProcessingRequest
+from entropy.domain.services.timestep_draft_consumption_service import TimestepDraftConsumptionService
 from entropy.infra.cancellation import send_cancel
 from entropy.infra.episode_repository import EpisodeRepository
 
@@ -88,8 +88,9 @@ def main():
 
     # 同步全流程：解析 + 拦截 + 健康检查 + 创建 + 跑图（失败时 draft 不动）
     try:
-        thread = EpisodeHandler.start_image_processing(
-            StartImageProcessingRequest(episode_name=args.name, timestep_draft=draft_text),
+        thread = TimestepDraftConsumptionService.start_image_processing(
+            args.name,
+            draft_text,
             extra_hook=extra_hook,
             created_hook=created_hook,
             done_hook=done_hook,

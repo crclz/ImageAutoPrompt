@@ -3,10 +3,10 @@ import pytest
 from entropy.application.app_dtos import (
     ChooseHighScoresRequest,
     RollbackTimestepRequest,
-    StartImageProcessingRequest,
 )
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.models.episode import ImagePointer
+from entropy.domain.services.timestep_draft_consumption_service import TimestepDraftConsumptionService
 
 
 @pytest.mark.slow  # 读取真实 episode 数据
@@ -81,8 +81,9 @@ def test_start_image_processing_happy_1():
         这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
     """
 
-    thread = EpisodeHandler.start_image_processing(
-        StartImageProcessingRequest(episode_name="test1", timestep_draft=s),
+    thread = TimestepDraftConsumptionService.start_image_processing(
+        "test1",
+        s,
     )
     thread.join()
 
