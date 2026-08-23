@@ -24,6 +24,9 @@ class EpisodeTimestep(pydantic.BaseModel):
 
     chosen_highscores: list[ImagePointer] = []
 
+    error: str = ""  # 失败原因（含取消信号）；空=成功
+    stacktrace: str = ""  # 失败时的完整堆栈，供 web 端展示
+
     prompts: list[ImagePrompt] = []
 
 

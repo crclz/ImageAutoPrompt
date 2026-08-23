@@ -95,6 +95,8 @@ class EpisodeRepository:
                 images=[],
                 initial_md_prefix=initial_md_prefix,
                 status=timestep.status,
+                error=timestep.error,
+                stacktrace=timestep.stacktrace,
             )
 
         for png_file in png_files:

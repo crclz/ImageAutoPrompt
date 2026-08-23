@@ -77,6 +77,11 @@ def rollback_timestep(name: str):
     return EpisodeHandler.rollback_timestep_wrapper(name)
 
 
+@app.post("/api/episodes/<name>/cancel-timestep")
+def cancel_timestep(name: str):
+    return EpisodeHandler.cancel_timestep_wrapper(name)
+
+
 @app.get("/rag")
 def rag_page():
     return RagHandler.rag_page_wrapper()

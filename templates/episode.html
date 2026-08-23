@@ -24,6 +24,15 @@
 
             </button>
 
+            <button v-if="isRunning" @click="sendCancel"
+                class="flex items-center px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-md text-xs font-bold transition-all active:scale-95">
+                <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Send Cancel Signal
+            </button>
+
             <button @click="handleRollback"
                 class="flex items-center px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md text-xs font-bold transition-all active:scale-95">
                 <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -48,6 +57,14 @@
                         :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
                         [[ getStatusInfo(step.status).text ]]
                     </span>
+                </template>
+
+                <template v-if="step.error">
+                    <div class="text-xs text-red-600 font-mono break-words">[[ step.error ]]</div>
+                    <details class="text-xs text-gray-500">
+                        <summary class="cursor-pointer">stacktrace</summary>
+                        <pre class="whitespace-pre-wrap bg-gray-50 p-2 rounded">[[ step.stacktrace ]]</pre>
+                    </details>
                 </template>
 
                 <template v-if="step.observation">
@@ -400,10 +417,14 @@
     }
 
 
-    function useEpisodeDataFetcher(episodeName) {
+    function useEpisodeDataFetcher(episodeName, showToast) {
         const timesteps = ref([]);
         const getEpisodeMessage = ref("");
         const canProcessImage = ref(0)
+        const isRunning = computed(() => {
+            if (!timesteps.value.length) return false;
+            return timesteps.value[timesteps.value.length - 1].status === 0;
+        });
         const fetchData = async () => {
             try {
                 const response = await fetch(`/api/episodes/${episodeName.value}`);
@@ -416,6 +437,27 @@
             } catch (err) {
                 console.warn("Sync error:", err);
                 getEpisodeMessage.value = "sync error: " + err;
+            }
+        };
+
+        const sendCancel = async () => {
+            try {
+                const response = await fetch(`/api/episodes/${episodeName.value}/cancel-timestep`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+                const result = await response.json();
+
+                if (response.ok && result.code === 0) {
+                    showToast("取消信号已发送，可能需要几秒生效");
+                } else {
+                    alert("取消失败: " + (result.message || "未知错误"));
+                }
+            } catch (err) {
+                alert("网络错误: " + err);
             }
         };
 
@@ -440,7 +482,7 @@
         });
 
 
-        return { timesteps, getEpisodeMessage, canProcessImage, fetchData, getStatusInfo };
+        return { timesteps, getEpisodeMessage, canProcessImage, isRunning, sendCancel, fetchData, getStatusInfo };
     }
 
     function useClipboard(showToast) {
@@ -458,10 +500,13 @@
         return { copyToClipboard };
     }
 
-    function useRollback(episodeName, fetchData) {
+    function useRollback(episodeName, fetchData, isRunning) {
 
         const handleRollback = async () => {
-            if (!confirm("确定要回滚最后一个 Timestep 吗？")) return;
+            const msg = isRunning.value
+                ? "该 Timestep 正在运行中，推荐使用取消功能（Cancel）。确定仍要回滚吗？"
+                : "确定要回滚最后一个 Timestep 吗？";
+            if (!confirm(msg)) return;
 
             try {
                 const response = await fetch(`/api/episodes/${episodeName.value}/rollback-timestep`, {
@@ -518,7 +563,7 @@
             const { toasts, showToast } = useToast();
             const { copyToClipboard } = useClipboard(showToast);
 
-            const { timesteps, getEpisodeMessage, canProcessImage, fetchData, getStatusInfo } = useEpisodeDataFetcher(episodeName);
+            const { timesteps, getEpisodeMessage, canProcessImage, isRunning, sendCancel, fetchData, getStatusInfo } = useEpisodeDataFetcher(episodeName, showToast);
 
             const { preview, openPreview, closePreview, navigate } = usePreview(
                 timesteps, showToast
@@ -541,7 +586,7 @@
 
 
             // ... 其他 ref
-            const { handleRollback } = useRollback(episodeName, fetchData);
+            const { handleRollback } = useRollback(episodeName, fetchData, isRunning);
 
             const downloadPreviewAsJpg = async () => {
                 if (!preview.value || !preview.value.url) return;
@@ -593,6 +638,8 @@
                 canProcessImage,
                 timesteps,
                 reversedTimesteps,
+                isRunning,
+                sendCancel,
                 preview,
                 selectedPointers,
                 getStatusInfo,

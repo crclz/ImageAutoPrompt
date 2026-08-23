@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 from threading import Thread
 import time
+import traceback
 from typing import List, Optional, Tuple
 
 
@@ -36,11 +37,9 @@ from entropy.infra.comfy_health import ComfyHealth
 from entropy.infra.episode_repository import EpisodeRepository
 from flask import jsonify, make_response, render_template, request
 
-from entropy.infra.keyed_lock import KeyedLock
+from entropy.infra.cancellation import FileCancellationSource, send_cancel
 
 _logger = logging.getLogger(__name__)
-
-_episode_timestep_lock = KeyedLock()
 
 
 class EpisodeHandler:
@@ -235,9 +234,9 @@ class EpisodeHandler:
 
             assert episode_name
 
-            resp = cls.start_image_processing(req)
+            cls.start_image_processing(req)  # 后台线程跑图，不 join
 
-            return cls.wrap_api_response(resp)
+            return cls.wrap_api_response(StartImageProcessingResponse())
         except Exception as e:
             _logger.exception("start_image_processing_wrapper error")
             return cls.wrap_api_exception(e)
@@ -365,16 +364,18 @@ class EpisodeHandler:
     def start_image_processing(
         cls,
         request: StartImageProcessingRequest,
-        join=False,
         extra_hook=None,
         created_hook=None,
-    ) -> StartImageProcessingResponse:
+        done_hook=None,
+    ) -> Thread:
         """
-        create new timestep. when done, change status from 0 to 1
-        change EpisodeTimestep.status from 0 to 1.
+        create new timestep, then start a daemon thread to run all images.
+
+        return: 后台跑图线程。调用者决定是否 join（web 不 join；cli join 并处理取消）。
 
         created_hook: 创建 timestep 后、跑图前调用 (timestep_i)
         extra_hook: 每张图完成后调用 (image_index, image_bytes)（存图之后）
+        done_hook: 跑图收尾后调用 (error: Optional[str])，None=成功，非 None=失败原因（含取消）
         """
         timestep_i = cls.create_timestep_with_draft(request.episode_name, request.timestep_draft)
 
@@ -382,15 +383,12 @@ class EpisodeHandler:
             created_hook(timestep_i)
 
         def fn_run_many():
-            cls.run_timestep_images(request.episode_name, timestep_i, extra_hook=extra_hook)
+            cls.run_timestep_images(request.episode_name, timestep_i, extra_hook=extra_hook, done_hook=done_hook)
 
         run_many_thread = Thread(target=fn_run_many, daemon=True)
         run_many_thread.start()
 
-        if join:
-            run_many_thread.join()
-
-        return StartImageProcessingResponse()
+        return run_many_thread
 
     @classmethod
     def run_timestep_images(
@@ -398,13 +396,12 @@ class EpisodeHandler:
         episode_name: str,
         timestep_i: int,
         extra_hook=None,
+        done_hook=None,
     ) -> None:
         """
-        跑指定 timestep 的所有图片（锁内 run_many），全部完成后 status 置 1。
-        每张图完成时默认存图到 images/；extra_hook 在存图后追加调用 (image_index, image_bytes)
+        跑指定 timestep 的所有图片，收尾时 status 置 1（成功或失败都迁移出 running，不滞留）。
+        失败（含取消）时记录 error + stacktrace 到 timestep，供 web 端展示。
         """
-        key = f"{episode_name}:{timestep_i}"
-
         current_app_config = AppConfig.read()
         template_json = Path(current_app_config.workflow_api_json).read_text("utf8")
 
@@ -425,7 +422,14 @@ class EpisodeHandler:
             if extra_hook:
                 extra_hook(image_index, image_bytes)
 
-        with _episode_timestep_lock.lock(key, 0.5):
+        # 跨进程取消信号源（web/cli 都可 send_cancel 写 cancel_flag）
+        cancel_flag_path = EpisodeRepository.episodes_dir() / episode_name / "cancel_flag"
+        cancellation_source = FileCancellationSource(cancel_flag_path)
+
+        error: Optional[str] = None
+        stacktrace = ""
+
+        try:
             t0 = datetime.now()
             ComfyApi.run_many(
                 current_app_config.comfyui_base_url,
@@ -434,15 +438,30 @@ class EpisodeHandler:
                 negatives,
                 loras,
                 complete_hook=complete_hook,
+                cancellation_source=cancellation_source,
             )
 
             dt = (datetime.now() - t0).total_seconds()
             _logger.info(f"run_many takes {dt:.1f} seconds")
+        except Exception as e:
+            error = str(e)
+            stacktrace = traceback.format_exc()
+            _logger.exception(f"run_many failed for episode {episode_name}, timestep {timestep_i}")
 
-            episode = EpisodeRepository.get_eposide(episode_name)
+        # 收尾：重新读 episode（防 rollback 竞态），timestep 仍存在才写回
+        episode = EpisodeRepository.get_eposide(episode_name)
+
+        if timestep_i >= len(episode.timesteps):
+            _logger.warning(f"timestep {timestep_i} no longer exists (rolled back), skip status write-back")
+        else:
             episode.timesteps[timestep_i].status = 1
+            episode.timesteps[timestep_i].error = error or ""
+            episode.timesteps[timestep_i].stacktrace = stacktrace
 
             EpisodeRepository.save_episode(episode_name, episode)
+
+        if done_hook:
+            done_hook(error)
 
     @classmethod
     def rollback_timestep_wrapper(cls, episode_name: str):
@@ -462,6 +481,19 @@ class EpisodeHandler:
             return cls.wrap_api_exception(e)
 
     @classmethod
+    def cancel_timestep_wrapper(cls, episode_name: str):
+        try:
+            assert episode_name
+
+            cancel_flag_path = EpisodeRepository.episodes_dir() / episode_name / "cancel_flag"
+            send_cancel(cancel_flag_path)
+
+            return cls.wrap_api_ok({"message": "cancel signal sent"})
+        except Exception as e:
+            _logger.exception("cancel_timestep_wrapper error")
+            return cls.wrap_api_exception(e)
+
+    @classmethod
     def rollback_timestep(cls, request: RollbackTimestepRequest) -> RollbackTimestepResponse:
         episode = EpisodeRepository.get_eposide(request.episode_name)
 
@@ -473,32 +505,26 @@ class EpisodeHandler:
         episode_name = request.episode_name
         assert episode_name, "episode_name is empty"
 
-        key = f"{episode_name}:{rolled_i}"
+        episode.timesteps.pop()
 
-        if _episode_timestep_lock.is_locked(key):
-            raise ValueError(f"episode timestep locked ({key}). kill the program and restart")
+        ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)
 
-        with _episode_timestep_lock.lock(key, timeout=0.5):
-            episode.timesteps.pop()
+        rollback_time = time.time().__int__()
 
-            ts_pics = EpisodeRepository.timestep_pics(request.episode_name, rolled_i)
+        for pic in ts_pics:
+            # move pic to pic.parent/trash/*_uuid.png
+            trash_dir = pic.parent / "trash"
+            trash_dir.mkdir(exist_ok=True)
 
-            rollback_time = time.time().__int__()
+            new_name = pic.name.removesuffix(".png") + f"_rollback_{rollback_time}.png"
 
-            for pic in ts_pics:
-                # move pic to pic.parent/trash/*_uuid.png
-                trash_dir = pic.parent / "trash"
-                trash_dir.mkdir(exist_ok=True)
+            dst = trash_dir / new_name
 
-                new_name = pic.name.removesuffix(".png") + f"_rollback_{rollback_time}.png"
+            pic.rename(dst)
 
-                dst = trash_dir / new_name
+        EpisodeRepository.save_episode(request.episode_name, episode)
 
-                pic.rename(dst)
-
-            EpisodeRepository.save_episode(request.episode_name, episode)
-
-            return RollbackTimestepResponse()
+        return RollbackTimestepResponse()
 
     @classmethod
     def get_episode_list_wrapper(cls):

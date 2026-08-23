@@ -27,12 +27,26 @@ class ImageDescriptor(pydantic.BaseModel):
 
 class ComfyApi:
     @staticmethod
-    def run_workflow(base_url: str, workflow_template_json: str, positive: str, negative: str, lora: str = "") -> bytes:
+    def _check_cancel(cancellation_source) -> None:
+        if cancellation_source is not None and cancellation_source.should_cancel():
+            raise ValueError("received cancellation signal")
+
+    @staticmethod
+    def run_workflow(
+        base_url: str,
+        workflow_template_json: str,
+        positive: str,
+        negative: str,
+        lora: str = "",
+        cancellation_source=None,
+    ) -> bytes:
         """
         return: png binary
         """
 
         assert workflow_template_json
+
+        ComfyApi._check_cancel(cancellation_source)
 
         # 1. render json
 
@@ -85,6 +99,8 @@ class ComfyApi:
 
         deadline = datetime.now() + timedelta(seconds=AppConfig.read().workflow_timeout_seconds)
         while True:
+            ComfyApi._check_cancel(cancellation_source)
+
             if datetime.now() > deadline:
                 raise ValueError("poll for prompt reached deadline")
 
@@ -187,6 +203,7 @@ class ComfyApi:
         loras: List[str],
         batch_size=1,
         complete_hook=None,
+        cancellation_source=None,
     ) -> List[bytes]:
         """
         return, keep order
@@ -212,7 +229,9 @@ class ComfyApi:
             assert isinstance(lora, str)
 
             try:
-                image_bytes = cls.run_workflow(base_url, workflow_template_json, positive, negative, lora)
+                image_bytes = cls.run_workflow(
+                    base_url, workflow_template_json, positive, negative, lora, cancellation_source=cancellation_source
+                )
                 results[i] = image_bytes
 
                 if complete_hook:
@@ -225,6 +244,7 @@ class ComfyApi:
 
             args_list = zip(range(len(positives)), positives, negative, loras)
             for args in args_list:
+                cls._check_cancel(cancellation_source)  # 提交前取消点：不再提交新图
                 sem.acquire()  # 窗口满时阻塞在此，保证最多 MAX_WORKERS 在飞（背压）
                 futures.append(executor.submit(lambda a=args: run(a[0], a[1], a[2], a[3])))
 

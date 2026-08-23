@@ -29,6 +29,9 @@ class TimestepQueryModel(pydantic.BaseModel):
 
     invalid_tags: str = ""
 
+    error: str = ""
+    stacktrace: str = ""
+
     def sort_images(self) -> None:
         self.images.sort(key=lambda x: x.image_index)
 

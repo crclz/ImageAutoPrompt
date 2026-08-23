@@ -81,12 +81,10 @@ def test_start_image_processing_happy_1():
         这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
     """
 
-    response = EpisodeHandler.start_image_processing(
+    thread = EpisodeHandler.start_image_processing(
         StartImageProcessingRequest(episode_name="test1", timestep_draft=s),
-        join=True,
     )
-
-    print("response is", response)
+    thread.join()
 
 
 @pytest.mark.slow  # 修改真实 episode 数据
