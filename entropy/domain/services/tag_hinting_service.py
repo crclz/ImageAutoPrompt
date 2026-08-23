@@ -1,11 +1,10 @@
-from typing import List
 
 from entropy.domain.services.tag_checker import TagChecker
 
 
 class TagHintingService:
     @classmethod
-    def get_invalid_tag_hint(cls, positives: List[str], negatives: List[str], tolerance: int) -> str:
+    def get_invalid_tag_hint(cls, positives: list[str], negatives: list[str], tolerance: int) -> str:
         """
         if invalid tag count not exceed tolerance, return empty
         Otherwise return hint text.
@@ -13,7 +12,7 @@ class TagHintingService:
 
         assert len(positives) == len(negatives)
 
-        not_exist_tags_list: List[List[str]] = []
+        not_exist_tags_list: list[list[str]] = []
 
         for positive, negative in zip(positives, negatives):
             not_exist_positive = TagChecker.get_not_exist_tags(positive)

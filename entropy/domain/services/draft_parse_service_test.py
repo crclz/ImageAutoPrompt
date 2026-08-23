@@ -107,7 +107,7 @@ def test_parse_timestep_draft_shouldTreatNullNegativeAsEmpty_whenNegativeIsNull(
     """
 
     result = DraftParseService.parse_timestep_draft(s)
-    positives, negatives, loras = result.positives, result.negatives, result.loras
+    _, negatives, loras = result.positives, result.negatives, result.loras
     assert negatives[0] == ""
     assert loras == [""]
 

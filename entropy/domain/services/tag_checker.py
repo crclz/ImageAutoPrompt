@@ -1,16 +1,16 @@
-import functools
-import time
-from typing import List, Set, Tuple
-from pathlib import Path
 import csv
+import functools
 import re
+import time
+from pathlib import Path
+from typing import ClassVar
 
 from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import EpisodeTimestep
 
 
 class TagChecker:
-    _tag_set: Set[str] = set()
+    _tag_set: ClassVar[set[str]] = set()
 
     @staticmethod
     def init_tag_set():
@@ -37,7 +37,7 @@ class TagChecker:
 
     @staticmethod
     @functools.lru_cache(maxsize=5)
-    def _load_tags_from_disk(window_id: int, file_path: str) -> Set[str]:
+    def _load_tags_from_disk(window_id: int, file_path: str) -> set[str]:
         """
         实际执行磁盘读取的私有方法。
         window_id 的变化会触发缓存失效，从而重新读取文件。
@@ -55,7 +55,7 @@ class TagChecker:
         return set(tags)
 
     @staticmethod
-    def get_extra_valid_tags() -> Set[str]:
+    def get_extra_valid_tags() -> set[str]:
 
         config = AppConfig.read()
         file_path = config.extra_valid_tag_file
@@ -178,7 +178,7 @@ class TagChecker:
         return tag
 
     @staticmethod
-    def get_not_exist_tags(prompt: str) -> List[str]:
+    def get_not_exist_tags(prompt: str) -> list[str]:
         """
         这个仅仅能用于prompt，因为存在括号转义这种不幂等的操作
         """
@@ -203,7 +203,7 @@ class TagChecker:
         return False
 
     @classmethod
-    def all_tags_in_timestep(cls, t: EpisodeTimestep) -> Tuple[List[str], List[str]]:
+    def all_tags_in_timestep(cls, t: EpisodeTimestep) -> tuple[list[str], list[str]]:
         positive_tags = []
         negative_tags = []
 

@@ -1,6 +1,5 @@
 import json
 import re
-from typing import Optional, Tuple
 
 import pydantic
 
@@ -45,11 +44,11 @@ class DraftParseService:
         return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=False)
 
     @staticmethod
-    def parse_prompt_block(content: str, index: int) -> Tuple[str, str, str]:
+    def parse_prompt_block(content: str, index: int) -> tuple[str, str, str]:
         """按行解析一个 prompt 块的 positive/negative/lora 段（顺序不限），返回 (positive, negative, lora)。"""
 
         sections = {"positive": [], "negative": [], "lora": []}
-        current: Optional[str] = None
+        current: str | None = None
 
         for line in content.splitlines():
             stripped = line.strip()
@@ -76,7 +75,7 @@ class DraftParseService:
         return positive, negative, lora
 
     @staticmethod
-    def try_parse_user_friendly(s: str) -> Optional[TimestepDraftParseResult]:
+    def try_parse_user_friendly(s: str) -> TimestepDraftParseResult | None:
         """每行以 ':' 开头的手工输入格式；不是该格式（或输入为空）时返回 None"""
 
         lines = s.splitlines()
@@ -100,7 +99,7 @@ class DraftParseService:
         return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=True)
 
     @staticmethod
-    def parse_exploration_abstract(text: str) -> Optional[ExplorationAbstract]:
+    def parse_exploration_abstract(text: str) -> ExplorationAbstract | None:
         """
         兼容三种形态:
         1. <exploration>```exploration {json}```</exploration> (旧 draft)

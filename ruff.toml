@@ -11,7 +11,8 @@ line-length = 120
 [lint]
 extend-select = ["C901", "PLR0915"]
 ignore = [
-    "SIM102", # SIM102推荐合并if，是错误的
+    "SIM102", # SIM102推荐合并if. 更应该采用 TigerStyle 的
+    "SIM103", # 同理
 ]
 
 # example: uv run ruff check entropy/domain/models --select UP006

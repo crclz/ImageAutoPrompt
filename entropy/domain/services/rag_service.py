@@ -2,7 +2,6 @@ import logging
 import os
 import threading
 import time
-from typing import List, Tuple
 
 _logger = logging.getLogger(__name__)
 
@@ -66,12 +65,10 @@ def reranker_model():
         with _lock:
             if _reranker_model is None:  # double-checked locking
                 raise ValueError("Not supported")
-                from FlagEmbedding import FlagReranker
                 import torch
+                from FlagEmbedding import FlagReranker
 
                 device = "cuda" if torch.cuda.is_available() else "cpu"
-
-                logging.info(f"reranker model device: {device}")
 
                 _reranker_model = FlagReranker(
                     r"C:\Users\ThePlayer\.cache\huggingface\hub\models--BAAI--bge-reranker-v2-m3\snapshots\953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
@@ -84,7 +81,7 @@ def reranker_model():
 
 class RagService:
     @classmethod
-    def do_rag(cls, query_text: str, recall_count: int = 500, rerank_output: int = 20) -> Tuple[List[str], List[float]]:
+    def do_rag(cls, query_text: str, recall_count: int = 500, rerank_output: int = 20) -> tuple[list[str], list[float]]:
         """
         return: tags, scores
         """
@@ -124,8 +121,8 @@ class RagService:
 
     @classmethod
     def batch_rag(
-        cls, query_text_list: List[str], recall_count: int = 500, rerank_output: int = 20
-    ) -> List[Tuple[List[str], List[float]]]:
+        cls, query_text_list: list[str], recall_count: int = 500, rerank_output: int = 20
+    ) -> list[tuple[list[str], list[float]]]:
         if not query_text_list:
             return []
 
@@ -187,7 +184,7 @@ class RagService:
         return final_results
 
     @classmethod
-    def batch_rag_simple(cls, query_text_list: List[str], recall_count: int) -> List[Tuple[List[str], List[float]]]:
+    def batch_rag_simple(cls, query_text_list: list[str], recall_count: int) -> list[tuple[list[str], list[float]]]:
         if not query_text_list:
             return []
 
@@ -215,7 +212,7 @@ class RagService:
         return list(zip(all_candidates_list, distances))
 
     @classmethod
-    def rag_simple(cls, query_text: str, recall_count: int) -> Tuple[List[str], List[float]]:
+    def rag_simple(cls, query_text: str, recall_count: int) -> tuple[list[str], list[float]]:
         r = cls.batch_rag_simple([query_text], recall_count)
 
         return r[0]
