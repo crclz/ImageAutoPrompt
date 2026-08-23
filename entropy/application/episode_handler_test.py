@@ -2,7 +2,7 @@ import pytest
 
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.models.episode import ImagePointer
-from entropy.domain.models.http_dtos import (
+from entropy.application.app_dtos import (
     ChooseHighScoresRequest,
     RollbackTimestepRequest,
     StartImageProcessingRequest,

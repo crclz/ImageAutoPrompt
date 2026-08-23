@@ -15,7 +15,7 @@ import sys
 sys.path.append(".")
 
 from entropy.application.episode_handler import EpisodeHandler
-from entropy.domain.models.http_dtos import CreateEpisodeRequest
+from entropy.application.app_dtos import CreateEpisodeRequest
 
 
 def main():

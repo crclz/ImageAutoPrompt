@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 
 from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
-from entropy.domain.models.http_dtos import (
+from entropy.application.app_dtos import (
     ChooseHighScoresRequest,
     ChooseHighScoresResponse,
     CreateEpisodeRequest,

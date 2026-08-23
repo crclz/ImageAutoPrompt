@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.append(".")
 
 from entropy.application.episode_handler import EpisodeHandler
-from entropy.domain.models.http_dtos import StartImageProcessingRequest
+from entropy.application.app_dtos import StartImageProcessingRequest
 from entropy.infra.episode_repository import EpisodeRepository
 
 _t0 = time.time()
