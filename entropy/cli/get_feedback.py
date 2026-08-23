@@ -2,8 +2,8 @@
 获取用户反馈（对齐 Web 端 choose-highscore 的标记结果）。
 
 用法:
-    uv run cli/get_feedback.py --name hello              # 最新 timestep 的反馈
-    uv run cli/get_feedback.py --name hello --timestep 1 # 指定 timestep 的反馈
+    uv run entropy/cli/get_feedback.py --name hello              # 最新 timestep 的反馈
+    uv run entropy/cli/get_feedback.py --name hello --timestep 1 # 指定 timestep 的反馈
 
 纯查询接口：查询成功一律 exit 0，三态通过文本表达；LLM 自行对比两次输出判断反馈是否变化（没变则停止并向用户二次确认）。
 

@@ -1,4 +1,16 @@
+"""
+对 danbooru tag 做语义搜索（调用本服务的 /api/show-rag）。
+
+用法:
+    uv run entropy/cli/semantic_tag_search.py --query "red hair"
+    uv run entropy/cli/semantic_tag_search.py --query "red hair" "blue eyes"
+"""
+
 import argparse
+import sys
+
+# 约定在仓库根运行：将当前目录加入 sys.path（entropy 是 namespace package，未安装到环境中）
+sys.path.append(".")
 
 from entropy.infra.rag_proxy import RagProxy, ShowRagRequest
 
@@ -6,11 +18,6 @@ from entropy.infra.rag_proxy import RagProxy, ShowRagRequest
 def main():
     # 1. 创建解析器对象
     parser = argparse.ArgumentParser()
-
-    # try:
-    #     current_app_config = AppConfig.read()  # noqa: F821
-    # except Exception:
-    #     raise ValueError("read yaml config error, please let user to handle this")
 
     # 2. 添加必要的参数
     # metavar 给参数起个好听的名字，help 是说明文字
