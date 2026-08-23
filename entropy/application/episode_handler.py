@@ -202,14 +202,14 @@ class EpisodeHandler:
         # if request.timestep != len(episode.timesteps) - 1:
         #     raise ValueError(f"wrong timestep. expected: {len(episode.timesteps) - 1}, actual: {request.timestep}")
 
-        to_be_chosen = episode.get_to_be_chosen()
-        if to_be_chosen is None:
+        feedbackable = episode.get_feedbackable_timestep()
+        if feedbackable is None:
             raise ValueError("cannot choose highscore")
 
         # choose
 
-        to_be_chosen.chosen_highscores = request.highscores
-        to_be_chosen.status = 2  # 1,2 => 2. restrictions of 1,2 is in episode.get_to_be_chosen
+        feedbackable.chosen_highscores = request.highscores
+        feedbackable.status = 2  # 1,2 => 2. restrictions of 1,2 is in episode.get_feedbackable_timestep
 
         # save
         EpisodeRepository.save_episode(request.name, episode)

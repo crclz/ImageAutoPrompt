@@ -38,9 +38,9 @@ class Episode(pydantic.BaseModel):
             return True
         return self.timesteps[-1].status == 2
 
-    def get_to_be_chosen(self) -> EpisodeTimestep | None:
+    def get_feedbackable_timestep(self) -> EpisodeTimestep | None:
         """
-        返回可评价/覆盖的 timestep：最新的一个（status 1=跑完待反馈, 2=已反馈可覆盖）
+        返回当前可提交反馈的 timestep：最新的一个（status 1=跑完待反馈, 2=已反馈可覆盖）
         """
         if not self.timesteps:
             return None
