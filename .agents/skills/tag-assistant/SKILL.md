@@ -32,7 +32,7 @@ query_list: # 数量限制由语义搜索的限制决定
 
 
 ## 语义搜索
-`uv run tag_semantic_search.py --query "query1" "query2"`
+`uv run entropy/cli/semantic_tag_search.py --query "query1" "query2"`
 
 - query最多8个
 - query间相互独立，不互相影响，可以理解为进行N次独立的查询。
@@ -47,7 +47,7 @@ query_list: # 数量限制由语义搜索的限制决定
 
 
 ## 关键词搜索
-去仓库根目录的 datasets/danbooru.txt 查找可能的tag。
+去仓库根目录的 entropy/conf/tag_datasets/danbooru.txt 查找可能的tag。
 
 关键词搜索没有语义搜索强大，建议多使用语义搜索。
 
