@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 from pathlib import Path
 import re
-from threading import Thread
+import threading
 import time
 import traceback
 from typing import List, Optional, Tuple
@@ -40,6 +40,8 @@ from flask import jsonify, make_response, render_template, request
 from entropy.infra.cancellation import FileCancellationSource, send_cancel
 
 _logger = logging.getLogger(__name__)
+
+_RUNNING_FLAG = "running_flag"  # 跑图心跳文件：mtime 距今 < 1s 视为正在跑图
 
 
 class EpisodeHandler:
@@ -172,7 +174,19 @@ class EpisodeHandler:
         if episode.can_process_image():
             can_process_image = 1
 
-        return EpisodeQueryModel(timesteps=timesteps, can_process_image=can_process_image)
+        is_really_running = 1 if cls.is_really_running(name) else 0
+
+        return EpisodeQueryModel(
+            timesteps=timesteps, can_process_image=can_process_image, is_really_running=is_really_running
+        )
+
+    @classmethod
+    def is_really_running(cls, episode_name: str) -> bool:
+        """running_flag 心跳 mtime 距今 < 1s 视为正在跑图（跨进程：CLI/web 同判定）。"""
+        flag = EpisodeRepository.episodes_dir() / episode_name / _RUNNING_FLAG
+        if not flag.exists():
+            return False
+        return (time.time() - flag.stat().st_mtime) < 1.0
 
     @classmethod
     def choose_high_scores_wrapper(cls, episode_name):
@@ -367,7 +381,7 @@ class EpisodeHandler:
         extra_hook=None,
         created_hook=None,
         done_hook=None,
-    ) -> Thread:
+    ) -> threading.Thread:
         """
         create new timestep, then start a daemon thread to run all images.
 
@@ -385,7 +399,7 @@ class EpisodeHandler:
         def fn_run_many():
             cls.run_timestep_images(request.episode_name, timestep_i, extra_hook=extra_hook, done_hook=done_hook)
 
-        run_many_thread = Thread(target=fn_run_many, daemon=True)
+        run_many_thread = threading.Thread(target=fn_run_many, daemon=True)
         run_many_thread.start()
 
         return run_many_thread
@@ -426,6 +440,19 @@ class EpisodeHandler:
         cancel_flag_path = EpisodeRepository.episodes_dir() / episode_name / "cancel_flag"
         cancellation_source = FileCancellationSource(cancel_flag_path)
 
+        # 心跳续约：独立 daemon 线程 touch running_flag（mtime < 1s 视为在跑）。
+        # 跑图线程自身会阻塞在 run_many 的 sem.acquire，无法保证 touch，故必须独立线程。
+        running_flag_path = EpisodeRepository.episodes_dir() / episode_name / _RUNNING_FLAG
+        stop_heartbeat = threading.Event()
+
+        def heartbeat():
+            while not stop_heartbeat.is_set():
+                running_flag_path.touch()
+                time.sleep(0.3)
+
+        hb_thread = threading.Thread(target=heartbeat, daemon=True)
+        hb_thread.start()
+
         error: Optional[str] = None
         stacktrace = ""
 
@@ -447,6 +474,11 @@ class EpisodeHandler:
             error = str(e)
             stacktrace = traceback.format_exc()
             _logger.exception(f"run_many failed for episode {episode_name}, timestep {timestep_i}")
+        finally:
+            # 停心跳 + 删 running_flag：任何退出路径都执行，前端立即判定非 running
+            stop_heartbeat.set()
+            hb_thread.join(timeout=1)
+            running_flag_path.unlink(missing_ok=True)
 
         # 收尾：重新读 episode（防 rollback 竞态），timestep 仍存在才写回
         episode = EpisodeRepository.get_eposide(episode_name)
@@ -500,10 +532,14 @@ class EpisodeHandler:
         if not episode.timesteps:
             raise ValueError("episode empty, cannot rollback")
 
-        rolled_i = len(episode.timesteps) - 1
-
         episode_name = request.episode_name
         assert episode_name, "episode_name is empty"
+
+        # 跨进程防护：心跳新鲜（<1s）说明正在跑图，拒绝 rollback（前端互斥显示，后端兜底）
+        if cls.is_really_running(episode_name):
+            raise ValueError("timestep is running, cancel it first")
+
+        rolled_i = len(episode.timesteps) - 1
 
         episode.timesteps.pop()
 

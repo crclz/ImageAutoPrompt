@@ -38,4 +38,5 @@ class TimestepQueryModel(pydantic.BaseModel):
 
 class EpisodeQueryModel(pydantic.BaseModel):
     can_process_image: int = 0
+    is_really_running: int = 0  # running_flag 心跳 mtime < 1s（后端判定）
     timesteps: list[TimestepQueryModel] = []

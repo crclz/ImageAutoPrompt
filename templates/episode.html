@@ -24,7 +24,7 @@
 
             </button>
 
-            <button v-if="isRunning" @click="sendCancel"
+            <button v-if="isReallyRunning" @click="sendCancel"
                 class="flex items-center px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-md text-xs font-bold transition-all active:scale-95">
                 <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -33,7 +33,7 @@
                 Send Cancel Signal
             </button>
 
-            <button @click="handleRollback"
+            <button v-if="!isReallyRunning" @click="handleRollback"
                 class="flex items-center px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-md text-xs font-bold transition-all active:scale-95">
                 <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -421,10 +421,7 @@
         const timesteps = ref([]);
         const getEpisodeMessage = ref("");
         const canProcessImage = ref(0)
-        const isRunning = computed(() => {
-            if (!timesteps.value.length) return false;
-            return timesteps.value[timesteps.value.length - 1].status === 0;
-        });
+        const isReallyRunning = ref(0)
         const fetchData = async () => {
             try {
                 const response = await fetch(`/api/episodes/${episodeName.value}`);
@@ -432,6 +429,7 @@
                 if (!response.ok || data.code !== 0) throw new Error(data.message || 'Fetch failed');
                 timesteps.value = data.timesteps || [];
                 canProcessImage.value = data.can_process_image;
+                isReallyRunning.value = data.is_really_running || 0;
 
                 getEpisodeMessage.value = "sync success";
             } catch (err) {
@@ -482,7 +480,7 @@
         });
 
 
-        return { timesteps, getEpisodeMessage, canProcessImage, isRunning, sendCancel, fetchData, getStatusInfo };
+        return { timesteps, getEpisodeMessage, canProcessImage, isReallyRunning, sendCancel, fetchData, getStatusInfo };
     }
 
     function useClipboard(showToast) {
@@ -500,13 +498,10 @@
         return { copyToClipboard };
     }
 
-    function useRollback(episodeName, fetchData, isRunning) {
+    function useRollback(episodeName, fetchData) {
 
         const handleRollback = async () => {
-            const msg = isRunning.value
-                ? "该 Timestep 正在运行中，推荐使用取消功能（Cancel）。确定仍要回滚吗？"
-                : "确定要回滚最后一个 Timestep 吗？";
-            if (!confirm(msg)) return;
+            if (!confirm("确定要回滚最后一个 Timestep 吗？")) return;
 
             try {
                 const response = await fetch(`/api/episodes/${episodeName.value}/rollback-timestep`, {
@@ -563,7 +558,7 @@
             const { toasts, showToast } = useToast();
             const { copyToClipboard } = useClipboard(showToast);
 
-            const { timesteps, getEpisodeMessage, canProcessImage, isRunning, sendCancel, fetchData, getStatusInfo } = useEpisodeDataFetcher(episodeName, showToast);
+            const { timesteps, getEpisodeMessage, canProcessImage, isReallyRunning, sendCancel, fetchData, getStatusInfo } = useEpisodeDataFetcher(episodeName, showToast);
 
             const { preview, openPreview, closePreview, navigate } = usePreview(
                 timesteps, showToast
@@ -586,7 +581,7 @@
 
 
             // ... 其他 ref
-            const { handleRollback } = useRollback(episodeName, fetchData, isRunning);
+            const { handleRollback } = useRollback(episodeName, fetchData);
 
             const downloadPreviewAsJpg = async () => {
                 if (!preview.value || !preview.value.url) return;
@@ -638,7 +633,7 @@
                 canProcessImage,
                 timesteps,
                 reversedTimesteps,
-                isRunning,
+                isReallyRunning,
                 sendCancel,
                 preview,
                 selectedPointers,
