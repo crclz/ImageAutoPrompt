@@ -1,7 +1,6 @@
 import logging
-from pathlib import Path
 import re
-from typing import Dict, List, Tuple
+from pathlib import Path
 
 import pydantic
 
@@ -64,7 +63,7 @@ class EpisodeRepository:
         json_file.write_text(json_string, "utf8")
 
     @classmethod
-    def get_timesteps_query_model(cls, episode_name: str) -> List[TimestepQueryModel]:
+    def get_timesteps_query_model(cls, episode_name: str) -> list[TimestepQueryModel]:
         episode = cls.get_eposide(episode_name)
 
         # 修改：从新的 images 目录获取图片
@@ -74,7 +73,7 @@ class EpisodeRepository:
         # t001_05.png
         pattern = r"^t(\d+)_(\d+)\.png$"
 
-        timestep_map: Dict[int, TimestepQueryModel] = {}
+        timestep_map: dict[int, TimestepQueryModel] = {}
 
         # initialize
         for timestep in episode.timesteps:
@@ -83,7 +82,7 @@ class EpisodeRepository:
             if timestep.i == 0 and len(episode.timesteps) == 1:
                 initial_md_prefix = Path(AppConfig.read().prompt_file).read_text("utf8")
 
-                user_initial_prompt = pydantic.TypeAdapter(List[ImagePrompt]).dump_json(timestep.prompts)
+                user_initial_prompt = pydantic.TypeAdapter(list[ImagePrompt]).dump_json(timestep.prompts)
                 user_initial_prompt = user_initial_prompt.decode("utf8")
                 initial_md_prefix += "\n" + user_initial_prompt + "\n"
 
@@ -123,7 +122,7 @@ class EpisodeRepository:
             )
 
         # collect timesteps
-        timesteps: List[TimestepQueryModel] = []
+        timesteps: list[TimestepQueryModel] = []
 
         for i, timestep in enumerate(episode.timesteps):
             model = timestep_map.get(i)
@@ -148,14 +147,14 @@ class EpisodeRepository:
         return d / f
 
     @classmethod
-    def timestep_pics(cls, episode_name: str, target_timestep: int) -> List[Path]:
+    def timestep_pics(cls, episode_name: str, target_timestep: int) -> list[Path]:
         # 修改：使用 images_dir
         img_dir = cls.images_dir(episode_name)
 
         png_files = list(img_dir.glob("*.png"))
         pattern = r"^t(\d+)_(\d+)\.png$"
 
-        results: List[Path] = []
+        results: list[Path] = []
 
         for png_file in png_files:
             match = re.match(pattern, png_file.name)
@@ -171,9 +170,9 @@ class EpisodeRepository:
         return results
 
     @classmethod
-    def list_episodes(cls) -> List[Tuple[str, Episode]]:
+    def list_episodes(cls) -> list[tuple[str, Episode]]:
         """遍历所有子文件夹，加载包含 episode.json 的 Episode"""
-        episodes: List[Tuple[str, Episode]] = []
+        episodes: list[tuple[str, Episode]] = []
         base_dir = cls.episodes_dir()
 
         # 遍历基础目录下的所有项
@@ -184,7 +183,7 @@ class EpisodeRepository:
                     # 复用已有的 get_eposide 方法
                     episode = cls.get_eposide(item.name)
                     episodes.append((item.name, episode))
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     _logger.error(f"Failed to load episode from {item.name}: {e}")
 
         # 可选：根据需要进行排序（例如按名称或时间）
