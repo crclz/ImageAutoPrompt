@@ -22,10 +22,9 @@ class ShowRagResponse(pydantic.BaseModel):
 class RagProxy:
     @classmethod
     def Rag(cls, request: ShowRagRequest) -> ShowRagResponse:
-        rag_service_base_url = AppConfig.read().rag_service_base_url
-        assert rag_service_base_url, "rag_service_base_url is empty"
+        port = AppConfig.read().port
 
-        response = requests.post(f"{rag_service_base_url}/api/show-rag", json=request.model_dump(), timeout=60)
+        response = requests.post(f"http://127.0.0.1:{port}/api/show-rag", json=request.model_dump(), timeout=60)
         response.raise_for_status()
 
         return ShowRagResponse.model_validate_json(response.text)

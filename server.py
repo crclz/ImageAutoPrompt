@@ -5,6 +5,7 @@ from flask import Flask, abort, redirect, send_from_directory
 
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.application.rag_handler import RagHandler
+from entropy.domain.models.app_config import AppConfig
 
 import logging
 
@@ -110,3 +111,11 @@ def get_episodes():
 @app.post("/api/create-episode")
 def create_episode():
     return EpisodeHandler.create_episode_wrapper()
+
+
+def main():
+    app.run(host="127.0.0.1", port=AppConfig.read().port)
+
+
+if __name__ == "__main__":
+    main()

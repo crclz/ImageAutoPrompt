@@ -16,7 +16,7 @@ class AppConfig(pydantic.BaseModel):
 
     extra_valid_tag_file: str = ""
 
-    rag_service_base_url: str = ""
+    port: int = 5000
 
     @staticmethod
     @functools.lru_cache(5)
