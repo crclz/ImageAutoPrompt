@@ -13,14 +13,14 @@
             <span class="text-gray-600 text-sm font-bold tracking-wider">[[ getEpisodeMessage ]]</span>
             <div class="h-6 w-[1px] bg-gray-300 mx-2"></div>
 
-            <button @click="showPasteModal = true" :disabled="canProcessImage == 0"
+            <button @click="showDraftModal = true" :disabled="canProcessImage == 0"
                 class="flex items-center px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md text-xs font-bold transition-all active:scale-95">
                 <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <template v-if="canProcessImage">Paste Prompt</template>
-                <template v-if="!canProcessImage">Cannot Paste Prompt</template>
+                <template v-if="canProcessImage">Paste Timestep Draft</template>
+                <template v-if="!canProcessImage">Cannot Paste Timestep Draft</template>
 
             </button>
 
@@ -43,7 +43,7 @@
             </button>
         </div>
 
-        {% include "paste_modal.html" %}
+        {% include "draft_modal.html" %}
 
     </div>
 
@@ -355,25 +355,25 @@
         return { preview, openPreview, closePreview, navigate };
     }
 
-    function usePasteModal(episodeName, fetchData, showToast) {
-        const showPasteModal = ref(false);
-        const pasteContent = ref("");
-        const isSubmittingPaste = ref(false);
+    function useDraftModal(episodeName, fetchData, showToast) {
+        const showDraftModal = ref(false);
+        const draftContent = ref("");
+        const isSubmittingDraft = ref(false);
         const startImageProcessingDetailMsg = ref("");
 
-        const submitPaste = async () => {
-            if (!pasteContent.value.trim()) {
+        const submitDraft = async () => {
+            if (!draftContent.value.trim()) {
                 alert("内容不能为空");
                 return;
             }
 
-            isSubmittingPaste.value = true;
+            isSubmittingDraft.value = true;
             try {
                 const response = await fetch(`/api/episodes/${episodeName.value}/process-image`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        timestep_draft: pasteContent.value
+                        timestep_draft: draftContent.value
                     })
                 });
 
@@ -381,8 +381,8 @@
 
                 if (response.ok && result.code === 0) {
                     showToast("处理请求已发送");
-                    pasteContent.value = ""; // 清空
-                    showPasteModal.value = false; // 关闭界面
+                    draftContent.value = ""; // 清空
+                    showDraftModal.value = false; // 关闭界面
                     fetchData(); // 立即刷新
 
                 } else {
@@ -393,11 +393,11 @@
                 console.error("API Error:", err);
                 alert("网络请求失败，请检查后端服务");
             } finally {
-                isSubmittingPaste.value = false;
+                isSubmittingDraft.value = false;
             }
         };
 
-        return { showPasteModal, pasteContent, isSubmittingPaste, submitPaste, startImageProcessingDetailMsg };
+        return { showDraftModal, draftContent, isSubmittingDraft, submitDraft, startImageProcessingDetailMsg };
     }
 
 
@@ -555,8 +555,8 @@
 
 
             const {
-                showPasteModal, pasteContent, isSubmittingPaste, submitPaste, startImageProcessingDetailMsg,
-            } = usePasteModal(episodeName, fetchData, showToast);
+                showDraftModal, draftContent, isSubmittingDraft, submitDraft, startImageProcessingDetailMsg,
+            } = useDraftModal(episodeName, fetchData, showToast);
 
             // end
 
@@ -631,10 +631,10 @@
                 submitHighscores,
                 copyToClipboard,
                 toasts,
-                showPasteModal,
-                pasteContent,
-                isSubmittingPaste,
-                submitPaste,
+                showDraftModal,
+                draftContent,
+                isSubmittingDraft,
+                submitDraft,
                 getEpisodeMessage,
                 handleRollback,
                 startImageProcessingDetailMsg,
