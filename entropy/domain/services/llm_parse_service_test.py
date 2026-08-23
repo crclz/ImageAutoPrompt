@@ -3,7 +3,7 @@ import pytest
 from entropy.domain.services.llm_parse_service import LlmParseService
 
 
-def test_llm_parse_service_happy_case_1():
+def test_parse_exploration_output_shouldParseMultiplePromptBlocks_whenHappy():
     s = r"""
         看来你对 **torino aqua / tiv** 的通透碎光感，以及 **hiten / anmi** 的湿润肉感与逆光氛围非常满意！
 
@@ -69,7 +69,7 @@ def test_llm_parse_service_happy_case_1():
     assert loras == [""] * 4
 
 
-def test_llm_parse_service_return_false_when_negative_empty_1():
+def test_parse_exploration_output_shouldRaiseValueError_whenNegativeSectionIsEmpty():
     s = r"""
         ```prompt0
         positive
@@ -83,7 +83,7 @@ def test_llm_parse_service_return_false_when_negative_empty_1():
         LlmParseService.parse_exploration_output(s)
 
 
-def test_llm_parse_service_return_false_when_no_negative():
+def test_parse_exploration_output_shouldRaiseValueError_whenNegativeSectionMissing():
     s = r"""
         ```prompt0
         positive
@@ -95,7 +95,7 @@ def test_llm_parse_service_return_false_when_no_negative():
         LlmParseService.parse_exploration_output(s)
 
 
-def test_llm_parse_service_return_true_when_negative_empty():
+def test_parse_exploration_output_shouldTreatNullNegativeAsEmpty_whenNegativeIsNull():
     s = r"""
         ```prompt0
         positive
@@ -110,7 +110,7 @@ def test_llm_parse_service_return_true_when_negative_empty():
     assert loras == [""]
 
 
-def test_llm_parse_service_with_lora():
+def test_parse_exploration_output_shouldReturnLoraValues_whenLoraHappy():
     s = r"""
         ```prompt0
         positive
@@ -148,7 +148,7 @@ def test_llm_parse_service_with_lora():
     assert loras[1] == ""
 
 
-def test_llm_parse_service_lora_only_some_prompts():
+def test_parse_exploration_output_shouldReturnLoraForEachPrompt_whenAllPromptsHaveLoraSection():
     s = r"""
         ```prompt0
         positive
@@ -180,7 +180,7 @@ def test_llm_parse_service_lora_only_some_prompts():
     assert loras == ["<lora:noob_fkey:0.9>", "<lora:noob_myowa:1.0>"]
 
 
-def test_llm_parse_service_user_manually_input_friendly():
+def test_parse_exploration_output_shouldParseFriendlyFormat_whenHappy():
     s = r"""
         : 1girl, solo, red hair
         
@@ -194,7 +194,7 @@ def test_llm_parse_service_user_manually_input_friendly():
     assert is_friendly is True
 
 
-def test_danbooru_search():
+def test_parse_danbooru_search_shouldReturnQueryList_whenDanbooruSearchBlockPresent():
     s = r"""
         ```prompt0
         positive
@@ -228,7 +228,7 @@ def test_danbooru_search():
     assert ["a", "b", "c"] == query_list
 
 
-def test_exploration_abstract_1():
+def test_parse_exploration_abstract_shouldReturnAbstract_whenExplorationBlockPresent():
     s = r"""
 你好！收到你的需求。目前我们正处于探索的初始阶段（timestep=0），你的原始 prompt 描绘了一个非常经典的秋季校园场景：春日野穹、银杏叶、围巾与制服。
 
