@@ -24,9 +24,6 @@ class EpisodeTimestep(pydantic.BaseModel):
 
     chosen_highscores: list[ImagePointer] = []
 
-    rag_wip: int = 0  # 当与上一轮相比多出的tag不认识的时候，进行检索
-    rag_result: str = ""
-
     prompts: list[ImagePrompt] = []
 
 
