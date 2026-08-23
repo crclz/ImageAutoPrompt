@@ -1,16 +1,13 @@
-from datetime import datetime
 import logging
-from pathlib import Path
 import re
 import threading
 import time
 import traceback
-from typing import List, Optional, Tuple
+from datetime import UTC, datetime
+from pathlib import Path
 
+from flask import jsonify, make_response, render_template, request
 
-from entropy.domain.models.app_config import AppConfig
-from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
-from entropy.domain.models.error_code import ErrorCode
 from entropy.application.app_dtos import (
     ChooseHighScoresRequest,
     ChooseHighScoresResponse,
@@ -24,20 +21,21 @@ from entropy.application.app_dtos import (
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
+from entropy.domain.models.app_config import AppConfig
+from entropy.domain.models.draft import ExplorationAbstract
+from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
+from entropy.domain.models.error_code import ErrorCode
 from entropy.domain.models.query_model import (
     EpisodeQueryModel,
     TimestepQueryModel,
 )
-from entropy.domain.models.draft import ExplorationAbstract
 from entropy.domain.services.draft_parse_service import DraftParseService
 from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.tag_hinting_service import TagHintingService
+from entropy.infra.cancellation import FileCancellationSource, send_cancel
 from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.comfy_health import ComfyHealth
 from entropy.infra.episode_repository import EpisodeRepository
-from flask import jsonify, make_response, render_template, request
-
-from entropy.infra.cancellation import FileCancellationSource, send_cancel
 
 _logger = logging.getLogger(__name__)
 
@@ -67,7 +65,7 @@ class EpisodeHandler:
         return make_response(jsonify(err_data), 400)
 
     @staticmethod
-    def wrap_api_ok(data: Optional[dict] = None) -> dict:
+    def wrap_api_ok(data: dict | None = None) -> dict:
         """
         统一成功响应结构: {code: 0, message: "", ...业务字段平铺}
         """
@@ -100,7 +98,7 @@ class EpisodeHandler:
             return cls.wrap_api_exception(e)
 
     @classmethod
-    def format_observation(cls, timesteps: List[TimestepQueryModel]) -> None:
+    def format_observation(cls, timesteps: list[TimestepQueryModel]) -> None:
         for i, timestep in enumerate(timesteps):
             assert i == timestep.i
 
@@ -155,7 +153,7 @@ class EpisodeHandler:
             timestep.invalid_tags = ", ".join([p for p in all_tags if not TagChecker.exist_tag(p)])
 
         # display highlight:
-        highlight_text = dict()  # key=${timestep}_${image_index}, value=${timestep_when_choose}
+        highlight_text = {}  # key=${timestep}_${image_index}, value=${timestep_when_choose}
 
         for timestep in timesteps:
             for highscore in timestep.chosen_highscores:
@@ -258,7 +256,7 @@ class EpisodeHandler:
     @classmethod
     def tag_minus_last_timestep(
         cls, episode_name: str, positive_tags: str, negative_tags: str
-    ) -> Tuple[List[str], List[str]]:
+    ) -> tuple[list[str], list[str]]:
         episode = EpisodeRepository.get_eposide(episode_name)
 
         last_positive_tags = []
@@ -278,7 +276,7 @@ class EpisodeHandler:
     @classmethod
     def image_process_guard(
         cls, request: StartImageProcessingRequest
-    ) -> Tuple[bool, str, Optional[ExplorationAbstract], List[ImagePrompt], Tuple[List[str], List[str], List[str]]]:
+    ) -> tuple[bool, str, ExplorationAbstract | None, list[ImagePrompt], tuple[list[str], list[str], list[str]]]:
         """
         return: do_intercept, message, prompts, (positives, negatives)
         raise: some exceptions
@@ -301,10 +299,10 @@ class EpisodeHandler:
         if not parse_result.positives:
             raise ValueError(
                 "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
-                "或以 \":\" 开头的行（一行一个 tag）"
+                '或以 ":" 开头的行（一行一个 tag）'
             )
 
-        prompts: List[ImagePrompt] = []
+        prompts: list[ImagePrompt] = []
         for positive, negative, lora in zip(parse_result.positives, parse_result.negatives, parse_result.loras):
             prompts.append(ImagePrompt(positive=positive, negative=negative, lora=lora))
 
@@ -318,7 +316,7 @@ class EpisodeHandler:
             abstract = ExplorationAbstract()
         if not abstract:
             raise ValueError(
-                "缺少 <exploration> 块：请在文件头部用 <exploration>{\"type\":...,\"description\":...,\"keywords\":[...]}</exploration>"
+                '缺少 <exploration> 块：请在文件头部用 <exploration>{"type":...,"description":...,"keywords":[...]}</exploration>'
                 " 描述探索方向（type 为 artist_only / lora_only / free）"
             )
 
@@ -333,7 +331,13 @@ class EpisodeHandler:
             do_intercept = True
             message = invalid_tag_hint
 
-        return do_intercept, message, abstract, prompts, (parse_result.positives, parse_result.negatives, parse_result.loras)
+        return (
+            do_intercept,
+            message,
+            abstract,
+            prompts,
+            (parse_result.positives, parse_result.negatives, parse_result.loras),
+        )
 
     @classmethod
     def create_timestep_with_draft(cls, episode_name: str, timestep_draft: str) -> int:
@@ -348,7 +352,7 @@ class EpisodeHandler:
 
         current_app_config = AppConfig.read()
 
-        do_interception, message, _abstract, prompts, (positives, negatives, loras) = cls.image_process_guard(request)
+        do_interception, message, _, prompts, _ = cls.image_process_guard(request)
         if do_interception:
             # 拦截（如无效 tag 提示）：统一视为失败
             raise ValueError(message)
@@ -453,11 +457,11 @@ class EpisodeHandler:
         hb_thread = threading.Thread(target=heartbeat, daemon=True)
         hb_thread.start()
 
-        error: Optional[str] = None
+        error: str | None = None
         stacktrace = ""
 
         try:
-            t0 = datetime.now()
+            t0 = datetime.now(UTC)
             ComfyApi.run_many(
                 current_app_config.comfyui_base_url,
                 template_json,
@@ -468,7 +472,7 @@ class EpisodeHandler:
                 cancellation_source=cancellation_source,
             )
 
-            dt = (datetime.now() - t0).total_seconds()
+            dt = (datetime.now(UTC) - t0).total_seconds()
             _logger.info(f"run_many takes {dt:.1f} seconds")
         except Exception as e:
             error = str(e)

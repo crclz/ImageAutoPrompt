@@ -2,8 +2,8 @@ import logging
 
 from flask import render_template, request
 
-from entropy.application.episode_handler import EpisodeHandler
 from entropy.application.app_dtos import RagCandidate, ShowRagRequest, ShowRagResponse
+from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.services.rag_service import RagService
 
 _logger = logging.getLogger(__name__)
