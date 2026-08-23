@@ -25,10 +25,7 @@ from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.draft import ExplorationAbstract
 from entropy.domain.models.episode import Episode, EpisodeTimestep, ImagePrompt
 from entropy.domain.models.error_code import ErrorCode
-from entropy.domain.models.query_model import (
-    EpisodeQueryModel,
-    TimestepQueryModel,
-)
+from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.domain.services.draft_parse_service import DraftParseService
 from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.tag_hinting_service import TagHintingService
@@ -43,13 +40,6 @@ _RUNNING_FLAG = "running_flag"  # 跑图心跳文件：mtime 距今 < 1s 视为�
 
 
 class EpisodeHandler:
-    @classmethod
-    def new_episode(cls) -> None:
-        """
-        start new episode
-        """
-        raise NotImplementedError()
-
     @classmethod
     def episode_page_wrapper(cls, episode_name):
         return render_template("episode.html", episode_name=episode_name)
@@ -98,32 +88,6 @@ class EpisodeHandler:
             return cls.wrap_api_exception(e)
 
     @classmethod
-    def format_observation(cls, timesteps: list[TimestepQueryModel]) -> None:
-        for i, timestep in enumerate(timesteps):
-            assert i == timestep.i
-
-            if timestep.status == 2:
-                ob = "System:"
-
-                ob += f" 下列是用户对 timestep={i} 的评价:\n"
-
-                ob += "用户: NewHighScore: "
-                if timestep.chosen_highscores:
-                    for highscore in timestep.chosen_highscores:
-                        llm_info = highscore.format_llm()
-                        ob += f"{llm_info}, "
-                else:
-                    ob += "NO"
-
-                ob += "\n"
-
-                if i == len(timesteps) - 1:
-                    ob += f"System: 接下来请给出timestep={len(timesteps)}的探索"
-                ob += "\n"
-
-                timestep.observation = ob
-
-    @classmethod
     def get_episode_data(cls, name: str) -> EpisodeQueryModel:
         """
         get data, which could be rendered on webpages. return EpisodeQueryModel
@@ -131,9 +95,6 @@ class EpisodeHandler:
 
         episode = EpisodeRepository.get_eposide(name)
         timesteps = EpisodeRepository.get_timesteps_query_model(name)
-
-        # format observation
-        cls.format_observation(timesteps)
 
         # diff tags
         for i, timestep in enumerate(timesteps):
@@ -315,10 +276,7 @@ class EpisodeHandler:
         if not abstract and parse_result.is_friendly:
             abstract = ExplorationAbstract()
         if not abstract:
-            raise ValueError(
-                '缺少 <exploration> 块：请在文件头部用 <exploration>{"type":...,"description":...,"keywords":[...]}</exploration>'
-                " 描述探索方向（type 为 artist_only / lora_only / free）"
-            )
+            raise ValueError("缺少 <exploration> 块")
 
         do_intercept = False
         message = ""

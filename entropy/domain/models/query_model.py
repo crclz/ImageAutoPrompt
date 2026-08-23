@@ -20,9 +20,6 @@ class TimestepQueryModel(pydantic.BaseModel):
     images: list[ImageQueryModel] = []
     chosen_highscores: list[ImagePointer] = []
     status: int = 0
-    observation: str = ""  # timestep=i, 用户: NewHighScore: xxx
-
-    initial_md_prefix: str = ""
 
     diff_positive_tags: str = ""
     diff_negative_tags: str = ""
