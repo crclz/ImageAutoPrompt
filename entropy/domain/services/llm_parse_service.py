@@ -71,6 +71,9 @@ class LlmParseService:
             if n_part.strip().lower() == "null":
                 n_part = ""
 
+            if l_part.strip().lower() == "null":
+                l_part = ""
+
             positives.append(p_part)
             negatives.append(n_part)
             loras.append(l_part)

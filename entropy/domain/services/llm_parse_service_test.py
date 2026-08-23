@@ -129,6 +129,9 @@ def test_llm_parse_service_with_lora():
 
         negative
         null
+
+        lora
+        null
         ```
     """
 
@@ -140,7 +143,7 @@ def test_llm_parse_service_with_lora():
 
     assert negatives == ["", ""]
 
-    # prompt0 有 lora，prompt1 没有 lora 段
+    # prompt0 有 lora；prompt1 lora 段为 null，应置空（与 negative=null 行为对称）
     assert loras[0] == "<lora:noob_mignon:1.0> <lora:noob_real_tweaker:0.9>"
     assert loras[1] == ""
 
