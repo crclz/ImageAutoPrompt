@@ -1,6 +1,6 @@
 import pytest
 
-from entropy.domain.services.llm_parse_service import LlmParseService
+from entropy.domain.services.draft_parse_service import DraftParseService
 
 
 def test_parse_timestep_draft_shouldParseMultiplePromptBlocks_whenHappy():
@@ -53,7 +53,7 @@ def test_parse_timestep_draft_shouldParseMultiplePromptBlocks_whenHappy():
         这一轮我开始使用了括号权重（0.8-1.1），你可以看看带权重的混合是否比第一轮更符合你的心意。如果这四个中有让你惊喜的新风格，请继续反馈！
     """
 
-    result = LlmParseService.parse_timestep_draft(s)
+    result = DraftParseService.parse_timestep_draft(s)
     positives, negatives, loras = result.positives, result.negatives, result.loras
 
     assert len(positives) == 4
@@ -81,7 +81,7 @@ def test_parse_timestep_draft_shouldRaiseValueError_whenNegativeSectionIsEmpty()
     """
 
     with pytest.raises(ValueError):
-        LlmParseService.parse_timestep_draft(s)
+        DraftParseService.parse_timestep_draft(s)
 
 
 def test_parse_timestep_draft_shouldRaiseValueError_whenNegativeSectionMissing():
@@ -93,7 +93,7 @@ def test_parse_timestep_draft_shouldRaiseValueError_whenNegativeSectionMissing()
     """
 
     with pytest.raises(ValueError):
-        LlmParseService.parse_timestep_draft(s)
+        DraftParseService.parse_timestep_draft(s)
 
 
 def test_parse_timestep_draft_shouldTreatNullNegativeAsEmpty_whenNegativeIsNull():
@@ -106,7 +106,7 @@ def test_parse_timestep_draft_shouldTreatNullNegativeAsEmpty_whenNegativeIsNull(
         ```
     """
 
-    result = LlmParseService.parse_timestep_draft(s)
+    result = DraftParseService.parse_timestep_draft(s)
     positives, negatives, loras = result.positives, result.negatives, result.loras
     assert negatives[0] == ""
     assert loras == [""]
@@ -137,7 +137,7 @@ def test_parse_timestep_draft_shouldReturnLoraValues_whenLoraHappy():
         ```
     """
 
-    result = LlmParseService.parse_timestep_draft(s)
+    result = DraftParseService.parse_timestep_draft(s)
     positives, negatives, loras = result.positives, result.negatives, result.loras
 
     assert len(positives) == 2
@@ -176,7 +176,7 @@ def test_parse_timestep_draft_shouldReturnLoraForEachPrompt_whenAllPromptsHaveLo
         ```
     """
 
-    result = LlmParseService.parse_timestep_draft(s)
+    result = DraftParseService.parse_timestep_draft(s)
     positives, negatives, loras = result.positives, result.negatives, result.loras
 
     assert positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
@@ -191,7 +191,7 @@ def test_parse_timestep_draft_shouldParseFriendlyFormat_whenHappy():
         : 1girl, solo, blue hair
     """
 
-    result = LlmParseService.parse_timestep_draft(s)
+    result = DraftParseService.parse_timestep_draft(s)
     assert result.positives == ["1girl, solo, red hair", "1girl, solo, blue hair"]
     assert result.negatives == ["", ""]
     assert result.loras == ["", ""]  # friendly 格式不支持 lora
@@ -223,7 +223,7 @@ null
 ```
     """
 
-    abstract = LlmParseService.parse_exploration_abstract(s)
+    abstract = DraftParseService.parse_exploration_abstract(s)
     assert abstract
 
     assert abstract.type == "artist_only"

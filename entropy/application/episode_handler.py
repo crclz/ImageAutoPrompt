@@ -26,7 +26,8 @@ from entropy.domain.models.query_model import (
     EpisodeQueryModel,
     TimestepQueryModel,
 )
-from entropy.domain.services.llm_parse_service import ExplorationAbstract, LlmParseService
+from entropy.domain.models.draft import ExplorationAbstract
+from entropy.domain.services.draft_parse_service import DraftParseService
 from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.tag_hinting_service import TagHintingService
 from entropy.infra.comfy_api import ComfyApi
@@ -275,7 +276,7 @@ class EpisodeHandler:
         # parse llm
         assert request.timestep_draft, "timestep_draft is empty"
 
-        parse_result = LlmParseService.parse_timestep_draft(request.timestep_draft)
+        parse_result = DraftParseService.parse_timestep_draft(request.timestep_draft)
         if not parse_result.positives:
             raise ValueError(
                 "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
@@ -291,7 +292,7 @@ class EpisodeHandler:
         # is_zero_index = len(episode.timesteps) == 0
         del episode
 
-        abstract = LlmParseService.parse_exploration_abstract(request.timestep_draft)
+        abstract = DraftParseService.parse_exploration_abstract(request.timestep_draft)
         if not abstract and parse_result.is_friendly:
             abstract = ExplorationAbstract()
         if not abstract:

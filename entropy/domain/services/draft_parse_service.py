@@ -4,22 +4,16 @@ from typing import List, Optional, Tuple
 
 import pydantic
 
-from entropy.domain.models.draft import TimestepDraftParseResult
+from entropy.domain.models.draft import ExplorationAbstract, TimestepDraftParseResult
 
 
-class ExplorationAbstract(pydantic.BaseModel):
-    type: str = ""
-    description: str = ""
-    keywords: List[str] = []
-
-
-class LlmParseService:
+class DraftParseService:
     @staticmethod
     def parse_timestep_draft(text: str) -> TimestepDraftParseResult:
         """
         return: positives, negatives, loras, is_user_friendly_format_input
         """
-        success, positives, negatives = LlmParseService.try_parse_user_friendly(text)
+        success, positives, negatives = DraftParseService.try_parse_user_friendly(text)
         if success:
             loras = [""] * len(positives)
             return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=True)
