@@ -10,7 +10,6 @@ class AppConfig(pydantic.BaseModel):
     comfyui_base_url: str
     workflow_api_json: str
     workflow_timeout_seconds: int
-    prompt_file: str
 
     invalid_tag_tolerance: int
 
@@ -21,7 +20,7 @@ class AppConfig(pydantic.BaseModel):
     @staticmethod
     @functools.lru_cache(5)
     def _read(window_id: int) -> "AppConfig":
-        s = Path("app_config.yaml").read_text("utf8")
+        s = Path("entropy/conf/app_config.yaml").read_text("utf8")
         obj = yaml.safe_load(s)
 
         return AppConfig.model_validate(obj)

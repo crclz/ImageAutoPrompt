@@ -7,9 +7,8 @@ from entropy.domain.services.draft_parse_service import DraftParseService
 def _fake_config(**overrides):
     data = {
         "comfyui_base_url": "http://127.0.0.1:8188",
-        "workflow_api_json": "workflows/dev.json",
+        "workflow_api_json": "entropy/conf/workflows/dev.json",
         "workflow_timeout_seconds": 180,
-        "prompt_file": "prompts/prompt_recommended.md",
         "invalid_tag_tolerance": 9999,
         "extra_valid_tag_file": "",
         "port": 5000,
@@ -311,7 +310,7 @@ def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInv
 
 def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenWorkflowJsonNotExist(monkeypatch):
     # arrange
-    _mock_app_config(monkeypatch, workflow_api_json="workflows/not_exist.json")
+    _mock_app_config(monkeypatch, workflow_api_json="entropy/conf/workflows/not_exist.json")
     s = ": 1girl, solo"
 
     # act & assert

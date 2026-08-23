@@ -6,8 +6,8 @@
 
 /.vscode
 
-/datasets/*
-!/datasets/danbooru.txt
+/entropy/conf/tag_datasets/*
+!/entropy/conf/tag_datasets/danbooru.txt
 
 /runs
 /comfyui_template.json
@@ -16,12 +16,12 @@
 /database/*
 !/database/this_is_database
 
-/workflows/*
-!/workflows/this_is_workflows
-!/workflows/workflow.example.json
+/entropy/conf/workflows/*
+!/entropy/conf/workflows/this_is_workflows
+!/entropy/conf/workflows/workflow.example.json
 
 
-/app_config.yaml
+/entropy/conf/app_config.yaml
 
 /ai_models/*
 !/ai_models/this_is_ai_models

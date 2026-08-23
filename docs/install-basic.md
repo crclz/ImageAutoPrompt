@@ -38,17 +38,16 @@ pip install -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web
 
 ## ComfyUI配置
 
-1. 将 app_config.example.yaml 复制到 app_config.yaml，这是程序的主要配置。
-2. 进入 app_config.yaml 看看，我们需要编辑一些字段
+1. 将 entropy/conf/app_config.example.yaml 复制为 entropy/conf/app_config.yaml，这是程序的主要配置。
+2. 进入 entropy/conf/app_config.yaml 看看，我们需要编辑一些字段
    - comfyui_base_url: 这个是你comfyui的端口地址。
    - 本工具会通过这个地址调用comfyui，可调用自己的工作流，填入提示词，然后获取图片输出
    - workflow_api_json: 这个是comfyui工作流api json。你需要将自己的工作流进行轻微编辑后，导出(API)到对应的地址。
-   - prompt_file: 这个是prompt，你后续可能需要自定义
    - invalid_tag_tolerance: 保持9999，因为目前还没有配置好RAG功能
    - 其他配置：不用看
 
 3. workflow_api_json的处理
-   - 首先明确，workflows/workflow.example.json 不可以直接使用，只能作为参考
+   - 首先明确，entropy/conf/workflows/workflow.example.json 不可以直接使用，只能作为参考
    - 本工具支持任意工作流的原理，是用户在工作流中插入一些标志字符串，它们可被替换
    - 前往comfyui，我们需要将你的工作流做出如下改动：
      - 负面提示词：固定负面提示词为你模型需要的。为了探索过程稳定，我们不对负面提示词进行探索。

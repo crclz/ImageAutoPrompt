@@ -10,7 +10,7 @@ test_base_address = "http://localhost:8188"
 @pytest.mark.slow  # 真实访问 ComfyUI 出图
 def test_run_workflow_happy_case_1():
     # arrange
-    template_json_path = Path("workflows/dev_fast.json")
+    template_json_path = Path("entropy/conf/workflows/dev_fast.json")
     template_json = template_json_path.read_text("utf8")
 
     positive = "ocean, tree, sunset, car"
@@ -42,7 +42,7 @@ def test_get_workflow_result_no_cache_1():
 
 @pytest.mark.slow  # 真实访问 ComfyUI 出图
 def test_run_many_happy_1():
-    template_json_path = Path("workflows/dev_fast.json")
+    template_json_path = Path("entropy/conf/workflows/dev_fast.json")
     template_json = template_json_path.read_text("utf8")
 
     positive = "ocean, tree, sunset, car, (masterpiece, best quality,newest,absurdres,highres)"

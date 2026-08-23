@@ -1,22 +1,20 @@
 # currently, all config keys are hot reloaded
+# 所有相对路径均以仓库根目录为基准（cwd）
 
 # comfyui
 comfyui_base_url: http://127.0.0.1:8188
 
 # comfyui workflow json
-workflow_api_json: workflows/my-workflow.json
+workflow_api_json: entropy/conf/workflows/my-workflow.json
 
 # 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的4*3倍即可。
 workflow_timeout_seconds: 180 
-
-# 会影响timestep=0 复制结果的内容
-prompt_file: prompts/prompt_recommended.md
 
 # 无效标签容忍个数，见readme. 需RAG建库后使用
 invalid_tag_tolerance: 9999
 
 # 额外的有效标签，会热加载。文本文件，一行一个tag
-extra_valid_tag_file: "" # datasets/extra_valid_tags.txt
+extra_valid_tag_file: "" # entropy/conf/tag_datasets/extra_valid_tags.txt
 
 # 实验功能，暂时有负面效果，不默认开启
 rag_for_exploration_keyword: 0

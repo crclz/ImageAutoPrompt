@@ -21,10 +21,6 @@ ImageAutoPrompt适用于需探索prompt的AI图片内容创作场景，它尝试
 
 1. 启动server: 在仓库根目录，运行 `flask --app server run`，点击链接，进入网页
 2. 新建episode: 在episodes页面创建一个新episode，英文命名.
-3. 深度阅读 prompts/prompt_recommended.md 的 prompt格式、输出格式这两个章节。看看里面的提示词是否符合你使用的模型的要求。例如质量词，例如提示词格式。
-   - 强烈建议仔细查看并进行编辑。可存在多个文件，并利用上文 prompt_file 进行切换。
-4. 简略阅读 prompts/prompt_recommended.md 章节，未来你大概率需要进行编辑，以提升效果
-5. 构造初始文生图prompt，格式与 [prompts/prompt_recommended.md](prompts/prompt_recommended.md) 的末尾统一
 
 例如这个
 ```prompt0
@@ -36,16 +32,13 @@ negative
 null
 ```
 
-6. 在episode页面 paste prompt
-7. 等待timestep=0生成图片，然后点击图片，不选择高分，直接提交。
+3. 在episode页面 paste prompt
+4. 等待timestep=0生成图片，然后点击图片，不选择高分，直接提交。
 
 
 ### 进行artist（画师串）探索
 
-prompts/prompt_recommended.md中预置了一些画师。你可以将你审美的画师进行总结，替换进prompt_recommended.md。
-
 1. 复制High Score Chosen右边那串文字（点击即可）
-   - 首次的会是包含了 prompts/prompt_recommended.md + 初始prompt的完整文字。
 2. 粘贴给网页版的Gemini，或者其他任何。
    - 粘贴后别忙着提交，告诉它“仅仅帮我探索artist，除非我说可以探索其他”
 3. 等待Gemini输出完成，将整个复制粘贴到 episode 页面的Paste Prompt弹框
