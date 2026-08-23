@@ -2,9 +2,8 @@ import pytest
 
 from entropy.domain.services.rag_service import RagService
 
-pytestmark = pytest.mark.slow  # 加载 bge-m3 模型 + chromadb，慢
 
-
+@pytest.mark.slow  # 加载 bge-m3 模型 + chromadb
 def test_rag_simple_happy_1():
     query = "女性华丽服饰"
 

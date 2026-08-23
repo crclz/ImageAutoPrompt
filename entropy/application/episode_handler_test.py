@@ -8,9 +8,8 @@ from entropy.application.app_dtos import (
     StartImageProcessingRequest,
 )
 
-pytestmark = pytest.mark.slow  # 真实 comfy 出图 / 修改真实 episode 数据，默认跳过
 
-
+@pytest.mark.slow  # 读取真实 episode 数据
 def test_get_episode_data_happy_1():
 
     name = "test1"
@@ -20,17 +19,18 @@ def test_get_episode_data_happy_1():
     print("data is", data.model_dump_json())
 
 
+@pytest.mark.slow  # 修改真实 episode 数据
 def test_choose_high_scores_happy_1():
 
     EpisodeHandler.choose_high_scores(
         ChooseHighScoresRequest(
             name="test1",
-            timestep=1,
             highscores=[ImagePointer(timestep=1, image_index=0)],
         )
     )
 
 
+@pytest.mark.slow  # 真实 comfy 出图
 def test_start_image_processing_happy_1():
     s = r"""
         看来你对 **torino aqua / tiv** 的通透碎光感，以及 **hiten / anmi** 的湿润肉感与逆光氛围非常满意！
@@ -89,5 +89,6 @@ def test_start_image_processing_happy_1():
     print("response is", response)
 
 
+@pytest.mark.slow  # 修改真实 episode 数据
 def test_rollback_timestep_happy_1():
     EpisodeHandler.rollback_timestep(RollbackTimestepRequest(episode_name="test_rollback"))

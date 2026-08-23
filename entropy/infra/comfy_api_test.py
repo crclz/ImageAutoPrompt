@@ -4,11 +4,10 @@ import pytest
 
 from entropy.infra.comfy_api import ComfyApi
 
-pytestmark = pytest.mark.slow  # 真实访问 ComfyUI 出图，慢
-
 test_base_address = "http://localhost:8188"
 
 
+@pytest.mark.slow  # 真实访问 ComfyUI 出图
 def test_run_workflow_happy_case_1():
     # arrange
     template_json_path = Path("workflows/dev_fast.json")
@@ -27,6 +26,7 @@ def test_run_workflow_happy_case_1():
     out_path.write_bytes(image_data)
 
 
+@pytest.mark.slow  # 真实访问 ComfyUI
 def test_get_workflow_result_no_cache_1():
     prompt_id = "86804727-6e4a-43f2-8a93-e19499ff77d7"
     file_prefix = "entropy-out-2b0c34db-b0fa-4d0f-af2f-7beb8af23e55"
@@ -40,6 +40,7 @@ def test_get_workflow_result_no_cache_1():
     print("images", images)
 
 
+@pytest.mark.slow  # 真实访问 ComfyUI 出图
 def test_run_many_happy_1():
     template_json_path = Path("workflows/dev_fast.json")
     template_json = template_json_path.read_text("utf8")
