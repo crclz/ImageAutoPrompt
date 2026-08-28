@@ -6,6 +6,7 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 ## 范围
 适用于anima的 Turbo 与 Base 系列。
 版本差异：Base 是未精调的基础模型，默认风格朴素，更依赖 artist 标签与质量词；Turbo 是蒸馏版，更稳定。
+文本编码器为 Qwen3-0.6B（LLM）：无 CLIP 77-token 截断，长 prompt 可完整编码；NL 理解能力有限（0.6B 小模型）。
 
 ## 正向提示词
 对于正向提示词，最佳实践比较建议按照以下格式。
@@ -13,6 +14,7 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 `[人数tag 1girl, solo], [角色名 optional], [角色所属的作品系列名 optional], [@画师tag optional], [一般tag: 动作/表情 服装/道具 背景描述 等等其他 都属于一般tag]`
 ```
 注意：质量词（masterpiece, best quality, score_7 等）、safety 标签（safe/nsfw 等）、year/meta 标签（year 2025, newest 等）均由工作流预置在 prompt 最前，agent 不添加。
+注意：prompt 过短或缺细节时，模型易产生意外结果和不期望内容（官方指引），应保持详实。
 
 关于artist:
 
@@ -44,8 +46,6 @@ when: 该概念已有标准tag时; do: 优先用标准tag，如 one eye closed�
 when: 编写包含多个单词的tag时; do: medium breasts; do_not: medium_breasts; reason: tag下划线换成空格，score tag（score_7）是唯一例外;
 
 when: 编写包含括号的标签时; do: `keqing \(genshin impact\)`; do_not: 不转义; reason: anima实测仍需转义;
-
-when: 控制标签总数时; do: 正向tag低于80个; do_not: 正向tag超过100个; reason: 官方训练含tag dropout，无需写全，80以内最优;
 
 ## 自然语言混合（官方推荐）
 注意：官方允许混合 ≠ 本仓库默认写法，默认采用「tag骨架 + 短语块」风格（见下节）。
