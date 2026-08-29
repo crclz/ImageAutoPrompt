@@ -2,6 +2,30 @@
 
 为 noobai / anima 模型创作 danbooru tag prompt 的探索工具。全程通过 coding agent（claude code / opencode 等）使用：复制下面的指令文本给 agent 即可，每条指令旁附 skill 链接供人类阅读。
 
+## 前置要求
+- 你有自己的comfyui工作流（本仓库并不指导安装comfyui）
+
+
+## 日常使用
+
+当然，你可以使用多模态模型配合 free-explore 或者 format-noob / format-anima 进行prompt的编写。这属于一些比较原子的工具。
+
+> 帮我使用 format-anima skill 编写prompt.
+
+当然，本仓库主打的功能是episode，即对一个prompt进行不断的跑图-反馈-再跑图的循环。
+
+探索画师串:
+
+> 在新 episode 中，帮我使用 artist-explore 探索 artist. prompt: 1girl, solo, ...
+
+不探索画师串，探索其他 tag:
+
+> 在新 episode 中，帮我使用 free-explore 探索 free. prompt: 1girl, solo, ...
+
+（关键问题都已内置到 skill 里，agent 会先与你确认，达成一致后开工）
+
+
+
 ## 安装
 
 1. 安装 python 环境（[install-environment](.agents/skills/install-environment/SKILL.md)）:
@@ -23,21 +47,7 @@
    python server.py    # python 环境
    ```
 
-## 日常使用
 
-探索画师串:
-
-> 在新 episode 中，帮我使用 artist-explore 探索 artist. prompt: 1girl, solo, ...
-
-不探索画师串，探索其他 tag:
-
-> 在新 episode 中，帮我使用 free-explore 探索 free. prompt: 1girl, solo, ...
-
-（关键问题都已内置到 skill 里，agent 会先与你确认，达成一致后开工）
-
-当然，你可以使用多模态模型配合 free-explore 或者 format-noob / format-anima 进行prompt的编写。这属于一些比较原子的工具。
-
-> 帮我使用 format-anima skill 编写prompt.
 
 ## 进阶: RAG（可选）
 
