@@ -108,7 +108,7 @@
   },
   "14": {
     "inputs": {
-      "filename_prefix": "entropy_out_placeholder",
+      "filename_prefix": "entropy:output_image",
       "images": [
         "8",
         0

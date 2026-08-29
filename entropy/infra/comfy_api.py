@@ -30,6 +30,42 @@ class ComfyApi:
             raise ValueError("received cancellation signal")
 
     @staticmethod
+    def render_workflow(
+        workflow_template_json: str,
+        positive: str,
+        negative: str,
+        lora: str,
+        file_prefix: str,
+    ) -> str:
+        """
+        裸 token 替换：占位符须位于 JSON 字符串内（被一对引号包裹）。
+        值经 json.dumps 后剥掉最外层引号注入，保证特殊字符被正确转义，
+        因此同时支持 "entropy:positive" 整串与 "entropy:positive, xxx" 子串混排。
+        """
+
+        optional_keys = ["entropy:negative", "entropy:lora"]
+
+        replaces = {
+            "entropy:positive": positive,
+            "entropy:negative": negative,
+            "entropy:lora": lora,
+            "entropy:output_image": file_prefix,
+        }
+
+        rendered_workflow = workflow_template_json
+
+        for k, v in replaces.items():
+            if k not in rendered_workflow:
+                if k not in optional_keys:
+                    raise ValueError(f"workflow not contains: {k}")
+                continue
+
+            v = json.dumps(v, ensure_ascii=False)[1:-1]
+            rendered_workflow = rendered_workflow.replace(k, v)
+
+        return rendered_workflow
+
+    @staticmethod
     def run_workflow(
         base_url: str,
         workflow_template_json: str,
@@ -51,26 +87,7 @@ class ComfyApi:
         # force node to execute, avoid cached
         file_prefix = "entropy_out_" + str(shortuuid.uuid())
 
-        optional_keys = ["entropy:negative", "entropy:lora"]
-        optional_keys = [json.dumps(p, ensure_ascii=False) for p in optional_keys]
-
-        replaces = {
-            "entropy:positive": positive,
-            "entropy:negative": negative,
-            "entropy:lora": lora,
-            "entropy_out_placeholder": file_prefix,
-        }
-
-        rendered_workflow = workflow_template_json
-
-        for k, v in replaces.items():
-            k = json.dumps(k, ensure_ascii=False)
-            v = json.dumps(v, ensure_ascii=False)
-
-            if k not in rendered_workflow and k not in optional_keys:
-                raise ValueError(f"workflow not contains: {k}")
-
-            rendered_workflow = rendered_workflow.replace(k, v)
+        rendered_workflow = ComfyApi.render_workflow(workflow_template_json, positive, negative, lora, file_prefix)
 
         _logger.info(f"rendered_workflow is: {rendered_workflow}")
 

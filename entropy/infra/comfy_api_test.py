@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -5,6 +6,76 @@ import pytest
 from entropy.infra.comfy_api import ComfyApi
 
 test_base_address = "http://localhost:8188"
+
+minimal_template = '{"4": {"inputs": {"text": "entropy:positive"}}, "9": {"inputs": {"filename_prefix": "entropy:output_image"}}}'
+
+
+def test_render_workflow_standalone_1():
+    # act
+    rendered = ComfyApi.render_workflow(minimal_template, "1girl, solo", "lowres", "", "entropy_out_abc123")
+
+    # assert
+    obj = json.loads(rendered)
+    assert obj["4"]["inputs"]["text"] == "1girl, solo"
+    assert obj["9"]["inputs"]["filename_prefix"] == "entropy_out_abc123"
+
+
+def test_render_workflow_substring_mixed_1():
+    # arrange
+    template = '{"4": {"inputs": {"text_0": "entropy:positive,masterpiece, best quality"}}, "9": {"inputs": {"filename_prefix": "entropy:output_image"}}}'
+
+    # act
+    rendered = ComfyApi.render_workflow(template, "1girl, solo", "lowres", "", "entropy_out_abc123")
+
+    # assert
+    obj = json.loads(rendered)
+    assert obj["4"]["inputs"]["text_0"] == "1girl, solo,masterpiece, best quality"
+
+
+def test_render_workflow_escape_special_chars_1():
+    # arrange
+    positive = '1girl, "quote", back\\slash'
+
+    # act
+    rendered = ComfyApi.render_workflow(minimal_template, positive, "", "", "entropy_out_abc123")
+
+    # assert
+    obj = json.loads(rendered)
+    assert obj["4"]["inputs"]["text"] == positive
+
+
+def test_render_workflow_missing_required_1():
+    # arrange
+    template_missing_output = '{"4": {"inputs": {"text": "entropy:positive"}}}'
+    template_missing_positive = '{"9": {"inputs": {"filename_prefix": "entropy:output_image"}}}'
+
+    # act & assert
+    with pytest.raises(ValueError, match="entropy:output_image"):
+        ComfyApi.render_workflow(template_missing_output, "1girl", "", "", "entropy_out_abc")
+
+    with pytest.raises(ValueError, match="entropy:positive"):
+        ComfyApi.render_workflow(template_missing_positive, "1girl", "", "", "entropy_out_abc")
+
+
+def test_render_workflow_optional_missing_ok_1():
+    # act: 模板不含 entropy:negative / entropy:lora，不报错
+    rendered = ComfyApi.render_workflow(minimal_template, "1girl, solo", "lowres", "some_lora", "entropy_out_abc123")
+
+    # assert
+    obj = json.loads(rendered)
+    assert obj["4"]["inputs"]["text"] == "1girl, solo"
+
+
+def test_render_workflow_optional_present_empty_1():
+    # arrange
+    template = '{"4": {"inputs": {"text": "entropy:positive"}}, "6": {"inputs": {"lora": "entropy:lora"}}, "9": {"inputs": {"filename_prefix": "entropy:output_image"}}}'
+
+    # act
+    rendered = ComfyApi.render_workflow(template, "1girl", "", "", "entropy_out_abc123")
+
+    # assert
+    obj = json.loads(rendered)
+    assert obj["6"]["inputs"]["lora"] == ""
 
 
 @pytest.mark.slow  # 真实访问 ComfyUI 出图
