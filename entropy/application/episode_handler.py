@@ -349,7 +349,7 @@ class EpisodeHandler:
         episode = Episode(
             create_time=int(time.time()),
             workflow=workflow,
-            invalid_tag_budget=req.invalid_tag_budget or app_config.invalid_tag_tolerance,
+            invalid_tag_budget=req.invalid_tag_budget,
         )
 
         EpisodeRepository.save_episode(req.name, episode)

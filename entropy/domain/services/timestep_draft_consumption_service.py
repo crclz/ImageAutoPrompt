@@ -30,10 +30,10 @@ class TimestepDraftConsumptionService:
         """
         current_app_config = AppConfig.read()
 
-        # episode 快照配置：创建 episode 时写入 episode.json，之后以它为准（旧 episode 字段为空时回退 app_config）
+        # episode 快照配置：创建 episode 时写入 episode.json，之后以它为准（workflow 旧 episode 为空时回退 app_config；budget 为 0 不校验）
         episode = EpisodeRepository.get_eposide(episode_name)
         workflow = episode.workflow or current_app_config.workflow_api_json
-        invalid_tag_budget = episode.invalid_tag_budget or current_app_config.invalid_tag_tolerance
+        invalid_tag_budget = episode.invalid_tag_budget
         del episode  # cannot reuse, because stale
 
         do_interception, message, prompts = DraftParseService.image_process_guard(

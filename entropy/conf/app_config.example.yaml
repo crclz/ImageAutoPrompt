@@ -10,11 +10,8 @@ comfyui_base_url: http://127.0.0.1:8188
 # 注意：创建 episode 时会快照进 episode.json，之后以 episode.json 为准，改这里不影响已有 episode
 workflow_api_json: entropy/conf/workflows/my-workflow.json
 
-# 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的4*3倍即可。
+# 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的5倍即可。
 workflow_timeout_seconds: 180
-
-# 无效标签容忍个数（默认预算，创建 episode 时快照；推荐 noobai=6, anima=9999）。见readme. 需RAG建库后使用
-invalid_tag_tolerance: 9999
 
 # 额外的有效标签，会热加载。文本文件，一行一个tag
 extra_valid_tag_file: "" # entropy/conf/tag_datasets/extra_valid_tags.txt

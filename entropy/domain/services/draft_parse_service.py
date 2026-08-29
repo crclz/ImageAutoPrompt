@@ -144,7 +144,7 @@ class DraftParseService:
         """
         校验并解析 timestep draft，返回 (do_intercept, message, prompts)。
 
-        workflow / invalid_tag_budget 优先取 episode 快照（None 时回退 app_config）。
+        workflow 优先取 episode 快照（空时回退 app_config）；invalid_tag_budget 为 0/None 时不做无效 tag 拦截。
         校验内容：配置（comfyui_base_url / workflow）、prompt 块、<exploration> 块、无效 tag 拦截。
         <exploration> 解析结果仅用于校验（缺块则 raise），不外传。
 
@@ -184,9 +184,12 @@ class DraftParseService:
         do_intercept = False
         message = ""
 
-        # invalid tags interception
-        budget = invalid_tag_budget if invalid_tag_budget is not None else current_app_config.invalid_tag_tolerance
-        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(parse_result.positives, parse_result.negatives, budget)
+        # invalid tags interception（预算为 0/None 时跳过校验）
+        invalid_tag_hint = (
+            TagHintingService.get_invalid_tag_hint(parse_result.positives, parse_result.negatives, invalid_tag_budget)
+            if invalid_tag_budget
+            else ""
+        )
         if invalid_tag_hint:
             do_intercept = True
             message = invalid_tag_hint

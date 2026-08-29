@@ -9,7 +9,6 @@ def _fake_config(**overrides):
         "comfyui_base_url": "http://127.0.0.1:8188",
         "workflow_api_json": "entropy/conf/workflows/dev.json",
         "workflow_timeout_seconds": 180,
-        "invalid_tag_tolerance": 9999,
         "extra_valid_tag_file": "",
         "port": 5000,
     }
@@ -296,15 +295,29 @@ null
 
 def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInvalidTagsExceedTolerance(monkeypatch):
     # arrange
-    _mock_app_config(monkeypatch, invalid_tag_tolerance=1)
+    _mock_app_config(monkeypatch)
     s = ": 1girl, solo, cinematic lightingss, raindropsss"
 
     # act
-    do_intercept, message, prompts = DraftParseService.image_process_guard(s)
+    do_intercept, message, prompts = DraftParseService.image_process_guard(s, invalid_tag_budget=1)
 
     # assert
     assert do_intercept is True
     assert "budget=1" in message
+    assert len(prompts) == 1
+
+
+def test_DraftParseService_image_process_guard_shouldSkipInvalidTagCheck_whenBudgetIsZero(monkeypatch):
+    # arrange: 预算为 0（未设置）时，即使存在无效 tag 也不拦截
+    _mock_app_config(monkeypatch)
+    s = ": 1girl, solo, cinematic lightingss, raindropsss"
+
+    # act
+    do_intercept, message, prompts = DraftParseService.image_process_guard(s, invalid_tag_budget=0)
+
+    # assert
+    assert do_intercept is False
+    assert message == ""
     assert len(prompts) == 1
 
 

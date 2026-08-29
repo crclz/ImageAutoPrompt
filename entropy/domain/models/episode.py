@@ -35,7 +35,7 @@ class Episode(pydantic.BaseModel):
     create_time: int = 0
 
     workflow: str = ""  # 本 episode 固定使用的 comfy workflow 相对路径（创建时从 app_config 快照；空=旧 episode，回退 app_config）
-    invalid_tag_budget: int = 0  # 无效 tag 预算（创建时快照；0=旧 episode，回退 app_config）
+    invalid_tag_budget: int = 0  # 无效 tag 预算（创建时快照；0=不校验）
 
     timesteps: list[EpisodeTimestep] = []
 
