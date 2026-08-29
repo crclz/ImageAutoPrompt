@@ -35,6 +35,10 @@
 
 （关键问题都已内置到 skill 里，agent 会先与你确认，达成一致后开工）
 
+当然，你可以使用多模态模型配合 free-explore 或者 format-noob / format-anima 进行prompt的编写。这属于一些比较原子的工具。
+
+> 帮我使用 format-anima skill 编写prompt.
+
 ## 进阶: RAG（可选）
 
 RAG 提供 tag 灵感与纠错。安装 RAG 依赖与建库: [docs/install-rag.md](docs/install-rag.md)
