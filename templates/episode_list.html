@@ -7,7 +7,7 @@
     <div class="flex justify-between items-center mb-6 max-w-4xl mx-auto">
         <h3 class="text-xl font-bold text-gray-800">Episodes</h3>
         <div class="flex gap-2">
-            <button @click="showModal = true"
+            <button @click="openCreateModal"
                 class="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition">+
                 Create</button>
             <button @click="fetchEpisodes" :disabled="loading"
@@ -43,10 +43,17 @@
             <h4 class="font-bold mb-4">Create New Episode</h4>
             <input v-model="newName" @keyup.enter="createEpisode" placeholder="Name..."
                 class="w-full border p-2 rounded mb-4 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">Workflow</label>
+                <select v-model="newWorkflow"
+                    class="w-full border p-2 rounded text-sm bg-white focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option v-for="wf in workflowOptions" :key="wf" :value="wf">[[ wf ]]</option>
+                </select>
+            </div>
             <div class="flex justify-end gap-2">
                 <button @click="showModal = false"
                     class="px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded">Cancel</button>
-                <button @click="createEpisode" :disabled="creating || !newName.trim()"
+                <button @click="createEpisode" :disabled="creating || !newName.trim() || !newWorkflow"
                     class="px-3 py-1 text-sm bg-blue-600 text-white rounded disabled:opacity-50">
                     [[ creating ? '...' : 'Confirm' ]]
                 </button>
@@ -63,6 +70,22 @@
         setup() {
             const episodes = ref([]), loading = ref(false), creating = ref(false);
             const showModal = ref(false), newName = ref("");
+            const workflowOptions = ref([]), newWorkflow = ref("");
+
+            const openCreateModal = () => {
+                showModal.value = true;
+                fetchWorkflows();
+            };
+
+            const fetchWorkflows = async () => {
+                try {
+                    const res = await fetch('/api/workflows');
+                    const data = await res.json();
+                    if (!res.ok || data.code !== 0) { console.error(data.message || 'Fetch failed'); return; }
+                    workflowOptions.value = data.options || [];
+                    newWorkflow.value = data.default || "";
+                } catch (e) { console.error(e); }
+            };
 
             const formatDateTime = (ts) => {
                 if (!ts) return '-';
@@ -88,7 +111,7 @@
                     const res = await fetch('/api/create-episode', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: newName.value.trim() })
+                        body: JSON.stringify({ name: newName.value.trim(), workflow: newWorkflow.value })
                     });
                     const data = await res.json();
                     if (!res.ok || data.code !== 0) alert(data.message || "创建失败");
@@ -102,7 +125,7 @@
             };
 
             onMounted(fetchEpisodes);
-            return { episodes, loading, creating, showModal, newName, fetchEpisodes, createEpisode, formatDateTime };
+            return { episodes, loading, creating, showModal, newName, workflowOptions, newWorkflow, openCreateModal, fetchEpisodes, createEpisode, formatDateTime };
         },
         delimiters: ['[[', ']]']
     }).mount('#app');

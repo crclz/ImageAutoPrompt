@@ -30,7 +30,15 @@ class TimestepDraftConsumptionService:
         """
         current_app_config = AppConfig.read()
 
-        do_interception, message, prompts = DraftParseService.image_process_guard(timestep_draft)
+        # episode 快照配置：创建 episode 时写入 episode.json，之后以它为准（旧 episode 字段为空时回退 app_config）
+        episode = EpisodeRepository.get_eposide(episode_name)
+        workflow = episode.workflow or current_app_config.workflow_api_json
+        invalid_tag_budget = episode.invalid_tag_budget or current_app_config.invalid_tag_tolerance
+        del episode  # cannot reuse, because stale
+
+        do_interception, message, prompts = DraftParseService.image_process_guard(
+            timestep_draft, workflow=workflow, invalid_tag_budget=invalid_tag_budget
+        )
         if do_interception:
             # 拦截（如无效 tag 提示）：统一视为失败
             raise ValueError(message)
@@ -100,15 +108,17 @@ class TimestepDraftConsumptionService:
         失败（含取消）时记录 error + stacktrace 到 timestep，供 web 端展示。
         """
         current_app_config = AppConfig.read()
-        template_json = Path(current_app_config.workflow_api_json).read_text("utf8")
 
-        # 从 episode 读取该 timestep 的 prompts
+        # 从 episode 读取该 timestep 的 prompts 与快照的 workflow（旧 episode 回退 app_config）
         episode = EpisodeRepository.get_eposide(episode_name)
         timestep = episode.timesteps[timestep_i]
         positives = [p.positive for p in timestep.prompts]
         negatives = [p.negative for p in timestep.prompts]
         loras = [p.lora for p in timestep.prompts]
+        workflow = episode.workflow or current_app_config.workflow_api_json
         del episode  # cannot reuse, because stale
+
+        template_json = Path(workflow).read_text("utf8")
 
         def complete_hook(image_index: int, image_bytes: bytes) -> None:
             # 存图（web 与 cli 共用）：save so that web page can see the picture

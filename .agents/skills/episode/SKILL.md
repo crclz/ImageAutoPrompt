@@ -25,11 +25,20 @@ null
 ## episode
 对于一个prompt的探索，都是属于同一个episode。你需要让用户决定episode该叫什么名字，需要符合编程语言的identifier命名规则，且必须是snake_case，且不能中文.
 
-episode 通过 CLI 创建:
+episode 通过 CLI 创建（workflow 与 invalid-tag-budget 在创建时快照进 episode.json，之后以 episode.json 为准）:
 
 ```
-uv run entropy/cli/create_episode.py --name {episode_name}
+uv run entropy/cli/create_episode.py --name {episode_name} --workflow {workflow_json路径} --invalid-tag-budget {预算}
 ```
+
+两个必传参数由前置澄清确定的目标模型决定:
+
+| 目标模型 | --invalid-tag-budget 推荐 |
+| ---- | ---- |
+| anima | 9999 |
+| noobai | 6 |
+
+--workflow 不要凭空猜测路径（workflows 目录内容因环境而异）：执行 `uv run entropy/cli/discover_workflows.py` 列出全部可选 workflow 的相对路径，**把选项呈现给用户，由用户显式决定用哪个**（default 为 app_config 配置的默认工作流）。除非用户明确表示用默认或已事先指定，否则不要代替用户选择。
 
 极其少数情况下需要回看整个 episode 的历史轨迹（各 timestep 的 prompt、反馈等）时，执行 `uv run entropy/cli/get_trajectory.py --episode {episode_name}` 获取 episode.json 的绝对路径，自行阅读分析（只读，勿编辑）。
 

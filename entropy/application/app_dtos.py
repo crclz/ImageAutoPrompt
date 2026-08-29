@@ -67,6 +67,8 @@ class GetEpisodeListResponse(ApiResponse):
 
 class CreateEpisodeRequest(pydantic.BaseModel):
     name: str = ""
+    workflow: str = ""  # comfy workflow 相对路径；空时回退 app_config 的默认工作流
+    invalid_tag_budget: int = 0  # 无效 tag 预算；0 时回退 app_config 的默认值（web 端不传，CLI 必传）
 
 
 class CreateEpisodeResponse(ApiResponse):

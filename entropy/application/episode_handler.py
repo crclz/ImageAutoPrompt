@@ -1,6 +1,7 @@
 import logging
 import re
 import time
+from pathlib import Path
 
 from flask import jsonify, make_response, render_template, request
 
@@ -17,6 +18,7 @@ from entropy.application.app_dtos import (
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
+from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import Episode
 from entropy.domain.models.error_code import ErrorCode
 from entropy.domain.models.query_model import EpisodeQueryModel
@@ -338,8 +340,38 @@ class EpisodeHandler:
         if d.exists():
             raise ValueError("name already exist")
 
-        episode = Episode(create_time=int(time.time()))
+        # 快照机制：workflow/budget 在创建时固化进 episode.json，之后与 app_config 解耦
+        app_config = AppConfig.read()
+        workflow = req.workflow or app_config.workflow_api_json
+        if not Path(workflow).exists():
+            raise ValueError(f"workflow not exist: {workflow}")
+
+        episode = Episode(
+            create_time=int(time.time()),
+            workflow=workflow,
+            invalid_tag_budget=req.invalid_tag_budget or app_config.invalid_tag_tolerance,
+        )
 
         EpisodeRepository.save_episode(req.name, episode)
 
         return CreateEpisodeResponse()
+
+    @staticmethod
+    def list_workflow_paths() -> tuple[str, list[str]]:
+        """返回 (默认工作流, 全部可选工作流相对路径)。选项 = 默认工作流同级目录下的所有 *.json"""
+        default_workflow = AppConfig.read().workflow_api_json
+        options = sorted(p.as_posix() for p in Path(default_workflow).parent.glob("*.json"))
+        if default_workflow not in options:
+            options.insert(0, default_workflow)
+
+        return default_workflow, options
+
+    @classmethod
+    def list_workflows_wrapper(cls):
+        """默认工作流（app_config 的 workflow_api_json）+ 其同级目录下的兄弟 json"""
+        try:
+            default_workflow, options = cls.list_workflow_paths()
+            return jsonify({"code": 0, "message": "ok", "default": default_workflow, "options": options})
+        except Exception as e:
+            _logger.exception("list_workflows_wrapper error")
+            return cls.wrap_api_exception(e)

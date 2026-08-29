@@ -112,6 +112,12 @@ def create_episode():
     return EpisodeHandler.create_episode_wrapper()
 
 
+@app.get("/api/workflows")
+def list_workflows():
+    """默认工作流（app_config）+ 其同级目录下的兄弟 json，供 web 端创建 episode 时选择"""
+    return EpisodeHandler.list_workflows_wrapper()
+
+
 def main():
     app.run(host="127.0.0.1", port=AppConfig.read().port)
 

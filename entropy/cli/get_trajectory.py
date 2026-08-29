@@ -24,6 +24,8 @@ from entropy.infra.episode_repository import EpisodeRepository
 SCHEMA_HINT = """json 结构说明（// 后为字段说明，仅供阅读）:
 {
     "create_time": 1787991105,          // unix 时间戳
+    "workflow": "entropy/conf/workflows/my-workflow.json",  // 本 episode 固定的工作流（创建时快照；空=旧episode回退app_config）
+    "invalid_tag_budget": 9999,         // 无效tag预算（创建时快照；0=旧episode回退app_config）
     "timesteps": [
         {
             "i": 0,                      // timestep 序号，从 0 递增

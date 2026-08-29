@@ -138,11 +138,14 @@ class DraftParseService:
             raise ValueError(f"<exploration> 字段校验失败：{e}")
 
     @classmethod
-    def image_process_guard(cls, timestep_draft: str) -> tuple[bool, str, list[ImagePrompt]]:
+    def image_process_guard(
+        cls, timestep_draft: str, workflow: str | None = None, invalid_tag_budget: int | None = None
+    ) -> tuple[bool, str, list[ImagePrompt]]:
         """
         校验并解析 timestep draft，返回 (do_intercept, message, prompts)。
 
-        校验内容：配置（comfyui_base_url / workflow_api_json）、prompt 块、<exploration> 块、无效 tag 拦截。
+        workflow / invalid_tag_budget 优先取 episode 快照（None 时回退 app_config）。
+        校验内容：配置（comfyui_base_url / workflow）、prompt 块、<exploration> 块、无效 tag 拦截。
         <exploration> 解析结果仅用于校验（缺块则 raise），不外传。
 
         raise: ValueError（配置缺失 / 缺 prompt 块 / 缺 exploration 块）
@@ -153,7 +156,7 @@ class DraftParseService:
         assert base_url, "app config comfyui_base_url is empty"
         assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
 
-        json_file = current_app_config.workflow_api_json
+        json_file = workflow or current_app_config.workflow_api_json
         if not Path(json_file).exists():
             raise ValueError(f"not exist: {json_file}")
 
@@ -182,9 +185,8 @@ class DraftParseService:
         message = ""
 
         # invalid tags interception
-        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(
-            parse_result.positives, parse_result.negatives, current_app_config.invalid_tag_tolerance
-        )
+        budget = invalid_tag_budget if invalid_tag_budget is not None else current_app_config.invalid_tag_tolerance
+        invalid_tag_hint = TagHintingService.get_invalid_tag_hint(parse_result.positives, parse_result.negatives, budget)
         if invalid_tag_hint:
             do_intercept = True
             message = invalid_tag_hint
