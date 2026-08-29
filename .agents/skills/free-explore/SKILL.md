@@ -19,7 +19,9 @@ description: 定义了对于非artist标签的探索的探索的系统性的方�
 
 
 ## 前置澄清
-按顺序确认以下几点
+<ask-user
+    need-user-confirmation="force"
+    max-questions-per-time="3">
 1. 前置依赖: skill:episode; 也别忘了episode skill中需要用户确认的
 
 2. 简单确认参数
@@ -36,6 +38,8 @@ description: 定义了对于非artist标签的探索的探索的系统性的方�
 - 采用下文提到的 grilling-style, 和用户讨论探索的方向。直到和用户达成一致
   - 对于每一种维度，你都给用户几个备选的（用自然语言），看看用户的反馈。建议提3-5次问答。
   - 你也可以在这个流程中，初步搞清楚用户的偏好、深度广度偏好
+
+</ask-user>
 
 
 ## 正式流程

@@ -21,6 +21,18 @@ null
 从经验来看，对于画面的把控与调整，也需要靠正面提示词。
 
 
+## 前置澄清
+<ask-user
+    need-user-confirmation="force"
+    max-questions-per-time="3">
+
+- episode_name: 是新建，还是沿用现有？如果是新建，则帮用户想一个，但是得用户确认
+- 进行的工作流的种类: 是artist(对应skill: artist-explore)，lora(对应skill: lora-explore)，还是free(对应skill: free-explore)
+    - 以及对应SKILL探索流程内部所规定的前置澄清 (ask-user in other skills)
+- 目标模型（anima / noobai）：决定采用 format-anima 还是 format-noobai
+</ask-user>
+
+
 
 ## episode
 对于一个prompt的探索，都是属于同一个episode。你需要让用户决定episode该叫什么名字，需要符合编程语言的identifier命名规则，且必须是snake_case，且不能中文.
@@ -117,16 +129,6 @@ free时，可以修改其他。
 format_reminder_constant: 常量，所有episode固定，但你需每一个timestep重复输出，由文章开头部分的“prompt格式”决定。
 
 输出prompt前，请思考一下artist/lora tag应该放在哪个位置，免得放错。
-
-
-## 前置澄清
-前置依赖: skill:episode
-
-如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
-
-- episode_name: 是新建，还是沿用现有？如果是新建，则帮用户想一个，但是得用户确认
-- 进行的工作流的种类: 是artist(对应skill: artist-explore)，lora(对应skill: lora-explore)，还是free(对应skill: free-explore)
-- 目标模型（anima / noobai）：决定采用 format-anima 还是 format-noobai
 
 
 ## 工作流通用规则
