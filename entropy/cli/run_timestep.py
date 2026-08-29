@@ -2,7 +2,7 @@
 运行一个 timestep：解析 draft 文件，同步跑完文生图（join 后台线程等待完成）。
 
 用法:
-    uv run entropy/cli/run_timestep.py --name hello --draft hello.new_timestep.draft.md
+    uv run entropy/cli/run_timestep.py --name hello --draft hello.7k2f.new_timestep.draft.md
 
 成功流程:
     1. start_image_processing: 解析 + 拦截检查 + 健康检查 + 状态守卫 + 创建 + 后台线程跑图
@@ -158,6 +158,7 @@ def main():
 
     args = parser.parse_args()
 
+    print("提示: 若本次运行失败，draft 文件不会被移动。可直接原地修改 draft md 后重新执行本命令；只有全部成功后 draft 才会被归档到 episode 目录。", flush=True)
     sys.exit(RunTimestepCliProgram.run(args.name, Path(args.draft)))
 
 

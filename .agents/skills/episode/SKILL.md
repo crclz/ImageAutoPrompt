@@ -39,19 +39,19 @@ episode由多个timestep组成。
 
 | 动作                                            | 备注                                                                  |
 | --------------------------------------------- | ------------------------------------------------------------------- |
-| 1.  基于之前的prompt，以及用户的反馈，生成新timestep，写入当前目录的 {episode_name}.new_timestep.draft.md。 | 需根据用户的反馈，仔细思考新的timestep。注意平衡exploration和exploitation                |
-| 2.  执行 `uv run entropy/cli/run_timestep.py --name {episode_name} --draft {episode_name}.new_timestep.draft.md` 跑文生图。 | 新episode需先用 entropy/cli/create_episode.py 创建。命令耗时较长（出图慢），请将命令超时设置为10分钟以上。文件地址告知用户只是顺带 |
+| 1.  基于之前的prompt，以及用户的反馈，生成新timestep，写入当前目录的 {episode_name}.{rand}.new_timestep.draft.md（{rand}为随机后缀，见「timestep文件」节）。 | 需根据用户的反馈，仔细思考新的timestep。注意平衡exploration和exploitation                |
+| 2.  执行 `uv run entropy/cli/run_timestep.py --name {episode_name} --draft {episode_name}.{rand}.new_timestep.draft.md` 跑文生图。 | 新episode需先用 entropy/cli/create_episode.py 创建。命令耗时较长（出图慢），请将命令超时设置为10分钟以上，然后直接同步等待命令跑完。文件地址告知用户只是顺带 |
 | 3.  用户会在网页端标记高分图片，并告诉你。你用 `uv run entropy/cli/get_feedback.py --name {episode_name}` 获取反馈。 | 默认取最新timestep；`--timestep i` 可指定（绝大部分情况不用传）。若反馈与上次相同（没变），停止并向用户二次确认 |
 | 4.  你开启下一个timestep，回到 1                       | \-                                                                  |
 
 
 ## timestep文件
 
-draft 文件放在当前目录，命名为 {episode_name}.new_timestep.draft.md（例如 hello.new_timestep.draft.md）。每个timestep都复用这个文件名（运行成功后文件会被移动到 episode 目录存档）。
+draft 文件放在当前目录，命名为 {episode_name}.{rand}.new_timestep.draft.md（例如 hello.7k2f.new_timestep.draft.md）。{rand} 是每次生成的随机数字/字母后缀（2-4位）。每个timestep都使用全新的随机后缀：文件名不与残留的旧 draft 冲突，可避免某些 harness 对覆盖已存在文件的「写前必读」限制带来的失败和浪费。（运行成功后文件会被移动到 episode 目录存档）
 
-{episode_name}.new_timestep.draft.md 的示例如下（不包含begin/end）
+{episode_name}.{rand}.new_timestep.draft.md 的示例如下（不包含begin/end）
 
-begin {episode_name}.new_timestep.draft.md
+begin {episode_name}.{rand}.new_timestep.draft.md
 
 <exploration>
 {
@@ -126,7 +126,7 @@ when: 生成timestep时; do: 一次只生成1个timestep; do_not: 一次多个;
 
 when: timestep文件写入后; do: 执行 entropy/cli/run_timestep.py 跑文生图（文件地址告知用户只是顺带）; do_not: 将timestep文件内容重复给用户;
 
-when: 执行 run_timestep 时; do: 将命令超时设置为10分钟以上（出图耗时较长）; do_not: 使用默认短超时导致命令被中断;
+when: 执行 run_timestep 时; do: 将命令超时设置为10分钟以上（出图耗时较长），然后直接同步等待命令完成; do_not: 使用默认短超时导致命令被中断; do_not: 放到后台异步运行、再轮询检测进度——没有必要，同步等待即可;
 
 when: 获取用户反馈; do: 执行 `uv run entropy/cli/get_feedback.py --name {episode_name}`（不带 --timestep）；若反馈与上次相同，停止并向用户二次确认; do_not: 基于猜测代替用户评价;
 
