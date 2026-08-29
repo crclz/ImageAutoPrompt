@@ -13,7 +13,7 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 ```
 `[人数tag 1girl, solo], [角色名 optional], [角色所属的作品系列名 optional], [@画师tag optional], [一般tag: 动作/表情 服装/道具 背景描述 等等其他 都属于一般tag]`
 ```
-注意：质量词（masterpiece, best quality, score_7 等）、safety 标签（safe/nsfw 等）、year/meta 标签（year 2025, newest 等）均由工作流预置在 prompt 最前，agent 不添加。
+注意：质量词（masterpiece, best quality, very aesthetic, score_9, score_8, absurdres 等）、safety 标签（safe/nsfw 等）、year/meta 标签（year 2025, newest 等）均由工作流预置在 prompt 最前，agent 不添加。
 注意：prompt 过短或缺细节时，模型易产生意外结果和不期望内容（官方指引），应保持详实。
 
 关于artist:
@@ -25,15 +25,15 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 | `1girl, solo, @scottie \(phantom2\), armor, sword`                                               | 画师名自带括号需转义。 |
 
 关于tag:
-when: 设置negative prompt时; do: 不添加任何内容; do_not: -; reason: 工作流已预置官方推荐负向词（worst quality, score_1~3, blurry 等）;
+when: 设置negative prompt时; do: 不添加任何内容; do_not: -; reason: 工作流已预置官方推荐负向词（worst quality, low quality, score_1, score_2, score_3, artist name, blurry 等）;
 
-when: 考虑添加质量词时; do: 不添加任何质量词; do_not: -; reason: 工作流已预置（含score_7）;
+when: 考虑添加质量词时; do: 不添加任何质量词; do_not: -; reason: 工作流已预置（score_9, score_8, amazing quality, very aesthetic, absurdres）;
 
 when: 使用画师标签时; do: 画师必须添加 @ 前缀; do_not: -; reason: anima要求，不加@效果很弱;
 
 when: 确定画师标签位置时; do: 将画师置于正确的位置，如上表所示。在生成 prompt 前，思考画师标签插入的位置。; do_not: 将画师置于末尾; reason: 除了特殊的 tag，其他全都是一般 tag;
 
-when: 为标签添加权重时; do: 仅artist可加权，格式 (@artist名:权重)，权重范围0.5-2.5，步进0.1; do_not: 为其他tag添加权重; reason: 稳定性考虑，且anima权重需要更高数值才有效;
+when: 为标签添加权重时; do: 仅artist可加权，格式 (@artist名:权重)，权重范围0.5-1.5，步进0.1; do_not: 为其他tag添加权重; reason: 稳定性考虑，（主导画师取高值，副画师取低值）;
 
 when: 确定标签编写风格时; do: 采用标准的danbooru tag，或按官方指引混合自然语言（见下节）; do_not: -; reason: 对齐到训练数据;
 
