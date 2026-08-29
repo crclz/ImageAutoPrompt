@@ -11,7 +11,7 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 ## 正向提示词
 对于正向提示词，最佳实践比较建议按照以下格式。
 ```
-`[人数tag 1girl, solo], [角色名 optional], [角色所属的作品系列名 optional], [@画师tag optional], [一般tag: 动作/表情 服装/道具 背景描述 等等其他 都属于一般tag]`
+`[人数tag 1girl, solo], [角色名 optional], [角色所属的作品系列名 optional], [@画师tag optional], [一般tag: 主体动作/表情 → 细节(五官/发型/服装/道具) → 氛围(光线/背景/景深) → 情绪收尾(dreamy, elegant 等)]`
 ```
 注意：质量词（masterpiece, best quality, very aesthetic, score_9, score_8, absurdres 等）、safety 标签（safe/nsfw 等）、year/meta 标签（year 2025, newest 等）均由工作流预置在 prompt 最前，agent 不添加。
 注意：prompt 过短或缺细节时，模型易产生意外结果和不期望内容（官方指引），应保持详实。
