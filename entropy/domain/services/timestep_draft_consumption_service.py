@@ -30,9 +30,11 @@ class TimestepDraftConsumptionService:
         """
         current_app_config = AppConfig.read()
 
-        # episode 快照配置：创建 episode 时写入 episode.json，之后以它为准（workflow 旧 episode 为空时回退 app_config；budget 为 0 不校验）
+        # episode 快照配置：创建 episode 时写入 episode.json，之后以它为准（budget 为 0 不校验）
         episode = EpisodeRepository.get_eposide(episode_name)
-        workflow = episode.workflow or current_app_config.workflow_api_json
+        workflow = episode.workflow
+        if not workflow:
+            raise ValueError(f"episode '{episode_name}' has no workflow (legacy episode); create a new episode")
         invalid_tag_budget = episode.invalid_tag_budget
         del episode  # cannot reuse, because stale
 
@@ -109,13 +111,15 @@ class TimestepDraftConsumptionService:
         """
         current_app_config = AppConfig.read()
 
-        # 从 episode 读取该 timestep 的 prompts 与快照的 workflow（旧 episode 回退 app_config）
+        # 从 episode 读取该 timestep 的 prompts 与快照的 workflow
         episode = EpisodeRepository.get_eposide(episode_name)
         timestep = episode.timesteps[timestep_i]
         positives = [p.positive for p in timestep.prompts]
         negatives = [p.negative for p in timestep.prompts]
         loras = [p.lora for p in timestep.prompts]
-        workflow = episode.workflow or current_app_config.workflow_api_json
+        workflow = episode.workflow
+        if not workflow:
+            raise ValueError(f"episode '{episode_name}' has no workflow (legacy episode); create a new episode")
         del episode  # cannot reuse, because stale
 
         template_json = Path(workflow).read_text("utf8")

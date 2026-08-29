@@ -139,12 +139,12 @@ class DraftParseService:
 
     @classmethod
     def image_process_guard(
-        cls, timestep_draft: str, workflow: str | None = None, invalid_tag_budget: int | None = None
+        cls, timestep_draft: str, workflow: str, invalid_tag_budget: int | None = None
     ) -> tuple[bool, str, list[ImagePrompt]]:
         """
         校验并解析 timestep draft，返回 (do_intercept, message, prompts)。
 
-        workflow 优先取 episode 快照（空时回退 app_config）；invalid_tag_budget 为 0/None 时不做无效 tag 拦截。
+        workflow 必传（episode 快照）；invalid_tag_budget 为 0/None 时不做无效 tag 拦截。
         校验内容：配置（comfyui_base_url / workflow）、prompt 块、<exploration> 块、无效 tag 拦截。
         <exploration> 解析结果仅用于校验（缺块则 raise），不外传。
 
@@ -156,9 +156,10 @@ class DraftParseService:
         assert base_url, "app config comfyui_base_url is empty"
         assert base_url.startswith("http"), "app config comfyui_base_url should start with http"
 
-        json_file = workflow or current_app_config.workflow_api_json
-        if not Path(json_file).exists():
-            raise ValueError(f"not exist: {json_file}")
+        if not workflow:
+            raise ValueError("workflow is required")
+        if not Path(workflow).exists():
+            raise ValueError(f"not exist: {workflow}")
 
         # parse llm
         assert timestep_draft, "timestep_draft is empty"

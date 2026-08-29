@@ -18,7 +18,6 @@ from entropy.application.app_dtos import (
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
-from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import Episode
 from entropy.domain.models.error_code import ErrorCode
 from entropy.domain.models.query_model import EpisodeQueryModel
@@ -340,9 +339,10 @@ class EpisodeHandler:
         if d.exists():
             raise ValueError("name already exist")
 
-        # 快照机制：workflow/budget 在创建时固化进 episode.json，之后与 app_config 解耦
-        app_config = AppConfig.read()
-        workflow = req.workflow or app_config.workflow_api_json
+        # 快照机制：workflow/budget 在创建时固化进 episode.json
+        workflow = req.workflow
+        if not workflow:
+            raise ValueError("workflow is required")
         if not Path(workflow).exists():
             raise ValueError(f"workflow not exist: {workflow}")
 
@@ -356,22 +356,19 @@ class EpisodeHandler:
 
         return CreateEpisodeResponse()
 
-    @staticmethod
-    def list_workflow_paths() -> tuple[str, list[str]]:
-        """返回 (默认工作流, 全部可选工作流相对路径)。选项 = 默认工作流同级目录下的所有 *.json"""
-        default_workflow = AppConfig.read().workflow_api_json
-        options = sorted(p.as_posix() for p in Path(default_workflow).parent.glob("*.json"))
-        if default_workflow not in options:
-            options.insert(0, default_workflow)
+    WORKFLOWS_DIR = "entropy/conf/workflows"  # 工作流发现目录（写死；没有"默认工作流"概念）
 
-        return default_workflow, options
+    @staticmethod
+    def list_workflow_paths() -> list[str]:
+        """返回全部可选工作流相对路径（= WORKFLOWS_DIR 下的所有 *.json）"""
+        return sorted(p.as_posix() for p in Path(EpisodeHandler.WORKFLOWS_DIR).glob("*.json"))
 
     @classmethod
     def list_workflows_wrapper(cls):
-        """默认工作流（app_config 的 workflow_api_json）+ 其同级目录下的兄弟 json"""
+        """工作流发现：WORKFLOWS_DIR 目录下的所有 *.json"""
         try:
-            default_workflow, options = cls.list_workflow_paths()
-            return jsonify({"code": 0, "message": "ok", "default": default_workflow, "options": options})
+            options = cls.list_workflow_paths()
+            return jsonify({"code": 0, "message": "ok", "options": options})
         except Exception as e:
             _logger.exception("list_workflows_wrapper error")
             return cls.wrap_api_exception(e)

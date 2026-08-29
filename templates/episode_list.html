@@ -83,7 +83,7 @@
                     const data = await res.json();
                     if (!res.ok || data.code !== 0) { console.error(data.message || 'Fetch failed'); return; }
                     workflowOptions.value = data.options || [];
-                    newWorkflow.value = data.default || "";
+                    newWorkflow.value = "";
                 } catch (e) { console.error(e); }
             };
 

@@ -11,7 +11,6 @@ class AppConfig(pydantic.BaseModel):
     CONFIG_PATH: ClassVar[str] = "entropy/conf/app_config.yaml"
 
     comfyui_base_url: str
-    workflow_api_json: str
     workflow_timeout_seconds: int
 
     extra_valid_tag_file: str = ""

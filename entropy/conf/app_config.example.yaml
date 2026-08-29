@@ -4,12 +4,6 @@
 # comfyui
 comfyui_base_url: http://127.0.0.1:8188
 
-# comfyui workflow json（默认工作流）
-# 作用：1. 标识默认 workflow 供选择（web 端创建 episode 时默认选中；CLI/旧 episode 未指定时回退）
-#      2. 发现其他 workflow：web 端选项列表 = 本文件同级目录下的所有 *.json
-# 注意：创建 episode 时会快照进 episode.json，之后以 episode.json 为准，改这里不影响已有 episode
-workflow_api_json: entropy/conf/workflows/my-workflow.json
-
 # 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的5倍即可。
 workflow_timeout_seconds: 180
 

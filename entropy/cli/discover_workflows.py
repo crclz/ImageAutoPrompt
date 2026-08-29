@@ -4,13 +4,11 @@
 用法:
     uv run entropy/cli/discover_workflows.py
 
-输出（一行一个相对路径，default 标记 app_config 配置的默认工作流）:
-    reading config file: entropy/conf/app_config.yaml, knowing workflow_api_json = entropy/conf/workflows/my-workflow.json
-    default: entropy/conf/workflows/my-workflow.json
-    entropy/conf/workflows/my-workflow.json
+输出（一行一个相对路径）:
+    entropy/conf/workflows/anima.json
     ...
 
-选项列表 = 默认工作流同级目录下的所有 *.json，与 web 端创建 episode 时的下拉框一致。
+选项列表 = entropy/conf/workflows 目录下的所有 *.json，与 web 端创建 episode 时的下拉框一致。
 """
 
 import argparse
@@ -20,18 +18,13 @@ import sys
 sys.path.append(".")
 
 from entropy.application.episode_handler import EpisodeHandler
-from entropy.domain.models.app_config import AppConfig
 
 
 def main():
     parser = argparse.ArgumentParser(description="discover workflow jsons")
     parser.parse_args()
 
-    default_workflow, options = EpisodeHandler.list_workflow_paths()
-
-    print(f"reading config file: {AppConfig.CONFIG_PATH}, knowing workflow_api_json = {default_workflow}")
-    print(f"default: {default_workflow}")
-    for wf in options:
+    for wf in EpisodeHandler.list_workflow_paths():
         print(wf)
 
 

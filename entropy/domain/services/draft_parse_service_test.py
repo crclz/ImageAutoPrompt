@@ -7,7 +7,6 @@ from entropy.domain.services.draft_parse_service import DraftParseService
 def _fake_config(**overrides):
     data = {
         "comfyui_base_url": "http://127.0.0.1:8188",
-        "workflow_api_json": "entropy/conf/workflows/dev.json",
         "workflow_timeout_seconds": 180,
         "extra_valid_tag_file": "",
         "port": 5000,
@@ -18,6 +17,9 @@ def _fake_config(**overrides):
 
 def _mock_app_config(monkeypatch, **overrides):
     monkeypatch.setattr(AppConfig, "read", staticmethod(lambda: _fake_config(**overrides)))
+
+
+EXISTING_WORKFLOW = "entropy/conf/workflows/workflow.example.json"  # git 跟踪的示例工作流，保证测试在任意 clone 下可运行
 
 
 def test_parse_timestep_draft_shouldParseMultiplePromptBlocks_whenHappy():
@@ -254,7 +256,7 @@ def test_DraftParseService_image_process_guard_shouldReturnInterceptFalseAndProm
     s = ": 1girl, solo, red hair"
 
     # act
-    do_intercept, message, prompts = DraftParseService.image_process_guard(s)
+    do_intercept, message, prompts = DraftParseService.image_process_guard(s, workflow=EXISTING_WORKFLOW)
 
     # assert
     assert do_intercept is False
@@ -271,7 +273,7 @@ def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenPromptB
 
     # act & assert
     with pytest.raises(ValueError, match="未找到 prompt 块"):
-        DraftParseService.image_process_guard(s)
+        DraftParseService.image_process_guard(s, workflow=EXISTING_WORKFLOW)
 
 
 def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenExplorationBlockMissing(monkeypatch):
@@ -290,7 +292,7 @@ null
 
     # act & assert
     with pytest.raises(ValueError, match="缺少 <exploration> 块"):
-        DraftParseService.image_process_guard(s)
+        DraftParseService.image_process_guard(s, workflow=EXISTING_WORKFLOW)
 
 
 def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInvalidTagsExceedTolerance(monkeypatch):
@@ -299,7 +301,9 @@ def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInv
     s = ": 1girl, solo, cinematic lightingss, raindropsss"
 
     # act
-    do_intercept, message, prompts = DraftParseService.image_process_guard(s, invalid_tag_budget=1)
+    do_intercept, message, prompts = DraftParseService.image_process_guard(
+        s, workflow=EXISTING_WORKFLOW, invalid_tag_budget=1
+    )
 
     # assert
     assert do_intercept is True
@@ -313,7 +317,9 @@ def test_DraftParseService_image_process_guard_shouldSkipInvalidTagCheck_whenBud
     s = ": 1girl, solo, cinematic lightingss, raindropsss"
 
     # act
-    do_intercept, message, prompts = DraftParseService.image_process_guard(s, invalid_tag_budget=0)
+    do_intercept, message, prompts = DraftParseService.image_process_guard(
+        s, workflow=EXISTING_WORKFLOW, invalid_tag_budget=0
+    )
 
     # assert
     assert do_intercept is False
@@ -323,9 +329,9 @@ def test_DraftParseService_image_process_guard_shouldSkipInvalidTagCheck_whenBud
 
 def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenWorkflowJsonNotExist(monkeypatch):
     # arrange
-    _mock_app_config(monkeypatch, workflow_api_json="entropy/conf/workflows/not_exist.json")
+    _mock_app_config(monkeypatch)
     s = ": 1girl, solo"
 
     # act & assert
     with pytest.raises(ValueError, match="not exist"):
-        DraftParseService.image_process_guard(s)
+        DraftParseService.image_process_guard(s, workflow="entropy/conf/workflows/not_exist.json")
