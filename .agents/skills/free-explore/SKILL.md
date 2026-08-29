@@ -29,8 +29,6 @@ description: 定义了对于非artist标签的探索的探索的系统性的方�
 - prompt数量 (默认下表，但需询问用户是否需要更多)
 - 记得告知：这几个计划的timestep的type都是free, 而非artist_only 的
 - 每一个prompt每次新增的tag数量不能超过 15 个（告知用户：推荐15个） 
-- tag-assistant skill内 的参数
-  - 每一timestep能使用 tag-assistant内部语义搜索 的次数 (影响探索深度): 默认5次
 
 （2.和3.必须分开回答）
 
@@ -46,7 +44,7 @@ description: 定义了对于非artist标签的探索的探索的系统性的方�
 
 | 持续timestep个数 | 思路                              | prompt数量 per timestep | 备注 |
 | ------------ | ------------------------------- | --------------------- | -- |
-| N            | 与用户讨论更改方向，或者接受用户的反馈，想出新的prompt。记得使用tag-assistant skill | 8                     | \- |
+| N            | 与用户讨论更改方向，或者接受用户的反馈，想出新的prompt。记得查 entropy/conf/tag_datasets/danbooru.txt 找tag | 8                     | \- |
 
 注意事项：
 

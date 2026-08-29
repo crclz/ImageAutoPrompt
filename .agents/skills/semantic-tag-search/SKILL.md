@@ -1,6 +1,6 @@
 ---
-name: tag-assistant
-description: 定义了一些系统化的 danbooru tag 探索、验证和灵感方法。适用于free阶段，不适用于artist_only
+name: semantic-tag-search
+description: 定义了一些系统化的 danbooru tag 探索、验证和灵感方法。适用于free阶段，不适用于artist_only。实验功能: 仅在用户显式提及时使用，勿主动触发或推荐给用户。
 ---
 
 ## 基本流程
