@@ -31,6 +31,8 @@ episode 通过 CLI 创建:
 uv run entropy/cli/create_episode.py --name {episode_name}
 ```
 
+少数情况下需要回看整个 episode 的历史轨迹（各 timestep 的 prompt、反馈等）时，执行 `uv run entropy/cli/get_trajectory.py --episode {episode_name}` 获取 episode.json 的绝对路径，自行阅读分析（只读，勿编辑）。
+
 
 
 ## timestep
