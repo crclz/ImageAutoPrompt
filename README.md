@@ -6,13 +6,10 @@
 - 你有自己的comfyui工作流（本仓库并不指导安装comfyui）
 
 
-## 日常使用
+## 功能
+**核心功能**
 
-当然，你可以使用多模态模型配合 free-explore 或者 format-noob / format-anima 进行prompt的编写。这属于一些比较原子的工具。
-
-> 帮我使用 format-anima skill 编写prompt.
-
-当然，本仓库主打的功能是episode，即对一个prompt进行不断的跑图-反馈-再跑图的循环。
+本仓库主打的功能是episode，即对一个prompt进行不断的跑图-反馈-再跑图的循环。
 
 探索画师串:
 
@@ -24,9 +21,21 @@
 
 （关键问题都已内置到 skill 里，agent 会先与你确认，达成一致后开工）
 
+**其他功能**
+
+prompt编写原子工具
+> 帮我使用 format-anima skill 编写prompt. <粘贴多模态图片> <或者粘贴图片描述> 
+
+artist-name-search
+> 帮我使用 artist-name-search 找一找 pixiv的画师 (https://www.pixiv.net/users/1554775) 的danbooru tag是什么?
+
+> 帮我使用 artist-name-search 找一找 danbooru=yoneyama_mai的画师，pixiv是什么？
+
+lora搜索
+> 帮我使用 civitai-lora-search 搜索画师xxx的、适合于noobai的lora
 
 
-## 安装
+## 环境安装
 
 1. 安装 python 环境（[install-environment](.agents/skills/install-environment/SKILL.md)）:
 
