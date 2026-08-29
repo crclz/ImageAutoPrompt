@@ -1,14 +1,23 @@
-# currently, all config keys are hot reloaded
+# ============================================================
+# ImageAutoPrompt 主配置
+# 用法: 复制本文件为同目录下的 app_config.yaml（可让 coding agent 执行 setup-app-config skill 代劳）
+# 所有配置键均热加载: 修改后立即生效，无需重启服务
 # 所有相对路径均以仓库根目录为基准（cwd）
+# ============================================================
 
-# comfyui
+# ComfyUI 服务地址。本工具通过它提交工作流、轮询进度、下载图片。
+# 端口与你的 ComfyUI 启动端口一致（ComfyUI 默认 8188）
 comfyui_base_url: http://127.0.0.1:8188
 
-# 工作流超时（秒）。如果不知道怎么设置，设置为正常执行时间的5倍即可。
+# 单张图从提交到出图的超时（秒），超时报错。
+# 不知道怎么填: 设为正常出图耗时的 5 倍
 workflow_timeout_seconds: 180
 
-# 额外的有效标签，会热加载。文本文件，一行一个tag
-extra_valid_tag_file: "" # entropy/conf/tag_datasets/extra_valid_tags.txt
+# 额外的有效 tag 白名单文件（纯文本，一行一个 tag，热加载）。
+# tag 校验仅检查 tag 是否存在于词库（无需 RAG 建库）。文件中的 tag 一律视为有效，
+# 用于补充词库（如模型专属 tag、个人惯用 tag）。
+# 留空 "" = 不启用
+extra_valid_tag_file: "" # 示例: entropy/conf/tag_datasets/extra_valid_tags.txt
 
-# 服务监听端口
+# 本工具 web 服务监听端口（浏览器访问 http://127.0.0.1:<port>）
 port: 5000
