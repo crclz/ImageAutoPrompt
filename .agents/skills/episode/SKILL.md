@@ -115,6 +115,7 @@ format_reminder_constant: 常量，所有episode固定，但你需每一个times
 
 - episode_name: 是新建，还是沿用现有？如果是新建，则帮用户想一个，但是得用户确认
 - 进行的工作流的种类: 是artist(对应skill: artist-explore)，lora(对应skill: lora-explore)，还是free(对应skill: free-explore)
+- 目标模型（anima / noobai）：决定采用 format-anima 还是 format-noobai
 
 
 ## 工作流通用规则
