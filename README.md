@@ -46,6 +46,7 @@ lora搜索
    > 帮我使用 setup-app-config skill
 
 3. 适配工作流（首次安装，或加入新工作流时）（[adapt-workflow](.agents/skills/adapt-workflow/SKILL.md)）:
+   - 先在comfyui工作流顶部标签 - 右键 - 导出 API
 
    > 我想加入新的 Workflow 到 entropy/conf/workflows，帮我使用 adapt-workflow 将我的 Workflow 进行修改，我将它下载下来了，文件地址是：___
 
