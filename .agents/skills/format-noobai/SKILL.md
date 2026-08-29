@@ -30,7 +30,7 @@ when: 使用画师标签时; do: 画师必须添加 artist: 前缀; do_not: -; r
 
 when: 确定画师标签位置时; do: 将画师置于正确的位置，如上表所示。在生成 prompt 前，思考画师标签插入的位置。; do_not: 将画师置于末尾; reason: 除了特殊的 tag，其他全都是一般 tag;
 
-when: 为标签添加权重时; do: 为artist添加权重以精调画风 且权重记得添加括号例如(artist:xxx:1.1); do_not: 为其他tag添加权重; reason: 为了稳定性，不能为artist以外的tag添加权重，除非用户要求;
+when: 为标签添加权重时; do: 为artist添加权重以精调画风，权重记得添加括号，范围0.5-1.0闭区间、step 0.1，例如(artist:xxx:0.9); do_not: 为其他tag添加权重; reason: 为了稳定性，不能为artist以外的tag添加权重，除非用户要求;
 
 when: 确定标签编写风格时; do: 采用标准的danbooru tag; do_not: 采用自然语言; reason: 对齐到训练数据;
 

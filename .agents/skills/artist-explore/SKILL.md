@@ -1,16 +1,29 @@
 ---
 name: artist-explore
-description: 定义了对于artist(aka画风 画师串)的探索的系统性的方法论
+description: 定义了对于artist(aka画风 画师串)的探索的系统性的方法论。适用于anima与noobai
 ---
 
 ## 画师(artist)
+
+本skill适用于 anima 与 noobai，方法论两模型通用；画师tag的写法因模型而异，见下方「模型差异对照」。画师两模型共用。
 
 对于画师（画风），从经验来看，单画师的作用有限，需要叠加多名画师（aka画师串）。
 
 一般来说，一个好的画师串由2-5名画师组成，需要不断探索，不断试错。
 
-另外，有一个高级技巧，能更精细化组合画师，将tag括号括起来并添加权重，例如 (artist:aaa:0.9), (artist:bbb:0.8)。
-在权重属于高级技巧，不要一上来就用。另外，权重严格限制在0.5-1.0闭区间之间，且step=0.1
+另外，有一个高级技巧，能更精细化组合画师，将tag括号括起来并添加权重。权重属于高级技巧，不要一上来就用。
+
+### 模型差异对照
+
+| 模型 | 画师tag前缀 | 无权重写法 | 权重写法 | 权重范围 |
+| ---- | ----------- | ---------- | -------- | -------- |
+| noobai | `artist:` | `artist:aaa, artist:bbb` | `(artist:aaa:0.9)` | 0.5-1.0闭区间，step 0.1 |
+| anima | `@` | `@aaa, @bbb` | `(@aaa:0.9)` | 0.5-1.5，step 0.1 |
+
+两模型通用：
+- 画师名自带括号需转义，如 `artist:scottie \(phantom2\)` / `@scottie \(phantom2\)`
+- 画师tag置于人数tag（及角色名/系列名，若有）之后，不放末尾
+- 仅画师tag可加权，不为其他tag加权
 
 
 ## workflow: artist exploration and exploitation
@@ -18,6 +31,7 @@ description: 定义了对于artist(aka画风 画师串)的探索的系统性的�
 
 ### 前置澄清
 如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
+- 目标模型（anima / noobai），决定画师tag写法，见「模型差异对照」
 - 别忘了episode skill中需要用户确认的
 - dropout比例 (默认推荐0.5). dropout功能的含义是在每一episode开始时，dropout掉一部分artist，以避免与之前的episode选到过于相似的artist。
 - prompt数量 (默认下表，但需询问用户是否需要更多)
