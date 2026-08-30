@@ -7,6 +7,9 @@
 - 描述性、氛围感的短语不必遵循 danbooru tag，也无需验证是否为有效 tag——danbooru 标注最缺少的正是这类难以定量评价的风格描述
 
 ### 1. 色彩 (color)
+// 实测：色彩总体影响有限
+// 实测：优先放到末尾，作为氛围
+// TODO: 测测非turbo模型
 - `warm colors` 温暖
 - `cold colors` 冰冷
 - `complementary colors, warm-cool contrast` 冷暖对比/补色碰撞
@@ -29,6 +32,7 @@
 - `film-like tones` 胶片调
 
 ### 2. 光影 (light & shadow)
+// 和色彩差不多的结论. 
 - `soft diffused lighting` 柔和漫射光
 - `harsh dramatic lighting` 硬光戏剧化
 - `rim light` 轮廓光
@@ -50,7 +54,19 @@
 - `light through blinds` 百叶窗切光
 - `golden hour lighting` 黄昏光
 
+// TODO: flower sea
+
+1girl, solo, magical girl, cowboy shot, looking at viewer, light smile, blush, closed mouth, in flowers, in flower sea, flowers,
+holding staff, clasping staff with both hands,
+pink purple eyes, detailed eyes, jewel-like sparkle in eyes, long eyelashes,
+blonde hair, very long hair, curly hair, gradient hair, soft pink gradient toward hair tips, ahoge, floating hair,
+hair ornament, bow, crown, white cat ear shaped bow, golden feather crown with pink heart gem,
+white dress, layered white and pink dress, frills, lace trim, gold trim on dress edges,
+small golden feathered wings on shoulders, white ribbon collar with pink heart brooch,
+
+
 ### 3. 上色质感 (rendering & texture)
+// NOTE: 也是和色彩差不多的结论. 
 - `flat color` 平涂
 - `thick painting, impasto` 厚涂
 - `semi-thick painting` 半厚涂
@@ -77,6 +93,7 @@
 - `halftone` 网点
 
 ### 4. 线条 (lineart)
+// 结论和上述差不多，总体对画面影响很有限
 - `thick outlines` 粗描边
 - `thin delicate lines` 细线
 - `colored lineart` 有色线稿/彩线
@@ -90,6 +107,8 @@
 - `round soft lines` 圆润
 
 ### 5. 人体形态 (figure)
+// 这个tag不属于氛围，放到中间比较合适，不要放在开头或者结尾
+// 这个开始影响大了
 - `chibi` Q版头身
 - `elongated proportions` 修长(模特比)
 - `slender` 纤细
@@ -104,11 +123,12 @@
 - `detailed anatomy` 写实骨骼肌肉
 - `realistic skin texture` 写实皮肤(毛孔/质感)
 - `flat anime skin` 平面动画皮肤
-- `blushed joints` 关节红晕
 - `detailed hands` 精致手部
 - `simplified forms` 简化形体
 
 ### 6. 脸部 (face)
+// 这个tag不属于氛围，放到中间偏开头比较合适（1girl, solo, 角色tag, 一两个general标签, _here_）
+// 这个开始影响大了
 - `round face` 圆脸
 - `sharp face` 锐利尖脸
 - `big anime eyes` 大眼动画比
@@ -139,6 +159,7 @@
 - `gradient, translucent hair tips` 渐变透明发梢
 
 ### 7. 气质年龄感 (character vibe)
+// 结论和人体形态一致
 - `childlike` 幼态
 - `mature` 成熟
 - `elegant, refined` 优雅精致
@@ -158,7 +179,9 @@
 - `yandere` 病娇
 - `jaded, world-weary` 厌世
 
-### 8. 构图镜头 (composition)
+// TODO: remove this 因为不属于style
+
+<!-- ### 8. 构图镜头 (composition)
 - `close-up` 特写
 - `portrait` 头像
 - `bust shot` 半身
@@ -179,9 +202,10 @@
 - `detailed background` 繁复背景
 - `simple background, white background` 留白/纯色
 - `cluttered composition, high detail density` 满溢高信息密度
-- `floating particles, fragments` 悬浮粒子碎片
+- `floating particles, fragments` 悬浮粒子碎片 -->
 
 ### 9. 氛围情绪 (atmosphere)
+// NOTE: 没啥作用 可能需要移除
 - `healing, cozy` 治愈
 - `lonely, melancholic` 孤独忧郁
 - `dreamy, ethereal` 梦幻缥缈
@@ -195,6 +219,7 @@
 - `liminal space` 临界空间感
 
 ### 10. 时代/媒介戏仿 (era & medium pastiche)
+// TODO: 这个感觉也没啥用
 - `1980s retro anime style` 80年代复古动画
 - `1990s anime style` 90年代复古动画
 - `modern clean digital style` 现代清晰
