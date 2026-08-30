@@ -13,7 +13,7 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 ```
 `[人数tag 1girl, solo], [角色名 optional], [角色所属的作品系列名 optional], [@画师tag optional], [一般tag: 主体动作/表情 → 细节(五官/发型/服装/道具) → 氛围(光线/背景/景深) → 情绪收尾(dreamy, elegant 等)]`
 ```
-注意：质量词（masterpiece, best quality, very aesthetic, score_9, score_8, absurdres 等）、safety 标签（safe/nsfw 等）、year/meta 标签（year 2025, newest 等）均由工作流预置在 prompt 最前，agent 不添加。
+注意：质量词（masterpiece, best quality, score_9, score_8, absurdres 等）、safety 标签（safe/nsfw 等）、year/meta 标签（year 2025, newest 等）均由工作流预置在 prompt 最前，agent 不添加。
 注意：prompt 过短或缺细节时，模型易产生意外结果和不期望内容（官方指引），应保持详实。
 
 关于artist:
@@ -27,7 +27,7 @@ description: 定义了对于anima的文生图prompt的格式标准。当需要�
 关于tag:
 when: 设置negative prompt时; do: 不添加任何内容; do_not: -; reason: 工作流已预置官方推荐负向词（worst quality, low quality, score_1, score_2, score_3, artist name, blurry 等）;
 
-when: 考虑添加质量词时; do: 不添加任何质量词; do_not: -; reason: 工作流已预置（score_9, score_8, amazing quality, very aesthetic, absurdres）;
+when: 考虑添加质量词时; do: 不添加任何质量词; do_not: -; reason: 工作流已预置（masterpiece, best quality, score_9, score_8, absurdres）;
 
 when: 使用画师标签时; do: 画师必须添加 @ 前缀; do_not: -; reason: anima要求，不加@效果很弱;
 
