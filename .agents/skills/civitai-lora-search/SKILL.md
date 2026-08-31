@@ -18,6 +18,35 @@ lora的作者可能会以pixiv昵称（日文名），或者danbooru tag发布�
 你需要正向或者反向地查询它的昵称或者danbooru tag，以达到不漏掉资源的目的.
 
 
+## 搜全经验（踩坑总结）
+
+### 1. 画师 lora 的模型名常用 pixiv 原名，先用 danbooru 查原名再搜
+civitai 上画师 lora 的模型名多用画师的 **pixiv 原名**（日/中/韩文），例如「画風 館田ダン style」。如果你用罗马字 `kanda_dan` 搜，匹配不上模型名里的「館田ダン」，于是 0 结果——不是没有，是搜法不对。
+
+正确流程：先查 danbooru 拿画师的 other_names（pixiv 原名），再用原名搜。
+
+```bash
+curl -g "https://danbooru.donmai.us/artists.json?search[name]=arata_(xin)"
+# -> other_names: ["y3010607", "あらた"]   # 拿去搜 civitai
+```
+
+实例（真实踩坑）：
+
+| danbooru tag | 原名（拿去搜） | 罗马字（搜不到） |
+|---|---|---|
+| arata_(xin) | あらた | arata |
+| kanda_done | 館田ダン | kanda_dan |
+| tianliang_duohe_fangdongye | 天凉多喝防冻液 | tianliang |
+| sora_72-iro | そらなにいろ | sora |
+
+### 2. 空格和下划线是不同的写法，搜不到彼此
+civitai 按模型名字面匹配：模型名是 `torino_aqua`（下划线连写）时，你搜 `torino aqua`（带空格）匹配不上。同一画师的不同模型可能用不同写法，所以多写法都试一遍：`torino aqua` / `torino_aqua` / `torino`。
+
+### 3. 0 结果要存疑
+civitai 搜索服务会临时 overloaded，CLI 显示 "0 results" 无法区分"真没有"和"抽风"。重要画师的 0 结果要重试或换词确认。
+
+
+
 ## 搜索
 
 civitai models search --type LORA --sort "Most Downloaded" --nsfw
@@ -165,5 +194,16 @@ civitai download --version=1762339 # model version
 ```
 Error: download sush1spin-000018.safetensors: Get "https://civitai.com/api/download/models/1762339?fileId=1663074": proxyconnect tcp: dial tcp 127.0.0.1:7897: refusing to download from a private/loopback address (127.0.0.1) — the download URL resolved to a non-public IP
 ```
+
+### 兜底：curl + token（CLI 直连失败时）
+TUN 没开、直连超时、CLI 又走不了代理时：
+1. token 可能过期。让 CLI 走代理跑一次 API（`civitai models get <id>`）触发 refresh，然后读新 token：
+   `grep access_token "$APPDATA/civitai/config.yaml"`
+2. 用 curl 走代理下载（curl 的 UA 不会被 Cloudflare 拦）：
+   ```bash
+   curl -x http://127.0.0.1:7897 -sL --fail -H "Authorization: Bearer <token>" \
+     "https://civitai.com/api/download/models/<versionId>?fileId=<fileId>" -o out.safetensors
+   ```
+   注意：urllib（python）的默认 UA 会被 CF 403 拦，别用。下载后无自动 SHA256，需自行核验大小或手动比对。
 
 
