@@ -1,11 +1,11 @@
-"""从 lora 库中随机抽样，输出完整的 lora 块。
+"""从 noob lora 库中随机抽样，输出完整的 lora 块。
 
 用法（本脚本依赖当前工作目录，需在仓库根目录执行）：
-    python .agents/skills/lora-explore/scripts/get_loras.py --dropout=0.3
+    python .agents/skills/lora-explore/scripts/get_noob_loras.py --dropout=0.3
 
 --dropout 必传，取值 [0, 1)：随机丢弃对应比例的 lora 块。
 输出的每个块为 "## <lora:xxx>" 标题 + 描述（保留原始 // 注释）。
-本脚本是 lora 库的唯一出口，调用方不要直接阅读 library/noob_loras.md。
+本脚本是 noob lora 库的唯一出口，调用方不要直接阅读 library/noob_loras.md。
 """
 
 import argparse
