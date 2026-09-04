@@ -2,7 +2,7 @@
 运行一个 timestep：解析 draft 文件，同步跑完文生图（join 后台线程等待完成）。
 
 用法:
-    uv run entropy/cli/run_timestep.py --name hello --draft hello.7k2f.new_timestep.draft.md
+    python entropy/cli/run_timestep.py --name hello --draft hello.7k2f.new_timestep.draft.md
 
 成功流程:
     1. start_image_processing: 解析 + 拦截检查 + 健康检查 + 状态守卫 + 创建 + 后台线程跑图

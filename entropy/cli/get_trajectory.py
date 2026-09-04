@@ -2,7 +2,7 @@ r"""
 获取 episode 轨迹文件（episode.json）的绝对路径。
 
 用法:
-    uv run entropy/cli/get_trajectory.py --episode hello
+    python entropy/cli/get_trajectory.py --episode hello
 
 输出:
     DO NOT EDIT the json.

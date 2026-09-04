@@ -1,7 +1,7 @@
 """从 artist 库中随机抽样，输出完整的 artist 块。
 
 用法（本脚本依赖当前工作目录，需在仓库根目录执行）：
-    uv run .agents/skills/artist-explore/scripts/get_artists.py --dropout=0.3
+    python .agents/skills/artist-explore/scripts/get_artists.py --dropout=0.3
 
 --dropout 必传，取值 [0, 1)：随机丢弃对应比例的 artist 块。
 输出的每个块为 "## artist:xxx" 标题 + 画风描述（保留原始 // 注释）。

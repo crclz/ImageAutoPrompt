@@ -1,7 +1,7 @@
 """从 lora 库中随机抽样，输出完整的 lora 块。
 
 用法（本脚本依赖当前工作目录，需在仓库根目录执行）：
-    uv run .agents/skills/lora-explore/scripts/get_loras.py --dropout=0.3
+    python .agents/skills/lora-explore/scripts/get_loras.py --dropout=0.3
 
 --dropout 必传，取值 [0, 1)：随机丢弃对应比例的 lora 块。
 输出的每个块为 "## <lora:xxx>" 标题 + 描述（保留原始 // 注释）。

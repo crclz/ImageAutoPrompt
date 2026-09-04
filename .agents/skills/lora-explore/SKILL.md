@@ -51,7 +51,7 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 运行方式（在仓库根目录执行）：
 ```bash
-uv run .agents/skills/lora-explore/scripts/get_loras.py --dropout=0.3
+python .agents/skills/lora-explore/scripts/get_loras.py --dropout=0.3
 ```
 
 --dropout 必传，取值 [0,1)，表示随机丢弃的lora比例。

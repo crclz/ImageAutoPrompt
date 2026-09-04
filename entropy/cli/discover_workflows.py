@@ -2,7 +2,7 @@
 列出全部可选的 comfy workflow json（相对路径），供 create_episode.py 的 --workflow 使用。
 
 用法:
-    uv run entropy/cli/discover_workflows.py
+    python entropy/cli/discover_workflows.py
 
 输出（一行一个相对路径）:
     entropy/conf/workflows/anima.json

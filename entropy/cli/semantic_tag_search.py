@@ -2,8 +2,8 @@
 对 danbooru tag 做语义搜索（调用本服务的 /api/show-rag）。
 
 用法:
-    uv run entropy/cli/semantic_tag_search.py --query "red hair"
-    uv run entropy/cli/semantic_tag_search.py --query "red hair" "blue eyes"
+    python entropy/cli/semantic_tag_search.py --query "red hair"
+    python entropy/cli/semantic_tag_search.py --query "red hair" "blue eyes"
 """
 
 import argparse

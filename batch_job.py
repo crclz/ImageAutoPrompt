@@ -2,10 +2,10 @@
 batch_job — ComfyUI 批量图片处理 CLI 工具。
 
 用法:
-    uv run batch_job.py <job_folder> <port>
+    python batch_job.py <job_folder> <port>
 
 示例:
-    uv run batch_job.py ./runs/batch_jobs/test_resize_pic 8188
+    python batch_job.py ./runs/batch_jobs/test_resize_pic 8188
 """
 
 import json
@@ -51,7 +51,7 @@ MIME_MAP = {
 
 def main():
     if len(sys.argv) != 3:
-        print("用法: uv run batch_job.py <job_folder> <port>")
+        print("用法: python batch_job.py <job_folder> <port>")
         sys.exit(1)
 
     job_folder = os.path.abspath(sys.argv[1])

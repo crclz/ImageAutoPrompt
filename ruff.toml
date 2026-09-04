@@ -15,4 +15,4 @@ ignore = [
     "SIM103", # 同理
 ]
 
-# example: uv run ruff check entropy/domain/models --select UP006
+# example: python -m ruff check entropy/domain/models --select UP006

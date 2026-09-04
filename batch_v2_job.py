@@ -2,10 +2,10 @@
 batch_v2_job — ComfyUI 文本参数笛卡尔积批量生成 CLI 工具。
 
 用法:
-    uv run batch_v2_job.py <job_folder> <port>
+    python batch_v2_job.py <job_folder> <port>
 
 示例:
-    uv run batch_v2_job.py ./runs/batch_jobs2/test_job_1 8188
+    python batch_v2_job.py ./runs/batch_jobs2/test_job_1 8188
 
 说明:
     不接收图片输入。以 job.yaml 声明的变量矩阵做笛卡尔积，
@@ -49,7 +49,7 @@ _VAR_TOKEN_RE = re.compile(r"\$\{([^}]+)\}")
 
 def main():
     if len(sys.argv) != 3:
-        print("用法: uv run batch_v2_job.py <job_folder> <port>")
+        print("用法: python batch_v2_job.py <job_folder> <port>")
         sys.exit(1)
 
     job_folder = os.path.abspath(sys.argv[1])

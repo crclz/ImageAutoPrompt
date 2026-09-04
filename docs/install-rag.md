@@ -18,7 +18,7 @@ python ./test_notebooks/rag_build.tmp.py
 - 进行建库，到 database 目录
 
 
-4. 建库完成后，启动 `uv run server.py`（python 环境为 `python server.py`）
+4. 建库完成后，启动 `python server.py`（需先 `uv sync` 全量安装 rag 组依赖，见 install-environment skill）
 
 5. 来到rag网页，输入“鸟语花香”，然后等（首次加载模型会慢，后面光速）
    - 结果中召回了很多相关的词，能提供灵感

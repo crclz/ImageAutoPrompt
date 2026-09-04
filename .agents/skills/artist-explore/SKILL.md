@@ -79,7 +79,7 @@ anima 在路线一/路线二中二选一（前置澄清时已确认）；noobai 
 
 运行方式（在仓库根目录执行）：
 ```bash
-uv run .agents/skills/artist-explore/scripts/get_artists.py --dropout=0.3
+python .agents/skills/artist-explore/scripts/get_artists.py --dropout=0.3
 ```
 
 --dropout 必传，取值 [0,1)，表示随机丢弃的artist比例。

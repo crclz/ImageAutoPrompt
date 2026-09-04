@@ -2,7 +2,7 @@
 创建 episode（对齐 Web 端 POST /api/create-episode）。
 
 用法:
-    uv run entropy/cli/create_episode.py --name hello --workflow entropy/conf/workflows/my-workflow.json --invalid-tag-budget 9999
+    python entropy/cli/create_episode.py --name hello --workflow entropy/conf/workflows/my-workflow.json --invalid-tag-budget 9999
 
 workflow 与 invalid-tag-budget 在创建时快照进 episode.json，之后以 episode.json 为准（与 app_config 解耦）。
 invalid-tag-budget 推荐: noobai=6, anima=9999。

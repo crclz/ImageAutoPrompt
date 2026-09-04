@@ -53,8 +53,7 @@ lora搜索
 4. 启动服务（唯一需要手动运行的命令）:
 
    ```
-   uv run server.py    # uv 路线
-   python server.py    # python 环境
+   python server.py
    ```
 
 

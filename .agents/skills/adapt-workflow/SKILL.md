@@ -37,5 +37,5 @@ description: 将用户的 ComfyUI 工作流 json 适配本工具（插入占位�
 
 ### 4. 收尾
 
-- 告知用户: 工作流已入库，web 端创建 episode 的下拉框即可看到（CLI 用 `uv run entropy/cli/discover_workflows.py` 列出）
+- 告知用户: 工作流已入库，web 端创建 episode 的下拉框即可看到（CLI 用 `python entropy/cli/discover_workflows.py` 列出）
 - 提示: 创建 episode 时所选工作流会快照进 episode.json，之后改文件不影响已有 episode
