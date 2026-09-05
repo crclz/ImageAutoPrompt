@@ -206,7 +206,7 @@ def test_parse_timestep_draft_shouldReturnLoraForEachPrompt_whenAllPromptsHaveLo
 def test_parse_timestep_draft_shouldParseFriendlyFormat_whenHappy():
     s = r"""
         : 1girl, solo, red hair
-        
+
         : 1girl, solo, blue hair
     """
 
@@ -215,6 +215,205 @@ def test_parse_timestep_draft_shouldParseFriendlyFormat_whenHappy():
     assert result.negatives == ["", ""]
     assert result.loras == ["", ""]  # friendly 格式不支持 lora
     assert result.is_friendly is True
+
+
+def test_parse_timestep_draft_shouldExpandSnippets_whenSnippetBlockPresent():
+    s = r"""
+<snippet>
+{
+    "base": "1girl, solo, long hair, blue eyes",
+    "suffix": "masterpiece, best quality"
+}
+</snippet>
+
+<exploration>
+{"type": "free", "description": "d", "keywords": ["a"]}
+</exploration>
+
+```prompt0
+positive
+snippet(base), red hair, snippet(suffix)
+
+negative
+null
+```
+
+```prompt1
+positive
+snippet(base), blue hair, snippet(suffix)
+
+negative
+null
+```
+    """
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == [
+        "1girl, solo, long hair, blue eyes, red hair, masterpiece, best quality",
+        "1girl, solo, long hair, blue eyes, blue hair, masterpiece, best quality",
+    ]
+    assert result.negatives == ["", ""]
+    assert result.loras == ["", ""]
+
+
+def test_parse_timestep_draft_shouldExpandSnippets_whenFriendlyFormatWithSnippetBlock():
+    s = """
+<snippet>
+{
+    "base": "1girl, solo, long hair"
+}
+</snippet>
+
+: snippet(base), red hair
+
+: snippet(base), blue hair
+    """
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.is_friendly is True
+    assert result.positives == ["1girl, solo, long hair, red hair", "1girl, solo, long hair, blue hair"]
+
+
+def test_parse_timestep_draft_shouldExpandSnippets_whenSnippetInNegativeAndLoraSections():
+    # 统一替换：negative/lora 段中的 snippet 引用同样展开
+    s = r"""
+<snippet>
+{
+    "base": "1girl, solo",
+    "neg": "worst quality, lowres",
+    "loras": "<lora:aaa:1.0> <lora:bbb:0.9>"
+}
+</snippet>
+
+```prompt0
+positive
+snippet(base), red hair
+
+negative
+snippet(neg)
+
+lora
+snippet(loras)
+```
+    """
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == ["1girl, solo, red hair"]
+    assert result.negatives == ["worst quality, lowres"]
+    assert result.loras == ["<lora:aaa:1.0> <lora:bbb:0.9>"]
+
+
+def test_parse_timestep_draft_shouldRaiseValueError_whenSnippetReferenceUndefined():
+    s = r"""
+<snippet>
+{
+    "base": "1girl, solo"
+}
+</snippet>
+
+```prompt0
+positive
+snippet(base), snippet(unknown_thing)
+
+negative
+null
+```
+    """
+
+    with pytest.raises(ValueError, match="未定义的 snippet 引用"):
+        DraftParseService.parse_timestep_draft(s)
+
+
+def test_parse_timestep_draft_shouldRaiseValueError_whenSnippetNested():
+    # snippet 值里再引用 snippet 属于嵌套，替换后残留 snippet( 字样必须报错
+    s = r"""
+<snippet>
+{
+    "base": "1girl, solo",
+    "wrap": "masterpiece, snippet(base)"
+}
+</snippet>
+
+```prompt0
+positive
+snippet(wrap)
+
+negative
+null
+```
+    """
+
+    with pytest.raises(ValueError, match="无法展开的 snippet 引用"):
+        DraftParseService.parse_timestep_draft(s)
+
+
+def test_parse_timestep_draft_shouldRaiseValueError_whenSnippetNameInvalid():
+    s = r"""
+<snippet>
+{
+    "Bad-Name": "1girl, solo"
+}
+</snippet>
+
+```prompt0
+positive
+snippet(Bad-Name)
+
+negative
+null
+```
+    """
+
+    with pytest.raises(ValueError, match="snippet 名不合法"):
+        DraftParseService.parse_timestep_draft(s)
+
+
+def test_parse_timestep_draft_shouldRaiseValueError_whenSnippetBlockJsonInvalid():
+    s = r"""
+<snippet>
+{
+    "base": "1girl, solo",
+}
+</snippet>
+
+```prompt0
+positive
+snippet(base)
+
+negative
+null
+```
+    """
+
+    with pytest.raises(ValueError, match="不是合法 JSON"):
+        DraftParseService.parse_timestep_draft(s)
+
+
+def test_parse_timestep_draft_shouldRaiseValueError_whenProseMentionsUndefinedSnippet():
+    # 全文一次性展开：围栏之间的说明文字里出现未定义 snippet 引用同样报错
+    s = r"""
+<snippet>
+{
+    "base": "1girl, solo"
+}
+</snippet>
+
+说明：本轮尝试 snippet(hypothetical_style) 的组合方向。
+
+```prompt0
+positive
+snippet(base), red hair
+
+negative
+null
+```
+    """
+
+    with pytest.raises(ValueError, match="未定义的 snippet 引用"):
+        DraftParseService.parse_timestep_draft(s)
 
 
 def test_parse_exploration_abstract_shouldReturnAbstract_whenExplorationBlockPresent():
@@ -325,6 +524,30 @@ def test_DraftParseService_image_process_guard_shouldSkipInvalidTagCheck_whenBud
     assert do_intercept is False
     assert message == ""
     assert len(prompts) == 1
+
+
+def test_DraftParseService_image_process_guard_shouldValidateExpandedTags_whenSnippetUsed(monkeypatch):
+    # arrange: snippet 展开后才做 invalid tag 校验——值里的无效 tag 计入预算
+    _mock_app_config(monkeypatch)
+    s = """
+<snippet>
+{
+    "base": "1girl, solo, cinematic lightingss, raindropsss"
+}
+</snippet>
+
+: snippet(base), red hair
+    """
+
+    # act
+    do_intercept, message, prompts = DraftParseService.image_process_guard(
+        s, workflow=EXISTING_WORKFLOW, invalid_tag_budget=1
+    )
+
+    # assert
+    assert do_intercept is True
+    assert "budget=1" in message
+    assert prompts[0].positive == "1girl, solo, cinematic lightingss, raindropsss, red hair"
 
 
 def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenWorkflowJsonNotExist(monkeypatch):

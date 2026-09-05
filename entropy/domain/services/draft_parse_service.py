@@ -9,6 +9,10 @@ from entropy.domain.models.draft import ExplorationAbstract, TimestepDraftParseR
 from entropy.domain.models.episode import ImagePrompt
 from entropy.domain.services.tag_hinting_service import TagHintingService
 
+_SNIPPET_NAME = r"[0-9a-z_]+"
+_SNIPPET_REF_RE = re.compile(rf"snippet\(({_SNIPPET_NAME})\)")
+_SNIPPET_BLOCK_RE = re.compile(r"<snippet>\s*(.*?)\s*</snippet>", re.DOTALL)
+
 
 class DraftParseService:
     @staticmethod
@@ -18,7 +22,14 @@ class DraftParseService:
         支持两种格式：
         1. 用户手工输入：每行以 ':' 开头（is_friendly=True）
         2. LLM 输出：多个 ```prompt{n} ... ``` 块（is_friendly=False）
+
+        可选 <snippet>{json}</snippet> 块定义可复用片段；解析前对全文做一次性
+        snippet(name) 展开（单遍、禁止嵌套，任何位置出现未定义引用都会报错）。
         """
+        snippets = DraftParseService.parse_snippet_table(text)
+        text = _SNIPPET_BLOCK_RE.sub("", text)
+        text = DraftParseService.expand_snippets(text, snippets)
+
         friendly_result = DraftParseService.try_parse_user_friendly(text)
         if friendly_result is not None:
             return friendly_result
@@ -101,6 +112,54 @@ class DraftParseService:
         loras = [""] * len(positives)
 
         return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=True)
+
+    @staticmethod
+    def parse_snippet_table(text: str) -> dict[str, str]:
+        """解析可选的 <snippet>{json}</snippet> 块（snippet 名 -> tag 串）；无块返回空 dict。
+
+        raise: ValueError，JSON 非法 / 非对象 / 名字或值不合法时给中文指导式报错
+        """
+
+        match = _SNIPPET_BLOCK_RE.search(text)
+        if not match:
+            return {}
+
+        try:
+            obj = json.loads(match.group(1))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"<snippet> 内容不是合法 JSON：{e}")
+
+        if not isinstance(obj, dict):
+            raise ValueError("<snippet> 内容必须是 JSON 对象（snippet 名 -> tag 串）")  # noqa: TRY004
+
+        for name, value in obj.items():
+            if not re.fullmatch(_SNIPPET_NAME, name):
+                raise ValueError(f"snippet 名不合法（仅限小写字母/数字/下划线）：{name}")
+            if not isinstance(value, str):
+                raise ValueError(f"snippet 值必须是字符串：{name}")  # noqa: TRY004
+
+        return obj
+
+    @staticmethod
+    def expand_snippets(text: str, snippets: dict[str, str]) -> str:
+        """单遍展开 text 中的 snippet(name) 引用（替换结果不会被二次扫描，天然禁止嵌套）。
+
+        raise: ValueError，引用未定义的 snippet，或替换后仍残留 snippet( 字样（嵌套/名称不合法）
+        """
+
+        def _replace(m: re.Match) -> str:
+            name = m.group(1)
+            if name not in snippets:
+                raise ValueError(f"未定义的 snippet 引用：snippet({name})")
+            return snippets[name]
+
+        expanded = _SNIPPET_REF_RE.sub(_replace, text)
+
+        leftover = re.search(r"snippet\([^)\n]*\)?", expanded)
+        if leftover:
+            raise ValueError(f"存在无法展开的 snippet 引用（可能为嵌套或名称不合法）：{leftover.group(0)}")
+
+        return expanded
 
     @staticmethod
     def parse_exploration_abstract(text: str) -> ExplorationAbstract | None:

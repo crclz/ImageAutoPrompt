@@ -131,6 +131,32 @@ format_reminder_constant: 常量，所有episode固定，但你需每一个times
 输出prompt前，请思考一下artist/lora tag应该放在哪个位置，免得放错。
 
 
+### snippet 复用（可选）
+
+当多个 prompt 共享较长的相同片段时，可在 `</exploration>` 之后、`<prompts>` 之前声明一个可选的 `<snippet>` 块，把重复片段定义成变量，在 prompt 文本中用 `snippet(name)` 引用，减少书写量：
+
+<snippet>
+{
+    "base": "1girl, solo, long hair, blue eyes",
+    "suffix": "masterpiece, best quality"
+}
+</snippet>
+
+```prompt0
+positive
+snippet(base), red hair, snippet(suffix)
+
+negative
+null
+```
+
+规则：
+- snippet 名仅限小写字母/数字/下划线（如 `base`、`suffix_2`）
+- 禁止嵌套：snippet 的值里不能再出现 `snippet(...)`
+- 解析时对整个文件做一次性展开：任何位置（包括说明文字）出现未定义的 `snippet(...)` 引用都会报错
+- 建议：5 个及以上 tag、且被多个 prompt 重复的片段才抽成 snippet；短差异直接写在 prompt 里
+
+
 ## 工作流通用规则
 
 when: 没有episode_name; do: 需要用户想一个，或者帮用户想一个; do_not: 基于猜测，从已有的episode继续进行探索;
