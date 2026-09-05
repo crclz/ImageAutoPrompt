@@ -6,7 +6,7 @@ description: 定义了对于lora的探索的系统性的方法论. 不要阅读�
 ## lora
 
 lora 可以叠加多个（2-5个），需要不断探索，不断试错。
-权重写在 lora 语法里，例如 <lora:xxx:0.9>。探索时使用推荐值（库中 [最高权重: x] 标注）或默认 1.0。
+权重写在 lora 语法里，例如 <lora:xxx:0.9>。探索时默认 1.0 起步。
 权重范围 0.2 ~ 默认权重。
 
 ## 冲突处理
@@ -24,7 +24,6 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
 - 别忘了episode skill中需要用户确认的
-- dropout比例 (默认推荐0.5). dropout功能的含义是在每一episode开始时，dropout掉一部分lora，以避免与之前的episode选到过于相似的lora。
 - prompt数量 (默认下表，但需询问用户是否需要更多)
 - 执行计划（简要说明即可）。记得告知（而非询问），这几个计划的timestep都是 lora_only 的
 
@@ -37,7 +36,7 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 | 持续timestep个数 | 思路                                                          | prompt数量 per timestep | 备注                                                    |
 | ------------ | ----------------------------------------------------------- | --------------------- | ----------------------------------------------------- |
-| -            | 获取lora. 运行 get_noob_loras.py（noob 线）/ get_anima_loras.py（anima 线），按 episode 的模型线选择。后续的lora只能从这里面选择 | -                    |  - |
+| -            | 获取lora. 运行 get_loras.py --arch=<noob / anima> --limit=<候选数量>，arch 按 episode 的模型线选择。后续的lora只能从这里面选择 | -                    |  - |
 | 1            | 进行单lora探索。权重用推荐值或默认1.0。基于上一步的输出，然后选择你认为适合的lora，不能重复。 | 16                    | lora_only；如果用户无明显停留意图，你需要主动推进到下一个阶段。                |
 | 1            | 2 lora带权重组合。不要用上一阶段用户完全未看过的。重点关注用户在单lora阶段更喜欢的。              | 8                     | 同上                                                    |
 | 1            | 2-3 lora带权重.                                                    | 8                     | 同上；注意一般1个lora没有2个lora好，但是再往上就没这个规律，得试错。                     |
@@ -47,13 +46,14 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 ## reference
 
-在寻找lora的时候，请一定要通过 get_noob_loras.py / get_anima_loras.py 获取候选lora，它们分别是 noob / anima lora 库的唯一出口；不要直接阅读库原始文件（library/noob_loras.md、library/anima_loras.yaml）。
+在寻找lora的时候，请一定要通过 get_loras.py 获取候选lora，它是 noob / anima lora 库的唯一出口；不要直接阅读库原始文件（library/noob_loras.yaml、library/anima_loras.yaml）。
 
 运行方式（在仓库根目录执行）：
 ```bash
-python .agents/skills/lora-explore/scripts/get_noob_loras.py --dropout=0.3
-python .agents/skills/lora-explore/scripts/get_anima_loras.py --limit=5
+python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16
+python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
 ```
 
-- noob: --dropout 必传，取值 [0,1)，表示随机丢弃的lora比例。输出完整 lora 块（含描述）。
-- anima: --limit 必传，取值 >= 1，表示过滤 + shuffle 后取前 N 个。输出 `<lora:xxx>` 一行一个（不含权重）。过滤规则：my_comment 行首记号严格匹配 <1>/<3>/<3+>/<3->/<5>/<5->，未匹配（未评分/格式有误）不采用并在 stderr 警告，<1>/<3-> 剔除。若 stderr 出现未评分警告，请顺带告知用户。
+- --arch 必传，noob / anima 二选一，决定读取 library/{arch}_loras.yaml。
+- --limit 必传，取值 >= 1，表示过滤 + shuffle 后取前 N 个。输出 `<lora:xxx>` 一行一个（不含权重，触发词由 workflow 内置映射负责）。
+- 过滤规则：my_comment 行首记号严格匹配 <1>/<3>/<3+>/<3->/<5>/<5->，未匹配（未评分/格式有误）不采用并在 stderr 警告，<1>/<3-> 剔除；<未评> 静默剔除。若 stderr 出现未评分警告，请顺带告知用户。

@@ -3,6 +3,7 @@
 *.log
 .cache/.civitai-cache
 .cache/lora_search
+/.cache
 
 /.vscode
 
