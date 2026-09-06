@@ -22,10 +22,26 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 ### 前置澄清
 
-如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
-- 别忘了episode skill中需要用户确认的
-- prompt数量 (默认下表，但需询问用户是否需要更多)
-- 执行计划（简要说明即可）。记得告知（而非询问），这几个计划的timestep都是 lora_only 的
+<ask-user need-user-confirmation="force">
+  如果用户未明确以下事项，请向务必向用户显式提问，确认清楚后，才开始流程
+
+  <question>episode skill中需要用户确认的</question>
+
+  <question name="trigger_word">
+    if ask("是否工作流内置了从lora名称映射到触发词的机制") == yes {
+      // 例如，一些工作流识别到 lora_trigger_word, 就会进行 replace("lora_trigger_word,", "真正的触发词,")
+      if ask("在填写prompt的时候是否需要在该插入触发词的位置填写一个标志字符串") == yes {
+        ask("这个标志字符串是什么")
+        ask("应该插入到什么位置")
+      }
+    } else { // 工作流并未内置映射机制
+      ask("触发词应该插入到什么位置(默认建议插入到 1girl, solo, 作品名, 角色名称, ^这里^, 其他标签)")
+    }
+  </question>
+
+  <question>prompt数量 (默认下表，但需询问用户是否需要更多) </question>
+  <question>执行计划（简要说明即可）。记得告知（而非询问），这几个计划的timestep都是 lora_only 的</question>
+</ask-user>
 
 ### 流程
 
