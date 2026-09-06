@@ -64,3 +64,37 @@ def test_main_end_to_end(tmp_path, monkeypatch, capsys):
     names = {line.removeprefix("<lora:").removesuffix(">") for line in lines}
     assert names <= {"a", "c", "g"}
     assert "later: e, h" in captured.err
+
+
+def test_main_with_trigger_word(tmp_path, monkeypatch, capsys):
+    # words 覆盖四种形态：多 tag 串（带首尾空格）/ null / 缺失 / 空串
+    loras = {
+        "a": {"my_comment": "<5> 顶级", "words": "  CUTE2712, pastel colors "},
+        "c": {"my_comment": "<3+> 有特色", "words": None},
+        "g": {"my_comment": "<5-> 次顶级"},
+        "h": {"my_comment": "<5>", "words": ""},
+    }
+    lib = tmp_path / "library"
+    lib.mkdir()
+    (lib / "anima_loras.yaml").write_text(
+        yaml.safe_dump({"loras": loras}, allow_unicode=True), encoding="utf-8"
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv",
+                        ["get_loras.py", "--arch=anima", "--limit=10", "--with-trigger-word"])
+
+    get_loras.main()
+
+    captured = capsys.readouterr()
+    parsed = {}
+    for line in captured.out.strip().splitlines():
+        ref, _, suffix = line.partition(" # ")
+        name = ref.removeprefix("<lora:").removesuffix(">")
+        parsed[name] = suffix
+    assert parsed == {
+        "a": "trigger word: CUTE2712, pastel colors",
+        "c": "(no trigger word)",
+        "g": "(no trigger word)",
+        "h": "(no trigger word)",
+    }
+    assert captured.err == ""

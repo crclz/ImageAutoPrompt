@@ -3,9 +3,14 @@
 用法（本脚本依赖当前工作目录，需在仓库根目录执行）：
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16
+    python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16 --with-trigger-word
 
 --arch 必传，noob / anima 二选一，决定读取 library/noob_loras.yaml 还是 library/anima_loras.yaml。
 --limit 必传，取值 >= 1：过滤 + shuffle 后取前 N 个。
+--with-trigger-word 可选，默认关闭。开启时每行行尾附加触发词，供"工作流未内置
+触发词映射、需手动把触发词写进 prompt"的场景使用：
+    <lora:xxx> # trigger word: {words 字段 strip 后原样输出，可能是多 tag 串}
+    words 为 null/缺失/空串/非字符串时输出 <lora:xxx> # (no trigger word)
 过滤规则（对每条 lora 的 my_comment strip 后严格匹配行首记号，笨办法硬编码，不用正则）：
     - 行首记号必须是 <1> <3> <3+> <3-> <5> <5-> 之一，否则视为未评分/格式有误：
       不采用，并在 stderr 用英文警告列出（顺带告知用户，提醒其补评分）
@@ -56,6 +61,18 @@ def build_pool(loras: dict) -> tuple[list[str], list[str]]:
     return pool, unrated
 
 
+def format_lora_line(name: str, entry, with_trigger_word: bool) -> str:
+    """输出一行 <lora:xxx>；with_trigger_word 开启时按 docstring 约定附加触发词。"""
+    line = f"<lora:{name}>"
+    if with_trigger_word:
+        words = (entry or {}).get("words")
+        if isinstance(words, str) and words.strip():
+            line += f" # trigger word: {words.strip()}"
+        else:
+            line += " # (no trigger word)"
+    return line
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="从 lora 库过滤 + 随机抽样，输出 <lora:xxx> 一行一个"
@@ -64,6 +81,9 @@ def main() -> None:
                         help="模型线，必传：noob 读 library/noob_loras.yaml，anima 读 library/anima_loras.yaml")
     parser.add_argument("--limit", type=int, required=True,
                         help="抽样数量，必传，取值 >= 1")
+    parser.add_argument("--with-trigger-word", action="store_true",
+                        help="行尾附加触发词（# trigger word: ... / # (no trigger word)），"
+                             "工作流未内置触发词映射时使用")
     args = parser.parse_args()
 
     if args.limit < 1:
@@ -87,7 +107,7 @@ def main() -> None:
 
     random.shuffle(pool)
     for name in pool[: args.limit]:
-        print(f"<lora:{name}>")
+        print(format_lora_line(name, loras.get(name), args.with_trigger_word))
 
 
 if __name__ == "__main__":

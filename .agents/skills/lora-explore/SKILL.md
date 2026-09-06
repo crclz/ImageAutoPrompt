@@ -52,7 +52,7 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 | 持续timestep个数 | 思路                                                          | prompt数量 per timestep | 备注                                                    |
 | ------------ | ----------------------------------------------------------- | --------------------- | ----------------------------------------------------- |
-| -            | 获取lora. 运行 get_loras.py --arch=<noob / anima> --limit=<候选数量>，arch 按 episode 的模型线选择。后续的lora只能从这里面选择 | -                    |  - |
+| -            | 获取lora. 运行 get_loras.py --arch=<noob / anima> --limit=<候选数量>，arch 按 episode 的模型线选择。后续的lora只能从这里面选择 | -                    | 若前置澄清 trigger_word 确认工作流未内置触发词映射，追加 --with-trigger-word |
 | 1            | 进行单lora探索。权重用推荐值或默认1.0。基于上一步的输出，然后选择你认为适合的lora，不能重复。 | 16                    | lora_only；如果用户无明显停留意图，你需要主动推进到下一个阶段。                |
 | 1            | 2 lora带权重组合。不要用上一阶段用户完全未看过的。重点关注用户在单lora阶段更喜欢的。              | 8                     | 同上                                                    |
 | 1            | 2-3 lora带权重.                                                    | 8                     | 同上；注意一般1个lora没有2个lora好，但是再往上就没这个规律，得试错。                     |
@@ -71,5 +71,6 @@ python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
 ```
 
 - --arch 必传，noob / anima 二选一，决定读取 library/{arch}_loras.yaml。
-- --limit 必传，取值 >= 1，表示过滤 + shuffle 后取前 N 个。输出 `<lora:xxx>` 一行一个（不含权重，触发词由 workflow 内置映射负责）。
+- --limit 必传，取值 >= 1，表示过滤 + shuffle 后取前 N 个。输出 `<lora:xxx>` 一行一个，不含权重；触发词默认不输出（工作流内置映射时无需关注）。
+- --with-trigger-word 可选，默认关闭。
 - 过滤规则：my_comment 行首记号严格匹配 <1>/<3>/<3+>/<3->/<5>/<5->，未匹配（未评分/格式有误）不采用并在 stderr 警告，<1>/<3-> 剔除；<未评> 静默剔除。若 stderr 出现未评分警告，请顺带告知用户。
