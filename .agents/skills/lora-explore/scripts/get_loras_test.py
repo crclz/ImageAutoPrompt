@@ -18,7 +18,7 @@ def test_parse_rating_valid_tokens():
 
 
 def test_parse_rating_unrated_token():
-    assert get_loras.parse_rating("<未评> 报告有下载记录") == "未评"
+    assert get_loras.parse_rating("<TODO> 报告有下载记录") == "TODO"
 
 
 def test_parse_rating_invalid():
@@ -33,7 +33,7 @@ def _sample_loras():
         "a": {"my_comment": "<5> 顶级"},
         "b": {"my_comment": "<1> 不适合"},
         "c": {"my_comment": "<3+> 有特色"},
-        "d": {"my_comment": "<未评> 孤儿"},
+        "d": {"my_comment": "<TODO> 孤儿"},
         "e": {"my_comment": "表现一般"},
         "f": {"my_comment": "<3-> 质量小问题"},
         "g": {"my_comment": "<5-> 次顶级"},

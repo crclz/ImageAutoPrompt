@@ -207,3 +207,54 @@ TUN 没开、直连超时、CLI 又走不了代理时：
    注意：urllib（python）的默认 UA 会被 CF 403 拦，别用。下载后无自动 SHA256，需自行核验大小或手动比对。
 
 
+## 下载记录维护（library yaml）
+
+lora 库是 `library/anima_loras.yaml` / `library/noob_loras.yaml`（按模型架构选），用户私有、从零积累。文件不存在时，先创建（ranking 头部 + 空 `loras:`）；条目随后照下方示例的格式追加。
+
+- 接收批量下载前：先到对应 yaml 确认是否已下载过，已下载的跳过并告知。
+- 下载成功后：直接把新条目追加进 yaml，事后在对话中呈现所写条目供核对。
+
+条目格式示例：
+
+```yaml
+ranking:
+  general_rule: |
+    1 3 5, 其中5为顶级; 1为不采用; 3为喜爱度低于5的
+    3 是看起来还行的 但换句话说是平庸 不可作为主导 可作为辅助调色
+    3+ 是有特色但不能作为主导的 (使用的时候，可以偶尔单独探索探索)
+    3- 是质量可能有些小问题的
+  auto_explore_rule: 只限制1不能上场, 其他的均匀使用
+  manual_explore_rule: 想好看的就选5 想尝试一点新的就选择3+ 想选择辅助画风就选3 想选择有特色的画风就选择3-
+
+loras:
+  anima_748cm_1: # 键名 = 文件名（架构_画师_序号）
+    url: https://civitai.red/models/2626310/?modelVersionId=2948641
+    trained_on: "preview3"
+    words: "@748cm_style" # 触发词, 无则 null
+    weight: "0.8" # 推荐权重, 无则 null
+    important_info: "patrik版, 明写preview3训练, 偏好自然语言prompt(权重范围0.6-1.0)"
+    my_comment: <5-> 眼神有特色（阴暗）
+
+
+  anima_fkey_1:
+    url: https://civitai.red/models/2724437/?modelVersionId=3062077
+    trained_on: "base"
+    words: null
+    weight: null
+    important_info: "storyAura版, 描述明写Anima Base-v1训练; 偏好CFG 4-6"
+    my_comment: <5> 顶级 油画质感 色调冷
+
+
+  anima_fkey_2:
+    url: https://civitai.red/models/2680232/?modelVersionId=3009511
+    trained_on: "unknown"
+    words: "@fkey"
+    weight: null
+    important_info: "fkey共仅2个anima版"
+    my_comment: <3-> 与_1色调偏暖 但是人物不太符合审美 略显老
+```
+
+- 追加前若文件末尾没有换行，先补一个换行，否则新条目首行会拼到上一条末尾，yaml 损坏。
+- `my_comment` 行首评分记号（`<1> <3> <3+> <3-> <5> <5->`，含义即文件头部 ranking 块）由 lora-explore 的 `get_loras.py` 严格解析，无有效记号的条目会被弃用。新条目一律写 `<TODO>`（待评，静默剔除），待用户使用后自行补评。
+
+

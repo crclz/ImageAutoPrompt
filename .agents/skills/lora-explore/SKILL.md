@@ -73,4 +73,4 @@ python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
 - --arch 必传，noob / anima 二选一，决定读取 library/{arch}_loras.yaml。
 - --limit 必传，取值 >= 1，表示过滤 + shuffle 后取前 N 个。输出 `<lora:xxx>` 一行一个，不含权重；触发词默认不输出（工作流内置映射时无需关注）。
 - --with-trigger-word 可选，默认关闭。
-- 过滤规则：my_comment 行首记号严格匹配 <1>/<3>/<3+>/<3->/<5>/<5->，未匹配（未评分/格式有误）不采用并在 stderr 警告，<1>/<3-> 剔除；<未评> 静默剔除。若 stderr 出现未评分警告，请顺带告知用户。
+- 过滤规则：my_comment 行首记号严格匹配 <1>/<3>/<3+>/<3->/<5>/<5->，未匹配（未评分/格式有误）不采用并在 stderr 警告，<1>/<3-> 剔除；<TODO>（待评，如新下载条目）静默剔除。若 stderr 出现未评分警告，请顺带告知用户。

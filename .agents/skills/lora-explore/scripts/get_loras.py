@@ -15,7 +15,7 @@
     - 行首记号必须是 <1> <3> <3+> <3-> <5> <5-> 之一，否则视为未评分/格式有误：
       不采用，并在 stderr 用英文警告列出（顺带告知用户，提醒其补评分）
     - 记号为 <1>（不采用）或 <3->（质量可能有小问题）的剔除
-    - 记号为 <未评>（已知未评估，如孤儿条目）：静默剔除，不警告
+    - 记号为 <TODO>（已知未评估/待评，如新下载条目、孤儿条目）：静默剔除，不警告
 stdout 只输出结果列表（一行一个 <lora:xxx>），诊断信息一律走 stderr。
 本脚本是 noob / anima lora 库的唯一出口，调用方不要直接阅读 library/*_loras.yaml。
 """
@@ -29,7 +29,7 @@ import yaml
 
 VALID_RATINGS = ("1", "3", "3+", "3-", "5", "5-")
 EXCLUDED_RATINGS = ("1", "3-")
-UNRATED_TOKEN = "未评"
+UNRATED_TOKEN = "TODO"
 
 
 def parse_rating(my_comment) -> str | None:
@@ -46,7 +46,7 @@ def parse_rating(my_comment) -> str | None:
 def build_pool(loras: dict) -> tuple[list[str], list[str]]:
     """返回（可用 lora 名列表, 未评分/格式有误的 lora 名列表）。
 
-    <未评> 属于已知状态，静默剔除，不进警告列表。
+    <TODO> 属于已知状态（待评），静默剔除，不进警告列表。
     """
     pool: list[str] = []
     unrated: list[str] = []
