@@ -52,7 +52,11 @@ lora搜索
 
 4. 启动服务（唯一需要手动运行的命令）:
 
-   ```
+   ```bash
+   # 可选：激活python环境。uv需激活python环境。
+   .venv/Scripts/activate
+
+   # 启动服务
    python server.py
    ```
 
