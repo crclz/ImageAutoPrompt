@@ -104,19 +104,8 @@ class EpisodeHandler:
 
             timestep.invalid_tags = ", ".join([p for p in all_tags if not TagChecker.exist_tag(p)])
 
-        # display highlight:
-        highlight_text = {}  # key=${timestep}_${image_index}, value=${timestep_when_choose}
-
-        for timestep in timesteps:
-            for highscore in timestep.chosen_highscores:
-                key = f"{highscore.timestep}_{highscore.image_index}"
-                highlight_text[key] = f"HIGH_{timestep.i}"
-
-        for timestep in timesteps:
-            for image in timestep.images:
-                key = f"{timestep.i}_{image.image_index}"
-                if key in highlight_text:
-                    image.highlight_text = highlight_text[key]
+        # display highlight & comment badges
+        cls._apply_display_hints(timesteps)
 
         # can_process_image
         # 如果最近的2个timestep，有任何1个进行了评价，那么都可以继续process.
@@ -129,6 +118,29 @@ class EpisodeHandler:
         return EpisodeQueryModel(
             timesteps=timesteps, can_process_image=can_process_image, is_really_running=is_really_running
         )
+
+    @staticmethod
+    def _apply_display_hints(timesteps: list) -> None:
+        """给图片注入展示角标：HIGH_x（高分）与 comment_text（评论）"""
+        highlight_text = {}  # key=${timestep}_${image_index}, value=${timestep_when_choose}
+        comment_text = {}  # key=${timestep}_${image_index}, value=comment
+
+        for timestep in timesteps:
+            for highscore in timestep.chosen_highscores:
+                key = f"{highscore.timestep}_{highscore.image_index}"
+                highlight_text[key] = f"HIGH_{timestep.i}"
+
+            for extra in timestep.extra_comments:
+                key = f"{extra.timestep}_{extra.image_index}"
+                comment_text[key] = extra.comment
+
+        for timestep in timesteps:
+            for image in timestep.images:
+                key = f"{timestep.i}_{image.image_index}"
+                if key in highlight_text:
+                    image.highlight_text = highlight_text[key]
+                if key in comment_text:
+                    image.comment_text = comment_text[key]
 
     @classmethod
     def choose_high_scores_wrapper(cls, episode_name):
@@ -173,6 +185,7 @@ class EpisodeHandler:
         # choose
 
         feedbackable.chosen_highscores = request.highscores
+        feedbackable.extra_comments = request.extra_comments
         feedbackable.status = 2  # 1,2 => 2. restrictions of 1,2 is in episode.get_feedbackable_timestep
 
         # save

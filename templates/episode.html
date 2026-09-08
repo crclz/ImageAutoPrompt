@@ -92,6 +92,11 @@
                         [[img.highlight_text]]
                     </div>
 
+                    <div v-if="img.comment_text" :title="img.comment_text"
+                        class="absolute bottom-0 left-0 bg-amber-400 text-white text-[15px] px-1.5 font-bold rounded-tr shadow-sm z-10">
+                        💬
+                    </div>
+
                     <div v-if="isImageSelected(step.i, img.image_index)"
                         class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -142,6 +147,11 @@
                         class="px-3 py-1 text-xs font-bold text-red-400/80 hover:text-red-400 transition-colors uppercase">
                         清空 ([[ selectedPointers.length ]])
                     </button>
+                </div>
+
+                <div class="flex items-center bg-white/5 rounded-lg border border-white/10">
+                    <input v-model="previewComment" placeholder="评论此图（可留空，随提交生效）"
+                        class="bg-transparent text-white text-xs rounded-md px-3 py-1.5 placeholder-white/30 focus:outline-none w-56" />
                 </div>
 
                 <button @click="submitHighscores"
@@ -195,8 +205,9 @@
         return { toasts, showToast };
     }
 
-    function useSelection(episodeName, timesteps, closePreview, fetchData) {
+    function useSelection(episodeName, timesteps, closePreview, fetchData, preview) {
         const selectedPointers = ref([]);
+        const commentDrafts = ref([]); // 评论草稿: [{timestep, image_index, comment}]，随高分一起提交
 
         const isImageSelected = (stepI, imgIndex) => {
             return selectedPointers.value.some(p => p.timestep === stepI && p.image_index === imgIndex);
@@ -213,6 +224,51 @@
 
         const clearAllSelected = () => {
             selectedPointers.value = [];
+        };
+
+        const setCommentDraft = (stepI, imgIndex, text) => {
+            const found = commentDrafts.value.find(c => c.timestep === stepI && c.image_index === imgIndex);
+            if (found) {
+                found.comment = text;
+            } else {
+                commentDrafts.value.push({ timestep: stepI, image_index: imgIndex, comment: text });
+            }
+        };
+
+        const getServerComment = (stepI, imgIndex) => {
+            const step = timesteps.value.find(t => t.i === stepI);
+            const img = step && step.images.find(im => im.image_index === imgIndex);
+            return (img && img.comment_text) || "";
+        };
+
+        // 预览当前图的评论：有草稿用草稿，否则回显已提交的
+        const previewComment = computed({
+            get: () => {
+                if (!preview.value) return "";
+                const { stepI, imgIndex } = preview.value;
+                const draft = commentDrafts.value.find(c => c.timestep === stepI && c.image_index === imgIndex);
+                return draft ? draft.comment : getServerComment(stepI, imgIndex);
+            },
+            set: (val) => {
+                if (preview.value) setCommentDraft(preview.value.stepI, preview.value.imgIndex, val);
+            }
+        });
+
+        // 服务端是全量覆盖语义：提交时合并「未动过的已提交评论」+「本地非空草稿」，
+        // 避免只改高分时误清掉已有评论；清空草稿文本=删除该图评论
+        const buildExtraComments = () => {
+            const serverComments = [];
+            timesteps.value.forEach(step => {
+                (step.extra_comments || []).forEach(c => serverComments.push({
+                    timestep: c.timestep, image_index: c.image_index, comment: c.comment
+                }));
+            });
+
+            const draftKeys = new Set(commentDrafts.value.map(c => `${c.timestep}_${c.image_index}`));
+            const kept = serverComments.filter(c => !draftKeys.has(`${c.timestep}_${c.image_index}`));
+            const drafts = commentDrafts.value.filter(c => (c.comment || "").trim() !== "");
+
+            return kept.concat(drafts);
         };
 
         const submitHighscores = async () => {
@@ -233,12 +289,14 @@
                 highscores: selectedPointers.value.map(p => ({
                     timestep: p.timestep,
                     image_index: p.image_index
-                }))
+                })),
+                extra_comments: buildExtraComments()
             };
 
             const onSuccess = () => {
                 // 清空本地选择并关闭预览（可选）
                 selectedPointers.value = [];
+                commentDrafts.value = [];
                 closePreview();
 
                 // 立即刷新一次数据以获取最新状态
@@ -293,7 +351,7 @@
         };
 
 
-        return { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores };
+        return { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment };
     }
 
     function usePreview(timesteps, showToast) {
@@ -512,6 +570,10 @@
     function useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview }) {
         const handleKeyDown = (e) => {
             if (!preview.value) return;
+            // 输入框（评论）内的按键不作为快捷键：空格/方向键保留正常输入行为
+            const target = e.target;
+            const tag = (target && target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || (target && target.isContentEditable)) return;
             if (e.code === 'Space') {
                 e.preventDefault();
                 toggleSelection(preview.value.stepI, preview.value.imgIndex);
@@ -548,7 +610,7 @@
                 timesteps, showToast
             );
 
-            const { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores } = useSelection(episodeName, timesteps, closePreview, fetchData);
+            const { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment } = useSelection(episodeName, timesteps, closePreview, fetchData, preview);
 
             // preview handle key down
             const { } = useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview });
@@ -629,6 +691,7 @@
                 toggleSelection,
                 clearAllSelected,
                 submitHighscores,
+                previewComment,
                 copyToClipboard,
                 toasts,
                 showDraftModal,

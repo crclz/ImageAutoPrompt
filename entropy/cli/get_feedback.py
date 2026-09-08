@@ -8,9 +8,12 @@
 纯查询接口：查询成功一律 exit 0，三态通过文本表达；LLM 自行对比两次输出判断反馈是否变化（没变则停止并向用户二次确认）。
 
 三态:
-    已选择:      newest timestep is 1, user choose highscore: timestep_1_image[0], ...
-    已提交但没选: newest timestep is 1, user submitted but chose no highscore
+    已选择:      newest timestep is 1, user choose highscore: timestep_1_image[0], ...[, extra comments: timestep_1_image[0]: xxx; ...]
+    已提交但没选: newest timestep is 1, user submitted but chose no highscore[, extra comments: ...]
     未评价:      newest timestep is 1, user not choose yet
+
+extra comments: 逐图评论（随 highscore 一起提交）。无评论时不输出该段，输出与旧版一致；
+多条评论用 "; " 分隔（评论文本内可能出现逗号）。
 """
 
 import argparse
@@ -51,9 +54,15 @@ def main():
     if timestep.status == 2:
         if timestep.chosen_highscores:
             scores = ", ".join(h.format_llm() for h in timestep.chosen_highscores)
-            print(f"{prefix}user choose highscore: {scores}")
+            line = f"{prefix}user choose highscore: {scores}"
         else:
-            print(f"{prefix}user submitted but chose no highscore")
+            line = f"{prefix}user submitted but chose no highscore"
+
+        if timestep.extra_comments:
+            comments = "; ".join(c.format_llm() for c in timestep.extra_comments)
+            line += f", extra comments: {comments}"
+
+        print(line)
     else:
         print(f"{prefix}user not choose yet")
 

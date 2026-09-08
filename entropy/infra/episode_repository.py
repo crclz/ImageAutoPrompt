@@ -114,6 +114,7 @@ class EpisodeRepository:
                 continue
 
             model.chosen_highscores = timestep.chosen_highscores
+            model.extra_comments = timestep.extra_comments
 
             # sort images
             model.sort_images()

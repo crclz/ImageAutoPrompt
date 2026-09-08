@@ -10,6 +10,13 @@ class ImagePointer(pydantic.BaseModel):
         return f"timestep_{self.timestep}_image[{self.image_index}]"
 
 
+class ImageComment(ImagePointer):
+    comment: str = ""
+
+    def format_llm(self) -> str:
+        return f"{super().format_llm()}: {self.comment}"
+
+
 class ImagePrompt(pydantic.BaseModel):
     positive: str
     negative: str
@@ -23,6 +30,8 @@ class EpisodeTimestep(pydantic.BaseModel):
     """0=image processing, 1=image done, 2=high score chosen"""
 
     chosen_highscores: list[ImagePointer] = []
+
+    extra_comments: list[ImageComment] = []  # 随 highscore 一起提交的逐图评论，与 chosen_highscores 互不绑定
 
     error: str = ""  # 失败原因（含取消信号）；空=成功
     stacktrace: str = ""  # 失败时的完整堆栈，供 web 端展示

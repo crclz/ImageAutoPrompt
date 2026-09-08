@@ -4,7 +4,7 @@
 
 import pydantic
 
-from entropy.domain.models.episode import ImagePointer
+from entropy.domain.models.episode import ImageComment, ImagePointer
 
 
 class ImageQueryModel(pydantic.BaseModel):
@@ -14,11 +14,14 @@ class ImageQueryModel(pydantic.BaseModel):
 
     highlight_text: str = ""
 
+    comment_text: str = ""  # 该图的 extra comment（已提交），供前端角标与预览回显
+
 
 class TimestepQueryModel(pydantic.BaseModel):
     i: int = 0
     images: list[ImageQueryModel] = []
     chosen_highscores: list[ImagePointer] = []
+    extra_comments: list[ImageComment] = []
     status: int = 0
 
     diff_positive_tags: str = ""

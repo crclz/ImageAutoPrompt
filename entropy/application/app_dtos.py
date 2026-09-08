@@ -1,7 +1,7 @@
 
 import pydantic
 
-from entropy.domain.models.episode import ImagePointer
+from entropy.domain.models.episode import ImageComment, ImagePointer
 
 
 class ApiResponse(pydantic.BaseModel):
@@ -15,6 +15,7 @@ class ChooseHighScoresRequest(pydantic.BaseModel):
     name: str = ""
     # timestep: int = 0  # for integrity check
     highscores: list[ImagePointer] = []
+    extra_comments: list[ImageComment] = []  # 逐图评论，随 highscore 一起提交（全量覆盖）
     overwrite: int = 0  # 1=确认覆盖已反馈的 timestep（前端二次确认后传递）
 
 

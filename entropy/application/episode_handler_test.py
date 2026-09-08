@@ -5,8 +5,9 @@ from entropy.application.app_dtos import (
     RollbackTimestepRequest,
 )
 from entropy.application.episode_handler import EpisodeHandler
-from entropy.domain.models.episode import ImagePointer
+from entropy.domain.models.episode import Episode, EpisodeTimestep, ImageComment, ImagePointer
 from entropy.domain.services.timestep_draft_consumption_service import TimestepDraftConsumptionService
+from entropy.infra.episode_repository import EpisodeRepository
 
 
 @pytest.mark.slow  # 读取真实 episode 数据
@@ -91,3 +92,59 @@ def test_start_image_processing_happy_1():
 @pytest.mark.slow  # 修改真实 episode 数据
 def test_rollback_timestep_happy_1():
     EpisodeHandler.rollback_timestep(RollbackTimestepRequest(episode_name="test_rollback"))
+
+
+# ---------- extra_comments（tmp 隔离存储，非 slow） ----------
+
+
+@pytest.fixture
+def tmp_episode(tmp_path, monkeypatch):
+    monkeypatch.setattr(EpisodeRepository, "episodes_dir", classmethod(lambda cls: tmp_path))
+    EpisodeRepository.save_episode(
+        "tmp_extra", Episode(timesteps=[EpisodeTimestep(i=0, status=1)])
+    )
+    return "tmp_extra"
+
+
+def test_choose_high_scores_persists_extra_comments(tmp_episode):
+    EpisodeHandler.choose_high_scores(
+        ChooseHighScoresRequest(
+            name=tmp_episode,
+            highscores=[ImagePointer(timestep=0, image_index=1)],
+            extra_comments=[
+                ImageComment(timestep=0, image_index=2, comment="手崩了"),
+                ImageComment(timestep=0, image_index=1, comment="手很好看"),
+            ],
+        )
+    )
+
+    saved = EpisodeRepository.get_eposide(tmp_episode)
+    assert saved.timesteps[0].status == 2
+    assert saved.timesteps[0].chosen_highscores == [ImagePointer(timestep=0, image_index=1)]
+    assert [c.comment for c in saved.timesteps[0].extra_comments] == ["手崩了", "手很好看"]
+
+
+def test_choose_high_scores_overwrite_replaces_extra_comments(tmp_episode):
+    EpisodeHandler.choose_high_scores(
+        ChooseHighScoresRequest(
+            name=tmp_episode,
+            extra_comments=[ImageComment(timestep=0, image_index=2, comment="手崩了")],
+        )
+    )
+
+    # 服务端全量覆盖语义：不带 extra_comments 的重提交（overwrite=1）清空评论
+    EpisodeHandler.choose_high_scores(
+        ChooseHighScoresRequest(name=tmp_episode, overwrite=1)
+    )
+
+    saved = EpisodeRepository.get_eposide(tmp_episode)
+    assert saved.timesteps[0].extra_comments == []
+
+
+def test_old_episode_json_without_extra_comments_compat():
+    old_json = (
+        '{"create_time": 0, "workflow": "", "invalid_tag_budget": 0,'
+        ' "timesteps": [{"i": 0, "status": 2, "chosen_highscores": []}]}'
+    )
+    episode = Episode.model_validate_json(old_json)
+    assert episode.timesteps[0].extra_comments == []
