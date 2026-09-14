@@ -29,6 +29,10 @@ from entropy.infra.episode_repository import EpisodeRepository
 
 _logger = logging.getLogger(__name__)
 
+# 无效 tag 预算 ≥ 此值视为不关心 danbooru 校验（anima/krea2=9999；noobai=6、遗留 episode=0）。
+# 阈值及以上的 episode，web 端不展示任何 tag 相关行（diff 与 invalid tags）。
+_INVALID_TAG_DISPLAY_BUDGET = 50
+
 
 class EpisodeHandler:
     @classmethod
@@ -87,9 +91,12 @@ class EpisodeHandler:
         episode = EpisodeRepository.get_eposide(name)
         timesteps = EpisodeRepository.get_timesteps_query_model(name)
 
+        # 预算≥阈值：视为不走 danbooru 体系，tag 差异与 invalid tags 均不展示
+        show_tag_rows = episode.invalid_tag_budget < _INVALID_TAG_DISPLAY_BUDGET
+
         # diff tags
         for i, timestep in enumerate(timesteps):
-            if i > 0:
+            if i > 0 and show_tag_rows:
                 last_positive_tags, last_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i - 1])
                 this_positive_tags, this_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i])
 
@@ -97,12 +104,13 @@ class EpisodeHandler:
                 timestep.diff_negative_tags = ", ".join(list(set(this_negative_tags) - set(last_negative_tags)))
 
         # invalid tags
-        for i, timestep in enumerate(timesteps):
-            this_positive_tags, this_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i])
-            all_tags = this_positive_tags + this_negative_tags
-            all_tags = list(set(all_tags))
+        if show_tag_rows:
+            for i, timestep in enumerate(timesteps):
+                this_positive_tags, this_negative_tags = TagChecker.all_tags_in_timestep(episode.timesteps[i])
+                all_tags = this_positive_tags + this_negative_tags
+                all_tags = list(set(all_tags))
 
-            timestep.invalid_tags = ", ".join([p for p in all_tags if not TagChecker.exist_tag(p)])
+                timestep.invalid_tags = ", ".join([p for p in all_tags if not TagChecker.exist_tag(p)])
 
         # display highlight & comment badges
         cls._apply_display_hints(timesteps)
