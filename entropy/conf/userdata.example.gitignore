@@ -8,6 +8,9 @@
 
 # 出图（体积大；有了 episode.json 里的 prompt + workflow 随时能重跑）
 *.png
+*.jpg
+*.webp
+episodes/*/images/
 
 # 缓存（civitai 查询结果等）
 cache/
