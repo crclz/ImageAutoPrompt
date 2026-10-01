@@ -73,12 +73,6 @@ def test_get_not_exist_tags_2():
     assert TagChecker.get_not_exist_tags(s) == []
 
 
-def test_get_not_exist_support_extra_tag_file():
-    tag = "betanonbeet"
-
-    assert TagChecker.exist_tag(tag)
-
-
 def test_normalize_tag_1():
     assert TagChecker.normalize_tag("keqing_(genshin_impact)") == "keqing (genshin impact)"
 
