@@ -29,8 +29,8 @@ rag = [
     "torch>=2.10.0",
 ]
 
-[tool.uv]
-default-groups = ["rag"]
+# [tool.uv]
+# default-groups = ["rag"]
 
 [[tool.uv.index]]
 name = "pytorch-cu126"
