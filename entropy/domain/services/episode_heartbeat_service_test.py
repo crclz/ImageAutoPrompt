@@ -1,24 +1,17 @@
 import os
-import shutil
 import time
-from pathlib import Path
 
 import pytest
 
 from entropy.domain.services.episode_heartbeat_service import EpisodeHeartbeatService
-from entropy.infra.episode_repository import EpisodeRepository
-
-_TEST_EPISODES_DIR = Path("./runs/episodes/tmp_pytest_heartbeat")
+from entropy.infra.userdata import UserData
 
 
 @pytest.fixture(autouse=True)
-def _redirect_episodes_dir(monkeypatch):
-    """重定向 episodes_dir 到 runs/episodes/tmp_pytest_heartbeat，测试结束后整体删除。"""
-    monkeypatch.setattr(
-        EpisodeRepository, "episodes_dir", classmethod(lambda cls: _TEST_EPISODES_DIR)
-    )
-    yield
-    shutil.rmtree(_TEST_EPISODES_DIR, ignore_errors=True)
+def _redirect_episodes_dir(tmp_path, monkeypatch):
+    """把 episodes 目录重定向到 pytest 的 tmp_path（测试结束自动清理）。"""
+    monkeypatch.setattr(UserData, "episodes_dir", classmethod(lambda cls: tmp_path))
+    return tmp_path
 
 
 def _unique_episode_name() -> str:

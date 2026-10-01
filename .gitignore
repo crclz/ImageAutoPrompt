@@ -1,28 +1,22 @@
 # temp files
 *.tmp.*
 *.log
-.cache/.civitai-cache
-.cache/lora_search
-/.cache
+
+# user data：lora 库 / episodes / workflows / cache / app_config.yaml 全在 ./userdata
+/userdata
+/userdata_pointer
 
 /.vscode
 
 /entropy/conf/tag_datasets/*
 !/entropy/conf/tag_datasets/danbooru.txt
 
-/runs
 /comfyui_template.json
 /workflows.json
 
 /database/*
 !/database/this_is_database
 
-/entropy/conf/workflows/*
-!/entropy/conf/workflows/this_is_workflows
-!/entropy/conf/workflows/workflow.example.json
-
-
-/entropy/conf/app_config.yaml
 
 /ai_models/*
 !/ai_models/this_is_ai_models

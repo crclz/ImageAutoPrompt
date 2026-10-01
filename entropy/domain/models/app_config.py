@@ -6,9 +6,12 @@ from typing import ClassVar
 import pydantic
 import yaml
 
+from entropy.infra.userdata import UserData
+
 
 class AppConfig(pydantic.BaseModel):
-    CONFIG_PATH: ClassVar[str] = "entropy/conf/app_config.yaml"
+    # 配置文件在 userdata 里（见 entropy/infra/userdata.py）；模板为 entropy/conf/app_config.example.yaml
+    CONFIG_PATH: ClassVar[str] = str(UserData.app_config_path())
 
     comfyui_base_url: str
     workflow_timeout_seconds: int

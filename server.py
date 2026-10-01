@@ -1,12 +1,12 @@
 import logging
 import os
-from pathlib import Path
 
 from flask import Flask, abort, redirect, send_from_directory
 
 from entropy.application.episode_handler import EpisodeHandler
 from entropy.application.rag_handler import RagHandler
 from entropy.domain.models.app_config import AppConfig
+from entropy.infra.userdata import UserData
 
 logging.basicConfig(
     # 1. 日志输出目标：同时输出到文件和控制台（注：basicConfig默认只输出到控制台，指定filename则只输出到文件；如需双输出需自定义，见下文）
@@ -43,8 +43,8 @@ def get_episode_data(name):
 
 @app.get("/episodes/<episode_name>/files/<path:filename>")
 def serve_episode_files(episode_name, filename):
-    # 1. 构造该 episode 对应的磁盘目录
-    episodes_dir = Path("./runs/episodes")
+    # 1. 构造该 episode 对应的磁盘目录（唯一来源 UserData，不再自行拼路径）
+    episodes_dir = UserData.episodes_dir()
 
     target_dir = os.path.join(episodes_dir, episode_name)
 
@@ -114,11 +114,12 @@ def create_episode():
 
 @app.get("/api/workflows")
 def list_workflows():
-    """默认工作流（app_config）+ 其同级目录下的兄弟 json，供 web 端创建 episode 时选择"""
+    """userdata/workflows 目录下的所有 json，供 web 端创建 episode 时选择"""
     return EpisodeHandler.list_workflows_wrapper()
 
 
 def main():
+    UserData.ensure()  # 建立 userdata 骨架，便于用户看到数据该放哪
     app.run(host="127.0.0.1", port=AppConfig.read().port)
 
 

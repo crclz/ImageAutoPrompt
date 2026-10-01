@@ -2,6 +2,7 @@ import sys
 
 from entropy.domain.models.episode import Episode, EpisodeTimestep, ImageComment, ImagePointer
 from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 
 def _make_argv(name):
@@ -9,7 +10,7 @@ def _make_argv(name):
 
 
 def test_prints_extra_comments_on_same_line(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr(EpisodeRepository, "episodes_dir", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(UserData, "episodes_dir", classmethod(lambda cls: tmp_path))
     EpisodeRepository.save_episode(
         "tmp_fb",
         Episode(
@@ -37,7 +38,7 @@ def test_prints_extra_comments_on_same_line(tmp_path, monkeypatch, capsys):
 
 
 def test_no_extra_comments_section_when_absent(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr(EpisodeRepository, "episodes_dir", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(UserData, "episodes_dir", classmethod(lambda cls: tmp_path))
     EpisodeRepository.save_episode(
         "tmp_fb2", Episode(timesteps=[EpisodeTimestep(i=0, status=2)])
     )

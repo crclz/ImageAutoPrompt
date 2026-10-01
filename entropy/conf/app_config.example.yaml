@@ -1,8 +1,10 @@
 # ============================================================
 # ImageAutoPrompt 主配置
-# 用法: 复制本文件为同目录下的 app_config.yaml（可让 coding agent 执行 setup-app-config skill 代劳）
+# 用法: 复制本文件为 <userdata>/app_config.yaml（用户数据目录，默认 ./userdata，
+#       可在仓库根 userdata_pointer 里填一行绝对路径改到别处；
+#       实际取值用 `python entropy/cli/locate_userdata.py` 查看）
+#       可让 coding agent 执行 setup-app-config skill 代劳
 # 所有配置键均热加载: 修改后立即生效，无需重启服务
-# 所有相对路径均以仓库根目录为基准（cwd）
 # ============================================================
 
 # ComfyUI 服务地址。本工具通过它提交工作流、轮询进度、下载图片。
@@ -17,7 +19,8 @@ workflow_timeout_seconds: 180
 # tag 校验仅检查 tag 是否存在于词库（无需 RAG 建库）。文件中的 tag 一律视为有效，
 # 用于补充词库（如模型专属 tag、个人惯用 tag）。
 # 留空 "" = 不启用
-extra_valid_tag_file: "" # 示例: entropy/conf/tag_datasets/extra_valid_tags.txt
+# 相对路径以 userdata 目录为基准（绝对路径则原样使用）
+extra_valid_tag_file: "" # 示例: extra_valid_tags.txt（即 <userdata>/extra_valid_tags.txt）
 
 # 本工具 web 服务监听端口（浏览器访问 http://127.0.0.1:<port>）
 port: 5000

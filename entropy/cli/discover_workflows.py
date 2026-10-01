@@ -1,14 +1,14 @@
 """
-列出全部可选的 comfy workflow json（相对路径），供 create_episode.py 的 --workflow 使用。
+列出全部可选的 comfy workflow json（文件名），供 create_episode.py 的 --workflow 使用。
 
 用法:
     python entropy/cli/discover_workflows.py
 
-输出（一行一个相对路径）:
-    entropy/conf/workflows/anima.json
+输出（一行一个文件名）:
+    anima.json
     ...
 
-选项列表 = entropy/conf/workflows 目录下的所有 *.json，与 web 端创建 episode 时的下拉框一致。
+选项列表 = userdata/workflows 目录下的所有 *.json 文件名，与 web 端创建 episode 时的下拉框一致。
 """
 
 import argparse

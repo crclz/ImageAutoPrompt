@@ -4,7 +4,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 
 class EpisodeHeartbeatService:
@@ -16,7 +16,7 @@ class EpisodeHeartbeatService:
 
     @classmethod
     def flag_path(cls, episode_name: str) -> Path:
-        return EpisodeRepository.episodes_dir() / episode_name / cls._RUNNING_FLAG
+        return UserData.episodes_dir() / episode_name / cls._RUNNING_FLAG
 
     @classmethod
     def is_really_running(cls, episode_name: str) -> bool:

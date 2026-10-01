@@ -3,6 +3,8 @@ name: lora-explore
 description: 定义了对于lora的探索的系统性的方法论. 不要阅读和使用此skill，除非用户明确提到
 ---
 
+> 用户数据相关路径见 skill `userdata`。
+
 ## lora
 
 lora 可以叠加多个（2-5个），需要不断探索，不断试错。
@@ -62,7 +64,7 @@ lora 可以叠加多个（2-5个），需要不断探索，不断试错。
 
 ## reference
 
-在寻找lora的时候，请一定要通过 get_loras.py 获取候选lora，它是 noob / anima lora 库的唯一出口；不要直接阅读库原始文件（library/noob_loras.yaml、library/anima_loras.yaml）。
+在寻找lora的时候，请一定要通过 get_loras.py 获取候选lora，它是 noob / anima lora 库的唯一出口；不要直接阅读库原始文件（`<userdata>/noob_loras.yaml`、`<userdata>/anima_loras.yaml`）。
 
 运行方式（在仓库根目录执行）：
 ```bash
@@ -70,7 +72,7 @@ python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16
 python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
 ```
 
-- --arch 必传，noob / anima 二选一，决定读取 library/{arch}_loras.yaml。
+- --arch 必传，noob / anima 二选一，决定读取 `<userdata>/{arch}_loras.yaml`。
 - --limit 必传，取值 >= 1，表示过滤 + shuffle 后取前 N 个。输出 `<lora:xxx>` 一行一个，不含权重；触发词默认不输出（工作流内置映射时无需关注）。
 - --with-trigger-word 可选，默认关闭。
 - 过滤规则：my_comment 行首记号严格匹配 <1>/<3>/<3+>/<3->/<5>/<5->，未匹配（未评分/格式有误）不采用并在 stderr 警告，<1>/<3-> 剔除；<TODO>（待评，如新下载条目）静默剔除。若 stderr 出现未评分警告，请顺带告知用户。

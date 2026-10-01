@@ -6,7 +6,7 @@ r"""
 
 输出:
     DO NOT EDIT the json.
-    C:\...\runs\episodes\hello\episode.json
+    C:\...\userdata\episodes\hello\episode.json
     （随后附 json 结构说明，便于 LLM 直接阅读分析）
 
 不读取、不解析、不修改 json 内容，仅输出其绝对位置与结构说明；LLM 自行按需阅读分析。
@@ -20,11 +20,12 @@ import sys
 sys.path.append(".")
 
 from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 SCHEMA_HINT = """json 结构说明（// 后为字段说明，仅供阅读）:
 {
     "create_time": 1787991105,          // unix 时间戳
-    "workflow": "entropy/conf/workflows/my-workflow.json",  // 本 episode 固定的工作流（创建时快照）
+    "workflow": "my-workflow.json",     // 本 episode 固定的工作流文件名（userdata/workflows 下，创建时快照）
     "invalid_tag_budget": 9999,         // 无效tag预算（创建时快照；0=不校验）
     "timesteps": [
         {
@@ -55,7 +56,7 @@ def main():
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
-    json_path = (EpisodeRepository.episodes_dir() / args.episode / "episode.json").resolve()
+    json_path = (UserData.episodes_dir() / args.episode / "episode.json").resolve()
     print("DO NOT EDIT the json.", flush=True)
     print(json_path, flush=True)
     print()

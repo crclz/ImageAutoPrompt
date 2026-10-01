@@ -1,11 +1,11 @@
-"""从 lora 库（library/{arch}_loras.yaml）过滤 + 随机抽样，输出 <lora:xxx> 引用行。
+"""从 lora 库（userdata/{arch}_loras.yaml）过滤 + 随机抽样，输出 <lora:xxx> 引用行。
 
 用法（本脚本依赖当前工作目录，需在仓库根目录执行）：
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16 --with-trigger-word
 
---arch 必传，noob / anima 二选一，决定读取 library/noob_loras.yaml 还是 library/anima_loras.yaml。
+--arch 必传，noob / anima 二选一，决定读取 userdata/noob_loras.yaml 还是 userdata/anima_loras.yaml。
 --limit 必传，取值 >= 1：过滤 + shuffle 后取前 N 个。
 --with-trigger-word 可选，默认关闭。开启时每行行尾附加触发词，供"工作流未内置
 触发词映射、需手动把触发词写进 prompt"的场景使用：
@@ -17,15 +17,17 @@
     - 记号为 <1>（不采用）或 <3->（质量可能有小问题）的剔除
     - 记号为 <TODO>（已知未评估/待评，如新下载条目、孤儿条目）：静默剔除，不警告
 stdout 只输出结果列表（一行一个 <lora:xxx>），诊断信息一律走 stderr。
-本脚本是 noob / anima lora 库的唯一出口，调用方不要直接阅读 library/*_loras.yaml。
+本脚本是 noob / anima lora 库的唯一出口，调用方不要直接阅读 userdata/*_loras.yaml。
 """
 
 import argparse
 import random
 import sys
-from pathlib import Path
 
 import yaml
+
+# 约定在仓库根运行：将当前目录加入 sys.path（entropy 是 namespace package，未安装到环境中）
+sys.path.append(".")
 
 VALID_RATINGS = ("1", "3", "3+", "3-", "5", "5-")
 EXCLUDED_RATINGS = ("1", "3-")
@@ -78,7 +80,7 @@ def main() -> None:
         description="从 lora 库过滤 + 随机抽样，输出 <lora:xxx> 一行一个"
     )
     parser.add_argument("--arch", required=True, choices=("noob", "anima"),
-                        help="模型线，必传：noob 读 library/noob_loras.yaml，anima 读 library/anima_loras.yaml")
+                        help="模型线，必传：noob 读 userdata/noob_loras.yaml，anima 读 userdata/anima_loras.yaml")
     parser.add_argument("--limit", type=int, required=True,
                         help="抽样数量，必传，取值 >= 1")
     parser.add_argument("--with-trigger-word", action="store_true",
@@ -89,9 +91,15 @@ def main() -> None:
     if args.limit < 1:
         parser.error(f"--limit 必须 >= 1，收到: {args.limit}")
 
-    loras_file = Path(f"library/{args.arch}_loras.yaml")
+    from entropy.infra.userdata import UserData
+
+    loras_file = UserData.lora_library_path(args.arch)
     if not loras_file.is_file():
-        sys.exit(f"找不到 {loras_file}，请在仓库根目录运行本脚本")
+        sys.exit(
+            f"找不到 {loras_file}\n"
+            f"（lora 库位置见 `python entropy/cli/locate_userdata.py`；"
+            f"请在仓库根运行本脚本，缺库时按 civitai-lora-search 的格式新建）"
+        )
 
     data = yaml.safe_load(loras_file.read_text(encoding="utf-8"))
     loras = (data or {}).get("loras") or {}

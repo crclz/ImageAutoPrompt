@@ -48,7 +48,6 @@ def embedding_model():
                 t0 = time.perf_counter()
                 _logger.info("loading embedding model bge-m3...")
 
-                # TODO: replace with relative path inside repository
                 _embedding_model = SentenceTransformer(
                     r"./ai_models/BAAI/bge-m3",
                     device="cpu",

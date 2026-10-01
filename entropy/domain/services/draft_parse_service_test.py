@@ -334,4 +334,4 @@ def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenWorkflo
 
     # act & assert
     with pytest.raises(ValueError, match="not exist"):
-        DraftParseService.image_process_guard(s, workflow="entropy/conf/workflows/not_exist.json")
+        DraftParseService.image_process_guard(s, workflow="not_exist.json")

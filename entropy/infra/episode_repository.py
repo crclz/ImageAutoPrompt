@@ -4,31 +4,26 @@ from pathlib import Path
 
 from entropy.domain.models.episode import Episode
 from entropy.domain.models.query_model import ImageQueryModel, TimestepQueryModel
+from entropy.infra.userdata import UserData
 
 _logger = logging.getLogger(__name__)
 
 
 class EpisodeRepository:
-    @classmethod
-    def episodes_dir(cls) -> Path:
-        d = Path("./runs/episodes")
-        d.mkdir(parents=True, exist_ok=True)
-        return d
-
     @staticmethod
     def episode_json() -> str:
         return "episode.json"
 
     @classmethod
     def images_dir(cls, episode_name: str) -> Path:
-        """从 ./runs/episodes/{episode}/ 切换到 ./runs/episodes/{episode}/images/"""
-        d = cls.episodes_dir() / episode_name / "images"
+        """从 userdata/episodes/{episode}/ 切换到 userdata/episodes/{episode}/images/"""
+        d = UserData.episodes_dir() / episode_name / "images"
         d.mkdir(parents=True, exist_ok=True)
         return d
 
     @classmethod
     def get_eposide(cls, name: str) -> Episode:
-        d = cls.episodes_dir()
+        d = UserData.episodes_dir()
         episode_dir = d / name
 
         if not episode_dir.exists():
@@ -46,7 +41,7 @@ class EpisodeRepository:
 
     @staticmethod
     def save_episode(name: str, episode: Episode) -> None:
-        d = EpisodeRepository.episodes_dir()
+        d = UserData.episodes_dir()
         episode_dir = d / name
 
         if not episode_dir.exists():
@@ -158,7 +153,7 @@ class EpisodeRepository:
     def list_episodes(cls) -> list[tuple[str, Episode]]:
         """遍历所有子文件夹，加载包含 episode.json 的 Episode"""
         episodes: list[tuple[str, Episode]] = []
-        base_dir = cls.episodes_dir()
+        base_dir = UserData.episodes_dir()
 
         # 遍历基础目录下的所有项
         for item in base_dir.iterdir():

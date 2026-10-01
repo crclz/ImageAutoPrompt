@@ -2,7 +2,6 @@ import logging
 import threading
 import traceback
 from datetime import UTC, datetime
-from pathlib import Path
 
 from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import EpisodeTimestep
@@ -12,6 +11,7 @@ from entropy.infra.cancellation import FileCancellationSource
 from entropy.infra.comfy_api import ComfyApi
 from entropy.infra.comfy_health import ComfyHealth
 from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 _logger = logging.getLogger(__name__)
 
@@ -38,8 +38,11 @@ class TimestepDraftConsumptionService:
         invalid_tag_budget = episode.invalid_tag_budget
         del episode  # cannot reuse, because stale
 
+        # 快照里存的是文件名，这里解析成绝对路径：guard 只管校验，对 userdata 在哪一无所知
+        workflow_path = UserData.workflows_dir() / workflow
+
         do_interception, message, prompts = DraftParseService.image_process_guard(
-            timestep_draft, workflow=workflow, invalid_tag_budget=invalid_tag_budget
+            timestep_draft, workflow=workflow_path.as_posix(), invalid_tag_budget=invalid_tag_budget
         )
         if do_interception:
             # 拦截（如无效 tag 提示）：统一视为失败
@@ -122,7 +125,7 @@ class TimestepDraftConsumptionService:
             raise ValueError(f"episode '{episode_name}' has no workflow (legacy episode); create a new episode")
         del episode  # cannot reuse, because stale
 
-        template_json = Path(workflow).read_text("utf8")
+        template_json = (UserData.workflows_dir() / workflow).read_text("utf8")  # 存在性通常已由 guard 校验
 
         def complete_hook(image_index: int, image_bytes: bytes) -> None:
             # 存图（web 与 cli 共用）：save so that web page can see the picture
@@ -134,7 +137,7 @@ class TimestepDraftConsumptionService:
                 extra_hook(image_index, image_bytes)
 
         # 跨进程取消信号源（web/cli 都可 send_cancel 写 cancel_flag）
-        cancel_flag_path = EpisodeRepository.episodes_dir() / episode_name / "cancel_flag"
+        cancel_flag_path = UserData.episodes_dir() / episode_name / "cancel_flag"
         cancellation_source = FileCancellationSource(cancel_flag_path)
 
         error: str | None = None

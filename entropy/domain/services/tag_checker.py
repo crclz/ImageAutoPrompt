@@ -7,6 +7,7 @@ from typing import ClassVar
 
 from entropy.domain.models.app_config import AppConfig
 from entropy.domain.models.episode import EpisodeTimestep
+from entropy.infra.userdata import UserData
 
 
 class TagChecker:
@@ -55,6 +56,14 @@ class TagChecker:
         return set(tags)
 
     @staticmethod
+    def resolve_extra_valid_tag_file(file_path: str) -> Path:
+        """extra_valid_tag_file 的相对路径一律以 userdata 根为基准；绝对路径原样使用。"""
+        path = Path(file_path)
+        if path.is_absolute():
+            return path
+        return UserData.userdata_dir() / path
+
+    @staticmethod
     def get_extra_valid_tags() -> set[str]:
 
         config = AppConfig.read()
@@ -68,7 +77,7 @@ class TagChecker:
         window_id = int(time.time() * 1000) // window_size
 
         # 3. 调用带缓存的读取方法
-        return TagChecker._load_tags_from_disk(window_id, file_path)
+        return TagChecker._load_tags_from_disk(window_id, str(TagChecker.resolve_extra_valid_tag_file(file_path)))
 
     @staticmethod
     def extract_all_tags(prompt: str) -> list[str]:

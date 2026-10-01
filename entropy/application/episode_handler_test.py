@@ -8,6 +8,7 @@ from entropy.application.episode_handler import EpisodeHandler
 from entropy.domain.models.episode import Episode, EpisodeTimestep, ImageComment, ImagePointer
 from entropy.domain.services.timestep_draft_consumption_service import TimestepDraftConsumptionService
 from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 
 @pytest.mark.slow  # 读取真实 episode 数据
@@ -99,7 +100,7 @@ def test_rollback_timestep_happy_1():
 
 @pytest.fixture
 def tmp_episode(tmp_path, monkeypatch):
-    monkeypatch.setattr(EpisodeRepository, "episodes_dir", classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(UserData, "episodes_dir", classmethod(lambda cls: tmp_path))
     EpisodeRepository.save_episode(
         "tmp_extra", Episode(timesteps=[EpisodeTimestep(i=0, status=1)])
     )

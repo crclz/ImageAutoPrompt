@@ -3,6 +3,8 @@ name: install-environment
 description: 安装本仓库的 python 运行环境。uv（主推）与传统 python 环境两条路线。当用户要求"安装环境"或提到 install-environment 时使用。
 ---
 
+> 用户数据相关路径见 skill `userdata`。
+
 ## 目标
 
 安装完成后，仓库根目录可运行 `python server.py`（`python` 指 .venv 解释器，路径规则见 AGENTS.md 的 `## python` 节）。
@@ -56,4 +58,4 @@ pyproject 已将 RAG 依赖固化在 `[dependency-groups] rag`（chromadb、mode
 
 - 告知用户启动命令: `python server.py`
 - 若装了轻量环境: 告知将来启用 RAG 的方法（`uv sync` 全量安装后，按 docs/install-rag.md 建库）
-- 引导下一步: 执行 setup-app-config skill 配置 `entropy/conf/app_config.yaml`
+- 引导下一步: 执行 setup-app-config skill 配置 `<userdata>/app_config.yaml`

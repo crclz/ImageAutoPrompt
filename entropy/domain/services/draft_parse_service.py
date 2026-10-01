@@ -144,11 +144,12 @@ class DraftParseService:
         """
         校验并解析 timestep draft，返回 (do_intercept, message, prompts)。
 
-        workflow 必传（episode 快照）；invalid_tag_budget 为 0/None 时不做无效 tag 拦截。
-        校验内容：配置（comfyui_base_url / workflow）、prompt 块、<exploration> 块、无效 tag 拦截。
+        workflow 必传，且必须是**调用方已解析好的路径**（相对路径按 cwd 解析，即仓库根；
+        本方法对 userdata 在哪一无所知）；invalid_tag_budget 为 0/None 时不做无效 tag 拦截。
+        校验内容：配置（comfyui_base_url / workflow 文件存在）、prompt 块、<exploration> 块、无效 tag 拦截。
         <exploration> 解析结果仅用于校验（缺块则 raise），不外传。
 
-        raise: ValueError（配置缺失 / 缺 prompt 块 / 缺 exploration 块）
+        raise: ValueError（配置缺失 / workflow 文件不存在 / 缺 prompt 块 / 缺 exploration 块）
         """
         # base url
         current_app_config = AppConfig.read()

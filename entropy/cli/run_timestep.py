@@ -8,7 +8,7 @@
     1. start_image_processing: 解析 + 拦截检查 + 健康检查 + 状态守卫 + 创建 + 后台线程跑图
        - 创建后打印: timestep_{i} created, running (created_hook)
        - 每张图完成时打印: relative_time={分}m{余秒.1位小数}s complete prompt: {idx} (extra_hook)
-    2. join 等待跑图结束，全部成功后将 draft 归档到 runs/episodes/{name}/timestep_{i}_{sha256前8位}.md
+    2. join 等待跑图结束，全部成功后将 draft 归档到 userdata/episodes/{name}/timestep_{i}_{sha256前8位}.md
     3. exit 0
 
 失败（draft 不存在 / 解析失败 / 无效 tag 拦截 / episode 状态不允许）:
@@ -37,6 +37,7 @@ sys.path.append(".")
 from entropy.domain.services.timestep_draft_consumption_service import TimestepDraftConsumptionService
 from entropy.infra.cancellation import send_cancel
 from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 
 def interruptable_join_thread(thread: Thread) -> None:
@@ -92,7 +93,7 @@ class RunTimestepCliProgram:
             return 1
 
         cancelled: list[bool] = []
-        cancel_flag_path = EpisodeRepository.episodes_dir() / episode_name / "cancel_flag"
+        cancel_flag_path = UserData.episodes_dir() / episode_name / "cancel_flag"
 
         def sigint_handler(signum, frame):
             # Windows 上 KeyboardInterrupt 依赖主线程字节码间隙，主线程阻塞在 join 时会被延迟；
@@ -142,7 +143,7 @@ class RunTimestepCliProgram:
 
         timestep_i = len(EpisodeRepository.get_eposide(episode_name).timesteps) - 1
         digest = hashlib.sha256(draft_text.encode("utf8")).hexdigest()[:8]
-        dst = EpisodeRepository.episodes_dir() / episode_name / f"timestep_{timestep_i}_{digest}.md"
+        dst = UserData.episodes_dir() / episode_name / f"timestep_{timestep_i}_{digest}.md"
 
         if Path(dst).exists():
             os.remove(dst)

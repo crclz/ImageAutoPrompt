@@ -1,7 +1,6 @@
 import logging
 import re
 import time
-from pathlib import Path
 
 from flask import jsonify, make_response, render_template, request
 
@@ -26,6 +25,7 @@ from entropy.domain.services.tag_checker import TagChecker
 from entropy.domain.services.timestep_draft_consumption_service import TimestepDraftConsumptionService
 from entropy.infra.cancellation import send_cancel
 from entropy.infra.episode_repository import EpisodeRepository
+from entropy.infra.userdata import UserData
 
 _logger = logging.getLogger(__name__)
 
@@ -260,7 +260,7 @@ class EpisodeHandler:
         try:
             assert episode_name
 
-            cancel_flag_path = EpisodeRepository.episodes_dir() / episode_name / "cancel_flag"
+            cancel_flag_path = UserData.episodes_dir() / episode_name / "cancel_flag"
             send_cancel(cancel_flag_path)
 
             return cls.wrap_api_ok({"message": "cancel signal sent"})
@@ -356,16 +356,18 @@ class EpisodeHandler:
         if not re.match(r"^[a-zA-Z0-9_-]{1,64}$", req.name):
             raise ValueError("Invalid name: Use only English letters, numbers, hyphens, or underscores.")
 
-        d = EpisodeRepository.episodes_dir() / req.name
+        d = UserData.episodes_dir() / req.name
         if d.exists():
             raise ValueError("name already exist")
 
         # 快照机制：workflow/budget 在创建时固化进 episode.json
+        # workflow 只存文件名（如 anima.json），运行时解析为 userdata/workflows/<name>，
+        # 从而与 userdata 的实际位置解耦（换盘/换目录后 episode 仍可读）
         workflow = req.workflow
         if not workflow:
             raise ValueError("workflow is required")
-        if not Path(workflow).exists():
-            raise ValueError(f"workflow not exist: {workflow}")
+        if workflow not in cls.list_workflow_paths():
+            raise ValueError(f"workflow not exist in {UserData.workflows_dir().as_posix()}: {workflow}")
 
         episode = Episode(
             create_time=int(time.time()),
@@ -377,16 +379,14 @@ class EpisodeHandler:
 
         return CreateEpisodeResponse()
 
-    WORKFLOWS_DIR = "entropy/conf/workflows"  # 工作流发现目录（写死；没有"默认工作流"概念）
-
     @staticmethod
     def list_workflow_paths() -> list[str]:
-        """返回全部可选工作流相对路径（= WORKFLOWS_DIR 下的所有 *.json）"""
-        return sorted(p.as_posix() for p in Path(EpisodeHandler.WORKFLOWS_DIR).glob("*.json"))
+        """返回全部可选工作流名（= userdata/workflows 下的所有 *.json 文件名，如 anima.json）。"""
+        return sorted(p.name for p in UserData.workflows_dir().glob("*.json"))
 
     @classmethod
     def list_workflows_wrapper(cls):
-        """工作流发现：WORKFLOWS_DIR 目录下的所有 *.json"""
+        """工作流发现：userdata/workflows 目录下的所有 *.json"""
         try:
             options = cls.list_workflow_paths()
             return jsonify({"code": 0, "message": "ok", "options": options})

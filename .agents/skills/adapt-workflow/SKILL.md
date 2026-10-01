@@ -1,11 +1,13 @@
 ---
 name: adapt-workflow
-description: 将用户的 ComfyUI 工作流 json 适配本工具（插入占位符）并放入 entropy/conf/workflows/。当用户要加入或适配新工作流时使用。
+description: 将用户的 ComfyUI 工作流 json 适配本工具（插入占位符）并放入 <userdata>/workflows/。当用户要加入或适配新工作流时使用。
 ---
+
+> 用户数据相关路径见 skill `userdata`。
 
 ## 目标
 
-用户的工作流（ComfyUI 导出(API) 的 json）被放入 `entropy/conf/workflows/` 并插入占位符，随后可被 web 端创建 episode 时选用。
+用户的工作流（ComfyUI 导出(API) 的 json）被放入 `<userdata>/workflows/` 并插入占位符，随后可被 web 端创建 episode 时选用。
 
 ## 背景
 
@@ -23,7 +25,7 @@ description: 将用户的 ComfyUI 工作流 json 适配本工具（插入占位�
 
 ### 2. 修改
 
-- 将文件复制为 `entropy/conf/workflows/<合适的名字>.json`，在副本上修改（不动用户的原始文件）
+- 将文件复制为 `<userdata>/workflows/<合适的名字>.json`，在副本上修改（不动用户的原始文件）
 - 插入占位符，完成适配
 
 ### 3. 歧义时确认
