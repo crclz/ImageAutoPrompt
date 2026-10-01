@@ -15,3 +15,6 @@ python entropy/cli/locate_userdata.py
 stdout 只有一行：`<userdata>` 的绝对路径；stderr 是判断过程与各子路径（含 exists/missing）。
 **需要读写用户的文件时就跑它、用它的输出**，不要自己拼路径。
 仓库自带的东西（`library/artists.md`、`entropy/conf/tag_datasets/danbooru.txt` 等）不在 userdata 里。
+
+用户若想用 git 管理自己的数据：把 `entropy/conf/userdata.example.gitignore` 复制为
+`<userdata>/.gitignore`（跟踪轨迹与工作流，忽略出图/缓存），再在 `<userdata>` 里 `git init`。

@@ -1,0 +1,27 @@
+# userdata 内部的 .gitignore 模板（仅当你想用 git 管理自己的数据时才需要）。
+# 用法: 复制本文件到 <userdata>/.gitignore，然后在 <userdata> 里 git init。
+#
+# 思路: 只跟踪"不可再生的东西"（episode.json 轨迹、你适配的工作流、lora 库评分），
+#       体积大或可再生的（出图、缓存、运行态标记）忽略。
+
+# ---- 忽略: 可再生产物 ----
+
+# 出图（体积大；有了 episode.json 里的 prompt + workflow 随时能重跑）
+*.png
+
+# 缓存（civitai 查询结果等）
+cache/
+
+# 运行态标记（跑图/取消过程中的临时文件，正常情况下会被自己清掉）
+*_flag
+
+# 临时文件
+*.tmp.*
+*.log
+
+# ---- 跟踪: 值得留档的（下面这些**不要**忽略）----
+# episode.json          每个 episode 的完整轨迹（各 timestep 的 prompt、反馈、高分选择）
+# timestep_*.md         归档的 draft 原文（episode.json 里已有 prompt，留原文便于对照）
+# app_config.yaml       ComfyUI 地址与端口
+# {noob,anima}_loras.yaml   lora 库与评分（从零积累，最值得备份）
+# workflows/*.json      你适配好的 comfyui 工作流
