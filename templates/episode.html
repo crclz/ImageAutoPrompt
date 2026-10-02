@@ -127,9 +127,13 @@
                 </button>
                 
                 <div class="flex items-center space-x-2 text-sm">
+                    <button @click="navigate(-1)" @mousedown.prevent
+                        class="bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-md px-2 py-1 text-xs leading-none transition-all">&larr;</button>
                     <span class="text-indigo-400 font-black uppercase">TS [[ preview.stepI ]]</span>
                     <span class="text-white/40">/</span>
                     <span class="text-white font-bold">IDX [[ preview.imgIndex ]]</span>
+                    <button @click="navigate(1)" @mousedown.prevent
+                        class="bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-md px-2 py-1 text-xs leading-none transition-all">&rarr;</button>
                 </div>
 
                 <div class="h-4 w-[1px] bg-white/20"></div>
@@ -168,9 +172,14 @@
         <div class="relative flex-1 flex flex-col justify-end overflow-hidden">
             <button @click="navigate(-1)"
                 class="absolute left-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&lsaquo;</button>
-            <div class="w-full h-full flex items-end justify-center p-1" @click.self="closePreview">
-                <img :src="preview.url"
-                    class="max-w-full max-h-full object-contain shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
+            <div ref="zoomBoxEl" class="w-full h-full overflow-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                :class="isPanning ? 'cursor-grabbing' : ''" @mousedown.middle.prevent="startPan"
+                @click.self="closePreview">
+                <div :style="{ width: zoom * 100 + '%', height: zoom * 100 + '%' }"
+                    class="flex items-end justify-center" @click.self="closePreview">
+                    <img ref="zoomImgEl" :src="preview.url" @click="cycleZoom"
+                        :class="['max-w-full max-h-full object-contain shadow-[0_-10px_40px_rgba(0,0,0,0.6)]', imgCursor]">
+                </div>
             </div>
             <button @click="navigate(1)"
                 class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&rsaquo;</button>
@@ -188,7 +197,7 @@
 
 {% block scripts %}
 <script>
-    const { createApp, ref, onMounted, onUnmounted, computed } = Vue;
+    const { createApp, ref, onMounted, onUnmounted, computed, nextTick } = Vue;
 
     function useToast() {
         const toasts = ref([]); // 控制消息显示
@@ -356,9 +365,91 @@
 
     function usePreview(timesteps, showToast) {
         const preview = ref(null);
+        const zoom = ref(1);
+        const zoomBoxEl = ref(null);
+        const zoomImgEl = ref(null);
+
+        const ZOOM_STEPS = [1, 1.75, 2.5, 3.5];
+        const isMaxZoom = computed(() => zoom.value === ZOOM_STEPS[ZOOM_STEPS.length - 1]);
+        const isPanning = ref(false);
+        const imgCursor = computed(() => {
+            if (isPanning.value) return 'cursor-grabbing';
+            return isMaxZoom.value ? 'cursor-zoom-out' : 'cursor-zoom-in';
+        });
+
+        const startPan = (e) => {
+            const box = zoomBoxEl.value;
+            if (!box) return;
+            if (box.scrollWidth <= box.clientWidth && box.scrollHeight <= box.clientHeight) return;
+
+            const originX = e.clientX, originY = e.clientY;
+            const originLeft = box.scrollLeft, originTop = box.scrollTop;
+            isPanning.value = true;
+
+            function stopPan() {
+                window.removeEventListener('mousemove', onPanMove);
+                window.removeEventListener('mouseup', stopPan);
+                isPanning.value = false;
+            }
+
+            function onPanMove(ev) {
+                // 鼠标在窗口外松开时收不到 mouseup，所以用按键位判断，避免拖拽卡死
+                if ((ev.buttons & 4) === 0) {
+                    stopPan();
+                    return;
+                }
+                box.scrollLeft = originLeft - (ev.clientX - originX);
+                box.scrollTop = originTop - (ev.clientY - originY);
+            }
+
+            window.addEventListener('mousemove', onPanMove);
+            window.addEventListener('mouseup', stopPan);
+        };
+
+        const resetZoom = () => {
+            zoom.value = ZOOM_STEPS[0];
+            if (zoomImgEl.value) {
+                zoomImgEl.value.style.width = '';
+                zoomImgEl.value.style.height = '';
+            }
+            if (zoomBoxEl.value) {
+                zoomBoxEl.value.scrollLeft = 0;
+                zoomBoxEl.value.scrollTop = 0;
+            }
+        };
+
+        // 以点击处为锚点放大：缩放前记住点击点在图片上的比例，缩放后把它滚回光标底下
+        const cycleZoom = (e) => {
+            const img = zoomImgEl.value;
+            const box = zoomBoxEl.value;
+            if (!img || !box) return;
+
+            const before = img.getBoundingClientRect();
+            const fx = (e.clientX - before.left) / before.width;
+            const fy = (e.clientY - before.top) / before.height;
+
+            const next = ZOOM_STEPS[(ZOOM_STEPS.indexOf(zoom.value) + 1) % ZOOM_STEPS.length];
+            if (next === ZOOM_STEPS[0]) {
+                resetZoom();
+                return;
+            }
+
+            // max-width/max-height 只能把图缩到容器里，放不出比原图更大的尺寸，所以放大得给出真实像素宽高
+            const ratio = next / zoom.value;
+            img.style.width = before.width * ratio + 'px';
+            img.style.height = before.height * ratio + 'px';
+            zoom.value = next;
+
+            nextTick(() => {
+                const after = img.getBoundingClientRect();
+                box.scrollLeft += after.left + fx * after.width - e.clientX;
+                box.scrollTop += after.top + fy * after.height - e.clientY;
+            });
+        };
 
         const openPreview = (stepI, imgIndex, url) => {
             preview.value = { stepI, imgIndex, url };
+            resetZoom();
             document.body.style.overflow = 'hidden';
         };
 
@@ -403,6 +494,7 @@
             // 4. 执行跳转
             if (newIndex >= 0 && newIndex < allImages.length) {
                 preview.value = allImages[newIndex];
+                resetZoom();
             } else {
                 // 可选：如果到头了，可以加个抖动反馈或者 Toast
                 if (newIndex < 0) showToast("已经是最新的一张了");
@@ -410,7 +502,7 @@
             }
         };
 
-        return { preview, openPreview, closePreview, navigate };
+        return { preview, openPreview, closePreview, navigate, zoom, isMaxZoom, cycleZoom, zoomBoxEl, zoomImgEl, isPanning, startPan, imgCursor };
     }
 
     function useDraftModal(episodeName, fetchData, showToast) {
@@ -606,7 +698,7 @@
 
             const { timesteps, getEpisodeMessage, canProcessImage, isReallyRunning, sendCancel, fetchData, getStatusInfo } = useEpisodeDataFetcher(episodeName, showToast);
 
-            const { preview, openPreview, closePreview, navigate } = usePreview(
+            const { preview, openPreview, closePreview, navigate, zoom, isMaxZoom, cycleZoom, zoomBoxEl, zoomImgEl, isPanning, startPan, imgCursor } = usePreview(
                 timesteps, showToast
             );
 
@@ -687,6 +779,14 @@
                 openPreview,
                 closePreview,
                 navigate,
+                zoom,
+                isMaxZoom,
+                cycleZoom,
+                isPanning,
+                startPan,
+                imgCursor,
+                zoomBoxEl,
+                zoomImgEl,
                 isImageSelected,
                 toggleSelection,
                 clearAllSelected,
