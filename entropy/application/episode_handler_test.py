@@ -125,6 +125,26 @@ def test_choose_high_scores_persists_extra_comments(tmp_episode):
     assert [c.comment for c in saved.timesteps[0].extra_comments] == ["手崩了", "手很好看"]
 
 
+def test_choose_high_scores_dedupes_extra_comments(tmp_episode):
+    EpisodeHandler.choose_high_scores(
+        ChooseHighScoresRequest(
+            name=tmp_episode,
+            extra_comments=[
+                ImageComment(timestep=0, image_index=2, comment="手崩了"),
+                ImageComment(timestep=0, image_index=2, comment="手崩了"),
+                ImageComment(timestep=0, image_index=2, comment="改成手好看了"),
+                ImageComment(timestep=0, image_index=1, comment="配色好"),
+            ],
+        )
+    )
+
+    saved = EpisodeRepository.get_eposide(tmp_episode)
+    assert [(c.image_index, c.comment) for c in saved.timesteps[0].extra_comments] == [
+        (2, "改成手好看了"),
+        (1, "配色好"),
+    ]
+
+
 def test_choose_high_scores_overwrite_replaces_extra_comments(tmp_episode):
     EpisodeHandler.choose_high_scores(
         ChooseHighScoresRequest(

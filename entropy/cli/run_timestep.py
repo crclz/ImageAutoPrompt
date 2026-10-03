@@ -25,6 +25,7 @@ Ctrl+C:
 import argparse
 import hashlib
 import os
+import shutil
 import signal
 import sys
 import time
@@ -148,7 +149,7 @@ class RunTimestepCliProgram:
         if Path(dst).exists():
             os.remove(dst)
 
-        draft_path.rename(dst)
+        shutil.move(draft_path, dst)
         print(f"draft moved to {dst.as_posix()}")
 
 

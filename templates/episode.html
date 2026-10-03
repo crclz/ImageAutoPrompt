@@ -153,8 +153,13 @@
                     </button>
                 </div>
 
+                <div v-if="previewServerComment" class="max-w-[16rem] truncate text-[11px] text-amber-300/80"
+                    :title="previewServerComment">
+                    已有评论：[[ previewServerComment ]]
+                </div>
+
                 <div class="flex items-center bg-white/5 rounded-lg border border-white/10">
-                    <input v-model="previewComment" placeholder="评论此图（可留空，随提交生效）"
+                    <input v-model="previewComment" placeholder="本轮新评论（留空则不提交）"
                         class="bg-transparent text-white text-xs rounded-md px-3 py-1.5 placeholder-white/30 focus:outline-none w-56" />
                 </div>
 
@@ -250,35 +255,27 @@
             return (img && img.comment_text) || "";
         };
 
-        // 预览当前图的评论：有草稿用草稿，否则回显已提交的
+        // 输入框只装本轮新写的评论；历史评论不回填，仅只读展示
         const previewComment = computed({
             get: () => {
                 if (!preview.value) return "";
                 const { stepI, imgIndex } = preview.value;
                 const draft = commentDrafts.value.find(c => c.timestep === stepI && c.image_index === imgIndex);
-                return draft ? draft.comment : getServerComment(stepI, imgIndex);
+                return draft ? draft.comment : "";
             },
             set: (val) => {
                 if (preview.value) setCommentDraft(preview.value.stepI, preview.value.imgIndex, val);
             }
         });
 
-        // 服务端是全量覆盖语义：提交时合并「未动过的已提交评论」+「本地非空草稿」，
-        // 避免只改高分时误清掉已有评论；清空草稿文本=删除该图评论
-        const buildExtraComments = () => {
-            const serverComments = [];
-            timesteps.value.forEach(step => {
-                (step.extra_comments || []).forEach(c => serverComments.push({
-                    timestep: c.timestep, image_index: c.image_index, comment: c.comment
-                }));
-            });
+        const previewServerComment = computed(() => {
+            if (!preview.value) return "";
+            return getServerComment(preview.value.stepI, preview.value.imgIndex);
+        });
 
-            const draftKeys = new Set(commentDrafts.value.map(c => `${c.timestep}_${c.image_index}`));
-            const kept = serverComments.filter(c => !draftKeys.has(`${c.timestep}_${c.image_index}`));
-            const drafts = commentDrafts.value.filter(c => (c.comment || "").trim() !== "");
-
-            return kept.concat(drafts);
-        };
+        // 服务端是整体替换语义：只提交本次新写的评论，其余（含本轮先前提交的）由服务端清空
+        const buildExtraComments = () =>
+            commentDrafts.value.filter(c => (c.comment || "").trim() !== "");
 
         const submitHighscores = async () => {
             // if (selectedPointers.value.length === 0) {
@@ -360,7 +357,7 @@
         };
 
 
-        return { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment };
+        return { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment, previewServerComment };
     }
 
     function usePreview(timesteps, showToast) {
@@ -702,7 +699,7 @@
                 timesteps, showToast
             );
 
-            const { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment } = useSelection(episodeName, timesteps, closePreview, fetchData, preview);
+            const { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment, previewServerComment } = useSelection(episodeName, timesteps, closePreview, fetchData, preview);
 
             // preview handle key down
             const { } = useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview });
@@ -792,6 +789,7 @@
                 clearAllSelected,
                 submitHighscores,
                 previewComment,
+                previewServerComment,
                 copyToClipboard,
                 toasts,
                 showDraftModal,

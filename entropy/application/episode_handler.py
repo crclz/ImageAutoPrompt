@@ -17,7 +17,7 @@ from entropy.application.app_dtos import (
     StartImageProcessingRequest,
     StartImageProcessingResponse,
 )
-from entropy.domain.models.episode import Episode
+from entropy.domain.models.episode import Episode, ImageComment
 from entropy.domain.models.error_code import ErrorCode
 from entropy.domain.models.query_model import EpisodeQueryModel
 from entropy.domain.services.episode_heartbeat_service import EpisodeHeartbeatService
@@ -150,6 +150,14 @@ class EpisodeHandler:
                 if key in comment_text:
                     image.comment_text = comment_text[key]
 
+    @staticmethod
+    def _dedupe_comments(comments: list[ImageComment]) -> list[ImageComment]:
+        """同一张图只留一条评论；重复提交时后到的文本覆盖先前的，位置沿用首次出现处"""
+        deduped: dict[tuple[int, int], ImageComment] = {}
+        for comment in comments:
+            deduped[(comment.timestep, comment.image_index)] = comment
+        return list(deduped.values())
+
     @classmethod
     def choose_high_scores_wrapper(cls, episode_name):
         try:
@@ -193,7 +201,7 @@ class EpisodeHandler:
         # choose
 
         feedbackable.chosen_highscores = request.highscores
-        feedbackable.extra_comments = request.extra_comments
+        feedbackable.extra_comments = cls._dedupe_comments(request.extra_comments)
         feedbackable.status = 2  # 1,2 => 2. restrictions of 1,2 is in episode.get_feedbackable_timestep
 
         # save
