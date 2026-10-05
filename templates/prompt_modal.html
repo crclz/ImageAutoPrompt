@@ -1,0 +1,40 @@
+<div v-if="showPromptModal"
+    class="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
+    @click.self="closePromptModal">
+
+    <div class="bg-white w-[90%] max-w-5xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/20">
+
+        <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <div>
+                <h3 class="text-xl font-black text-gray-900 tracking-tight">Prompt</h3>
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-widest mt-0.5">
+                    TS [[ preview.stepI ]] / IDX [[ preview.imgIndex ]]
+                </p>
+            </div>
+            <button @click="closePromptModal"
+                class="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div v-if="!previewPrompt" class="p-8 text-sm text-gray-400 font-mono tracking-widest">
+            该图没有记录 prompt
+        </div>
+
+        <div v-else class="flex-1 min-h-0 p-8 space-y-5 overflow-y-auto">
+            <section v-for="field in promptFields" :key="field.key">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-bold text-indigo-600 uppercase tracking-wider">[[ field.label ]]</span>
+                    <button v-if="field.value" @click="copyToClipboard(field.value)"
+                        class="px-3 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors">
+                        复制
+                    </button>
+                </div>
+                <pre class="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded border border-gray-200 select-text"
+                    :class="field.value ? 'text-gray-700' : 'text-gray-400'">[[ field.value || '(空)' ]]</pre>
+            </section>
+        </div>
+    </div>
+</div>

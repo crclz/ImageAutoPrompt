@@ -121,6 +121,11 @@
         <div class="w-full flex justify-center items-center px-4 py-1.5 bg-black/60 border-b border-white/5 relative">
             <div class="flex items-center space-x-4">
 
+                <button @click="showPromptModal = true"
+                    class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg tracking-wider active:scale-95">
+                    prompt
+                </button>
+
                 <button @click="downloadPreviewAsJpg"
                     class="bg-amber-500 hover:bg-amber-400 text-white px-4 py-1.5 rounded-md text-xs font-black transition-all shadow-lg uppercase tracking-wider active:scale-95 mr-2">
                     JPG
@@ -190,6 +195,8 @@
                 class="absolute right-0 top-0 h-full px-6 text-white/5 hover:text-white/30 hover:bg-white/5 text-6xl transition-all z-10 flex items-center">&rsaquo;</button>
         </div>
     </div>
+
+    {% include "prompt_modal.html" %}
 
     <div class="fixed top-5 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none">
         <div v-for="t in toasts" :key="t.id"
@@ -502,6 +509,33 @@
         return { preview, openPreview, closePreview, navigate, zoom, isMaxZoom, cycleZoom, zoomBoxEl, zoomImgEl, isPanning, startPan, imgCursor };
     }
 
+    function usePromptModal(preview, timesteps) {
+        const showPromptModal = ref(false);
+
+        const previewPrompt = computed(() => {
+            if (!preview.value) return null;
+            const step = timesteps.value.find(t => t.i === preview.value.stepI);
+            const img = step && step.images.find(im => im.image_index === preview.value.imgIndex);
+            return (img && img.prompt) || null;
+        });
+
+        const promptFields = computed(() => {
+            const prompt = previewPrompt.value;
+            if (!prompt) return [];
+            return [
+                { key: 'positive', label: 'Positive', value: prompt.positive },
+                { key: 'negative', label: 'Negative', value: prompt.negative },
+                { key: 'lora', label: 'Lora', value: prompt.lora },
+            ];
+        });
+
+        const closePromptModal = () => {
+            showPromptModal.value = false;
+        };
+
+        return { showPromptModal, previewPrompt, promptFields, closePromptModal };
+    }
+
     function useDraftModal(episodeName, fetchData, showToast) {
         const showDraftModal = ref(false);
         const draftContent = ref("");
@@ -656,13 +690,18 @@
         return { handleRollback }
     }
 
-    function useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview }) {
+    function useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview, showPromptModal, closePromptModal }) {
         const handleKeyDown = (e) => {
             if (!preview.value) return;
             // 输入框（评论）内的按键不作为快捷键：空格/方向键保留正常输入行为
             const target = e.target;
             const tag = (target && target.tagName || '').toLowerCase();
             if (tag === 'input' || tag === 'textarea' || (target && target.isContentEditable)) return;
+            // prompt 弹窗打开时独占键盘：方向键不在背后偷偷换图
+            if (showPromptModal.value) {
+                if (e.key === 'Escape') closePromptModal();
+                return;
+            }
             if (e.code === 'Space') {
                 e.preventDefault();
                 toggleSelection(preview.value.stepI, preview.value.imgIndex);
@@ -701,8 +740,10 @@
 
             const { selectedPointers, isImageSelected, toggleSelection, clearAllSelected, submitHighscores, previewComment, previewServerComment } = useSelection(episodeName, timesteps, closePreview, fetchData, preview);
 
+            const { showPromptModal, previewPrompt, promptFields, closePromptModal } = usePromptModal(preview, timesteps);
+
             // preview handle key down
-            const { } = useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview });
+            const { } = useSelectionKeyDown({ toggleSelection, navigate, closePreview, preview, showPromptModal, closePromptModal });
 
 
             const {
@@ -800,6 +841,10 @@
                 handleRollback,
                 startImageProcessingDetailMsg,
                 downloadPreviewAsJpg,
+                showPromptModal,
+                previewPrompt,
+                promptFields,
+                closePromptModal,
             };
         },
         delimiters: ['[[', ']]']

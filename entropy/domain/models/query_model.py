@@ -4,7 +4,7 @@
 
 import pydantic
 
-from entropy.domain.models.episode import ImageComment, ImagePointer
+from entropy.domain.models.episode import ImageComment, ImagePointer, ImagePrompt
 
 
 class ImageQueryModel(pydantic.BaseModel):
@@ -15,6 +15,8 @@ class ImageQueryModel(pydantic.BaseModel):
     highlight_text: str = ""
 
     comment_text: str = ""  # 该图的 extra comment（已提交），供前端角标与预览回显
+
+    prompt: ImagePrompt | None = None  # 跑该图实际喂给 comfy 的 prompt；老 episode 无记录时为 None
 
 
 class TimestepQueryModel(pydantic.BaseModel):

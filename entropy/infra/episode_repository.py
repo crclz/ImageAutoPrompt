@@ -111,6 +111,10 @@ class EpisodeRepository:
             model.chosen_highscores = timestep.chosen_highscores
             model.extra_comments = timestep.extra_comments
 
+            for image in model.images:
+                if image.image_index < len(timestep.prompts):
+                    image.prompt = timestep.prompts[image.image_index]
+
             # sort images
             model.sort_images()
 
