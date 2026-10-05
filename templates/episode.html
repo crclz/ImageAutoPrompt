@@ -10,6 +10,12 @@
         </h2>
         <div class="h-6 w-[1px] bg-gray-300"></div>
         <div class="flex items-center space-x-2">
+            <button @click="toggleCompact"
+                :class="isCompact ? 'bg-sky-600 text-white border-sky-600' : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'"
+                class="flex items-center px-3 py-1 border rounded-md text-xs font-bold transition-all active:scale-95">
+                ToggleCompact
+            </button>
+
             <span class="text-gray-600 text-sm font-bold tracking-wider">[[ getEpisodeMessage ]]</span>
             <div class="h-6 w-[1px] bg-gray-300 mx-2"></div>
 
@@ -48,56 +54,58 @@
     </div>
 
     <div class="space-y-3">
-        <div v-for="step in reversedTimesteps" :key="step.i"
+        <div v-for="group in displayGroups" :key="group.key"
             class="bg-white border border-gray-200 rounded-lg p-3 transition-all hover:border-indigo-300 shadow-sm">
             <div class="flex items-center mb-3 space-x-4">
-                <span class="text-lg font-black text-gray-800 tracking-tight">TIMESTEP [[ step.i ]]</span>
-                <template v-if="getStatusInfo(step.status)">
+                <span class="text-lg font-black text-gray-800 tracking-tight">TIMESTEP [[ group.label ]]</span>
+                <template v-if="!isCompact && getStatusInfo(group.timesteps[0].status)">
                     <span
-                        :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(step.status).class]">
-                        [[ getStatusInfo(step.status).text ]]
+                        :class="['px-2.5 py-0.5 rounded text-xs font-bold uppercase border shadow-sm', getStatusInfo(group.timesteps[0].status).class]">
+                        [[ getStatusInfo(group.timesteps[0].status).text ]]
                     </span>
                 </template>
 
-                <template v-if="step.error">
-                    <div class="text-xs text-red-600 font-mono break-words">[[ step.error ]]</div>
+                <template v-if="!isCompact && group.timesteps[0].error">
+                    <div class="text-xs text-red-600 font-mono break-words">[[ group.timesteps[0].error ]]</div>
                     <details class="text-xs text-gray-500">
                         <summary class="cursor-pointer">stacktrace</summary>
-                        <pre class="whitespace-pre-wrap bg-gray-50 p-2 rounded">[[ step.stacktrace ]]</pre>
+                        <pre class="whitespace-pre-wrap bg-gray-50 p-2 rounded">[[ group.timesteps[0].stacktrace ]]</pre>
                     </details>
                 </template>
             </div>
 
-            <div>
-                <span class="bg-gray-200">+positive:</span> [[ step.diff_positive_tags ]]
-            </div>
+            <template v-if="!isCompact">
+                <div>
+                    <span class="bg-gray-200">+positive:</span> [[ group.timesteps[0].diff_positive_tags ]]
+                </div>
 
-            <div>
-                <span class="bg-gray-200">+negative:</span> [[ step.diff_negative_tags ]]
-            </div>
+                <div>
+                    <span class="bg-gray-200">+negative:</span> [[ group.timesteps[0].diff_negative_tags ]]
+                </div>
 
-            <div>
-                <span class="bg-gray-200">invalid tags:</span> [[ step.invalid_tags ]]
-            </div>
+                <div>
+                    <span class="bg-gray-200">invalid tags:</span> [[ group.timesteps[0].invalid_tags ]]
+                </div>
+            </template>
 
 
             <div class="flex flex-wrap gap-3">
-                <div v-for="img in step.images" :key="img.image_index" class="relative group">
-                    <img :src="img.url" @click="openPreview(step.i, img.image_index, img.url)"
+                <div v-for="item in group.images" :key="item.stepI + '_' + item.img.image_index" class="relative group">
+                    <img :src="item.img.url" @click="openPreview(item.stepI, item.img.image_index, item.img.url)"
                         class="h-64 w-auto rounded border-2 bg-gray-50 object-contain shadow-sm group-hover:shadow-md transition-all cursor-zoom-in"
-                        :class="isImageSelected(step.i, img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'">
+                        :class="isImageSelected(item.stepI, item.img.image_index) ? 'border-green-500 shadow-green-100' : 'border-gray-50 group-hover:border-indigo-100'">
 
-                    <div v-if="img.highlight_text"
+                    <div v-if="item.img.highlight_text"
                         class="absolute bottom-0 right-0 bg-blue-400 text-red-800 text-[15px] px-1.5 font-bold rounded-tl shadow-sm z-10">
-                        [[img.highlight_text]]
+                        [[item.img.highlight_text]]
                     </div>
 
-                    <div v-if="img.comment_text" :title="img.comment_text"
+                    <div v-if="item.img.comment_text" :title="item.img.comment_text"
                         class="absolute bottom-0 left-0 bg-amber-400 text-white text-[15px] px-1.5 font-bold rounded-tr shadow-sm z-10">
                         💬
                     </div>
 
-                    <div v-if="isImageSelected(step.i, img.image_index)"
+                    <div v-if="isImageSelected(item.stepI, item.img.image_index)"
                         class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd"
@@ -108,7 +116,7 @@
 
                     <span
                         class="absolute top-2 left-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity font-mono">
-                        INDEX [[ img.image_index ]]
+                        TS [[ item.stepI ]] INDEX [[ item.img.image_index ]]
                     </span>
                 </div>
             </div>
@@ -509,6 +517,74 @@
         return { preview, openPreview, closePreview, navigate, zoom, isMaxZoom, cycleZoom, zoomBoxEl, zoomImgEl, isPanning, startPan, imgCursor };
     }
 
+    const COMPACT_GROUP_IMAGE_LIMIT = 6;
+
+    function useCompactMode() {
+        const isCompact = ref(new URLSearchParams(window.location.search).get('compact') === '1');
+
+        const toggleCompact = () => {
+            isCompact.value = !isCompact.value;
+
+            const url = new URL(window.location.href);
+            if (isCompact.value) {
+                url.searchParams.set('compact', '1');
+            } else {
+                url.searchParams.delete('compact');
+            }
+            window.history.replaceState(null, '', url);
+        };
+
+        return { isCompact, toggleCompact };
+    }
+
+    function toGroup(steps) {
+        return {
+            key: steps.map(s => s.i).join('-'),
+            label: steps.map(s => s.i).join(','),
+            timesteps: steps,
+            images: steps.flatMap(s => s.images.map(img => ({ stepI: s.i, img }))),
+        };
+    }
+
+    function useDisplayGroups(timesteps, isCompact) {
+        const displayGroups = computed(() => {
+            if (!isCompact.value) {
+                return timesteps.value.map(step => toGroup([step])).reverse();
+            }
+
+            const groups = [];
+            let buffer = [];
+            let bufferedImages = 0;
+
+            const flush = () => {
+                if (buffer.length) groups.push(toGroup(buffer));
+                buffer = [];
+                bufferedImages = 0;
+            };
+
+            for (const step of timesteps.value) {
+                const imageCount = step.images.length;
+                if (imageCount === 0) continue;
+
+                if (imageCount > COMPACT_GROUP_IMAGE_LIMIT) {
+                    flush();
+                    groups.push(toGroup([step]));
+                    continue;
+                }
+
+                if (bufferedImages + imageCount > COMPACT_GROUP_IMAGE_LIMIT) flush();
+
+                buffer.push(step);
+                bufferedImages += imageCount;
+            }
+            flush();
+
+            return groups.reverse();
+        });
+
+        return { displayGroups };
+    }
+
     function usePromptModal(preview, timesteps) {
         const showPromptModal = ref(false);
 
@@ -750,10 +826,11 @@
                 showDraftModal, draftContent, isSubmittingDraft, submitDraft, startImageProcessingDetailMsg,
             } = useDraftModal(episodeName, fetchData, showToast);
 
+            const { isCompact, toggleCompact } = useCompactMode();
+
+            const { displayGroups } = useDisplayGroups(timesteps, isCompact);
+
             // end
-
-
-            const reversedTimesteps = computed(() => [...timesteps.value].reverse());
 
 
             // ... 其他 ref
@@ -808,7 +885,9 @@
                 episodeName,
                 canProcessImage,
                 timesteps,
-                reversedTimesteps,
+                displayGroups,
+                isCompact,
+                toggleCompact,
                 isReallyRunning,
                 sendCancel,
                 preview,
