@@ -205,9 +205,10 @@ def test_parse_timestep_draft_shouldReturnLoraForEachPrompt_whenAllPromptsHaveLo
 
 def test_parse_timestep_draft_shouldParseFriendlyFormat_whenHappy():
     s = r"""
-        : 1girl, solo, red hair
-
-        : 1girl, solo, blue hair
+        ---
+        1girl, solo, red hair
+        ---
+        1girl, solo, blue hair
     """
 
     result = DraftParseService.parse_timestep_draft(s)
@@ -215,6 +216,47 @@ def test_parse_timestep_draft_shouldParseFriendlyFormat_whenHappy():
     assert result.negatives == ["", ""]
     assert result.loras == ["", ""]  # friendly 格式不支持 lora
     assert result.is_friendly is True
+
+
+def test_parse_timestep_draft_shouldKeepSegmentTextAsIs_whenFriendlyMultiLine():
+    s = "---\n1girl, solo\n\n    red hair, long hair\n---\n1girl, solo, blue hair"
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == ["1girl, solo\n\n    red hair, long hair", "1girl, solo, blue hair"]
+
+
+def test_parse_timestep_draft_shouldTreatWhitespaceAroundSeparatorAsSeparator_whenFriendly():
+    s = "  ---\n1girl, solo\n   -----   \n1girl, solo, blue hair\n---"
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == ["1girl, solo", "1girl, solo, blue hair"]
+
+
+def test_parse_timestep_draft_shouldSkipEmptySegment_whenFriendlyHasConsecutiveSeparators():
+    s = "---\n---\n1girl, solo\n---\n---\n"
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == ["1girl, solo"]
+
+
+def test_parse_timestep_draft_shouldTreatSeparatorWithContentAsText_whenFriendly():
+    s = "---\n--- 1girl, solo\n---\n1girl, solo, blue hair"
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == ["--- 1girl, solo", "1girl, solo, blue hair"]
+
+
+def test_parse_timestep_draft_shouldFallbackToPromptBlocks_whenFriendlyHeadIsNotSeparator():
+    s = "--- 1girl, solo, red hair"
+
+    result = DraftParseService.parse_timestep_draft(s)
+
+    assert result.positives == []
+    assert result.is_friendly is False
 
 
 def test_parse_exploration_abstract_shouldReturnAbstract_whenExplorationBlockPresent():
@@ -253,7 +295,7 @@ null
 def test_DraftParseService_image_process_guard_shouldReturnInterceptFalseAndPrompts_whenFriendlyDraftValid(monkeypatch):
     # arrange
     _mock_app_config(monkeypatch)
-    s = ": 1girl, solo, red hair"
+    s = "---\n1girl, solo, red hair"
 
     # act
     do_intercept, message, prompts = DraftParseService.image_process_guard(s, workflow=EXISTING_WORKFLOW)
@@ -298,7 +340,7 @@ null
 def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInvalidTagsExceedTolerance(monkeypatch):
     # arrange
     _mock_app_config(monkeypatch)
-    s = ": 1girl, solo, cinematic lightingss, raindropsss"
+    s = "---\n1girl, solo, cinematic lightingss, raindropsss"
 
     # act
     do_intercept, message, prompts = DraftParseService.image_process_guard(
@@ -314,7 +356,7 @@ def test_DraftParseService_image_process_guard_shouldReturnInterceptTrue_whenInv
 def test_DraftParseService_image_process_guard_shouldSkipInvalidTagCheck_whenBudgetIsZero(monkeypatch):
     # arrange: 预算为 0（未设置）时，即使存在无效 tag 也不拦截
     _mock_app_config(monkeypatch)
-    s = ": 1girl, solo, cinematic lightingss, raindropsss"
+    s = "---\n1girl, solo, cinematic lightingss, raindropsss"
 
     # act
     do_intercept, message, prompts = DraftParseService.image_process_guard(
@@ -330,7 +372,7 @@ def test_DraftParseService_image_process_guard_shouldSkipInvalidTagCheck_whenBud
 def test_DraftParseService_image_process_guard_shouldRaiseValueError_whenWorkflowJsonNotExist(monkeypatch):
     # arrange
     _mock_app_config(monkeypatch)
-    s = ": 1girl, solo"
+    s = "---\n1girl, solo"
 
     # act & assert
     with pytest.raises(ValueError, match="not exist"):

@@ -16,7 +16,7 @@ class DraftParseService:
         """
         解析 timestep draft 文本。
         支持两种格式：
-        1. 用户手工输入：每行以 ':' 开头（is_friendly=True）
+        1. 用户手工输入：以 '---' 开头，用单独的 '---' 行分隔 prompt（is_friendly=True）
         2. LLM 输出：多个 ```prompt{n} ... ``` 块（is_friendly=False）
         """
         friendly_result = DraftParseService.try_parse_user_friendly(text)
@@ -80,27 +80,41 @@ class DraftParseService:
 
     @staticmethod
     def try_parse_user_friendly(s: str) -> TimestepDraftParseResult | None:
-        """每行以 ':' 开头的手工输入格式；不是该格式（或输入为空）时返回 None"""
+        """
+        手工输入格式：第一段非空文本是 3 个以上连字符（如 '---'），之后整行只有 3 个以上连字符的行作为 prompt 分隔符。
+        不是该格式（或输入为空）时返回 None。
+
+        prompt 文本原样保留（段内换行与缩进不动），只在每段首尾 strip。
+        """
+
+        separator_pattern = re.compile(r"-{3,}")
 
         lines = s.splitlines()
-        lines = [p.strip() for p in lines]
-        lines = [p for p in lines if p]
 
-        if not lines:
+        head_index = next((i for i, line in enumerate(lines) if line.strip()), None)
+        if head_index is None:
             return None
 
-        positives = []
+        if not separator_pattern.fullmatch(lines[head_index].strip()):
+            return None
 
-        for line in lines:
-            if not line.startswith(":"):
-                return None
+        segments: list[list[str]] = [[]]
 
-            positives.append(line.removeprefix(":").strip())
+        for line in lines[head_index + 1 :]:
+            if separator_pattern.fullmatch(line.strip()):
+                segments.append([])
+            else:
+                segments[-1].append(line)
 
-        negatives = [""] * len(positives)
-        loras = [""] * len(positives)
+        positives = ["\n".join(segment).strip() for segment in segments]
+        positives = [positive for positive in positives if positive]
 
-        return TimestepDraftParseResult(positives=positives, negatives=negatives, loras=loras, is_friendly=True)
+        return TimestepDraftParseResult(
+            positives=positives,
+            negatives=[""] * len(positives),
+            loras=[""] * len(positives),
+            is_friendly=True,
+        )
 
     @staticmethod
     def parse_exploration_abstract(text: str) -> ExplorationAbstract | None:
@@ -169,7 +183,7 @@ class DraftParseService:
         if not parse_result.positives:
             raise ValueError(
                 "未找到 prompt 块：draft 需要包含 ```prompt0 ... ``` 块（positive/negative 各一行），"
-                '或以 ":" 开头的行（一行一个 tag）'
+                '或以 "---" 开头、用单独的 "---" 行分隔的 prompt 段'
             )
 
         prompts: list[ImagePrompt] = []
