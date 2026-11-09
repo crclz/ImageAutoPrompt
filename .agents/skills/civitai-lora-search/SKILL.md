@@ -1,12 +1,13 @@
 ---
 name: civitai-lora-search
 description: 搜索civitai的lora。如果用户不显式要求，请勿调用。
---- 
+---
 
 > 用户数据相关路径见 skill `userdata`。
 
 ## 前置确认
 显式向用户确认（如果用户未主动说明）
+- civitai cli启动方式 (civitai / npx @civitai/cli)
 - 梯子端口。对应 HTTPS_PROXY="http://localhost:xxxx"
 - 模型架构
 - 是否下载
