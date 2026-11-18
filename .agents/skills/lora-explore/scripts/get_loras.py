@@ -4,8 +4,9 @@
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=anima --limit=5
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16
     python .agents/skills/lora-explore/scripts/get_loras.py --arch=noob --limit=16 --with-trigger-word
+    python .agents/skills/lora-explore/scripts/get_loras.py --arch=moss --limit=8
 
---arch 必传，noob / anima 二选一，决定读取 userdata/noob_loras.yaml 还是 userdata/anima_loras.yaml。
+--arch 必传，决定读取 userdata/{arch}_loras.yaml；库文件按模型线命名，新增模型线只需建对应的 yaml。
 --limit 必传，取值 >= 1：过滤 + shuffle 后取前 N 个。
 --with-trigger-word 可选，默认关闭。开启时每行行尾附加触发词，供"工作流未内置
 触发词映射、需手动把触发词写进 prompt"的场景使用：
@@ -17,7 +18,7 @@
     - 记号为 <1>（不采用）或 <3->（质量可能有小问题）的剔除
     - 记号为 <TODO>（已知未评估/待评，如新下载条目、孤儿条目）：静默剔除，不警告
 stdout 只输出结果列表（一行一个 <lora:xxx>），诊断信息一律走 stderr。
-本脚本是 noob / anima lora 库的唯一出口，调用方不要直接阅读 userdata/*_loras.yaml。
+本脚本是各模型线 lora 库的唯一出口，调用方不要直接阅读 userdata/*_loras.yaml。
 """
 
 import argparse
@@ -79,8 +80,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="从 lora 库过滤 + 随机抽样，输出 <lora:xxx> 一行一个"
     )
-    parser.add_argument("--arch", required=True, choices=("noob", "anima"),
-                        help="模型线，必传：noob 读 userdata/noob_loras.yaml，anima 读 userdata/anima_loras.yaml")
+    parser.add_argument("--arch", required=True,
+                        help="模型线，必传，读 userdata/{arch}_loras.yaml（如 noob / anima / moss）")
     parser.add_argument("--limit", type=int, required=True,
                         help="抽样数量，必传，取值 >= 1")
     parser.add_argument("--with-trigger-word", action="store_true",

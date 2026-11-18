@@ -106,5 +106,5 @@ class UserData:
 
     @classmethod
     def lora_library_path(cls, arch: str) -> Path:
-        """lora 库 userdata/{arch}_loras.yaml，arch 为 noob / anima。"""
+        """lora 库 userdata/{arch}_loras.yaml，arch 为模型线（noob / anima / moss）。"""
         return cls.userdata_dir() / f"{arch}_loras.yaml"
