@@ -9,8 +9,9 @@ batch_v2_job — ComfyUI 文本参数笛卡尔积批量生成 CLI 工具。
 
 说明:
     不接收图片输入。以 job.yaml 声明的变量矩阵做笛卡尔积，
-    对每个组合渲染 workflow.json（替换 ${var} 与 entropy_output_image），
-    生成 output/out_*.png。
+    对每个组合渲染 workflow.json（占位符同仓库本体：entropy:positive /
+    entropy:negative / entropy:lora / entropy:output_image），生成 output/out_*.png。
+    变量名只能是 positive / negative / lora，对应同名占位符。
 """
 
 import itertools
@@ -31,7 +32,9 @@ import yaml
 # 常量
 # ============================================================
 
-PLACEHOLDER_OUTPUT = "entropy_output_image"
+PLACEHOLDER_OUTPUT = "entropy:output_image"
+TOKEN_PREFIX = "entropy:"
+ALLOWED_VARS = ("positive", "negative", "lora")
 TIMEOUT_SECONDS = 300
 MAX_WORKERS = 2
 OUTPUT_SUBDIR = "output"
@@ -82,15 +85,14 @@ def main():
 
     # 场景 B：job.yaml 定义了变量但 workflow 完全没用 → 失败
     for var in var_order:
-        if f"${{{var}}}" not in workflow_template:
-            print(f"❌ 错误: job.yaml 定义了变量 '{var}' 但 workflow.json 未使用（缺少 ${{{var}}}）")
+        if TOKEN_PREFIX + var not in workflow_template:
+            print(f"❌ 错误: job.yaml 定义了变量 '{var}' 但 workflow.json 未使用（缺少 {TOKEN_PREFIX}{var}）")
             sys.exit(1)
 
-    # 场景 A：workflow 里有 ${var} 但 job.yaml 未定义 → 忽略 + 警告
-    defined = set(var_order)
-    for tok in _VAR_TOKEN_RE.findall(workflow_template):
-        if tok not in defined:
-            print(f"⚠️  警告: workflow.json 含未定义变量 '${{{tok}}}'，已忽略（job.yaml 为准）")
+    # 场景 A：workflow 里还有旧的 ${var} → 不替换，只警告
+    leftover = _VAR_TOKEN_RE.findall(workflow_template)
+    if leftover:
+        print(f"⚠️  警告: workflow.json 含旧语法变量 {_fmt_list(leftover)}，batch_v2 不再替换，请改用 {TOKEN_PREFIX}<变量名>")
 
     # 值 key 合法性校验
     for var in var_order:
@@ -189,6 +191,9 @@ def _parse_vars(cfg):
     vars_meta = {}
     var_order = []
     for var, spec in cfg["vars"].items():
+        if var not in ALLOWED_VARS:
+            print(f"❌ 错误: 变量名 '{var}' 不受支持，只允许 {_fmt_list(list(ALLOWED_VARS))}")
+            sys.exit(1)
         if not isinstance(spec, dict) or "data" not in spec:
             print(f"❌ 错误: 变量 '{var}' 必须包含 'data' 字段")
             sys.exit(1)
@@ -288,28 +293,22 @@ def _process_one(base_url, workflow_template, vars_meta, var_order, combo, out_d
 
 
 def _render_workflow(template, vars_meta, var_order, combo):
-    """替换 ${var} 与 entropy_output_image，返回 workflow JSON 对象。
+    """替换 entropy:<变量名> 与 entropy:output_image，返回 workflow JSON 对象。
 
-    替换规则：对变量值做 json.dumps(ensure_ascii=False) 后剥掉最外层引号，
-    注入到字符串内容里（模板中 ${var} 必须被一对引号包着）。
-    如下保证字符串内部特殊字符仍被正确转义。
+    替换规则与仓库本体的 render_workflow 一致：裸 token 替换，变量值做
+    json.dumps(ensure_ascii=False) 后剥掉最外层引号再注入。
     """
     # 唯一前缀，用于定位输出
     prefix = "batch_v2_out_" + uuid.uuid4().hex[:12]
 
     s = template
 
-    # 替换 ${var}：json.dumps 后剥最外层一对引号
     for var, key in zip(var_order, combo):
         value = vars_meta[var]["data"][key]
         dumped = json.dumps(value, ensure_ascii=False)
-        s = s.replace(f"${{{var}}}", dumped[1:-1])
+        s = s.replace(TOKEN_PREFIX + var, dumped[1:-1])
 
-    # 替换输出占位符（等价于剥引号的裸替换）
-    s = s.replace(
-        f'"{PLACEHOLDER_OUTPUT}"',
-        json.dumps(prefix, ensure_ascii=False),
-    )
+    s = s.replace(PLACEHOLDER_OUTPUT, json.dumps(prefix, ensure_ascii=False)[1:-1])
 
     return json.loads(s)
 
